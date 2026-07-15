@@ -1,0 +1,577 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "gallery/gallery.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "GalleryService"
+    },
+    {
+      "name": "UserService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/photogallery/auth/login": {
+      "post": {
+        "summary": "Login authenticates a user or moderator and returns a signed JWT.",
+        "operationId": "UserService_Login",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoLoginRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/photogallery/auth/register": {
+      "post": {
+        "operationId": "UserService_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoTokenResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoRegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/photogallery/galleries": {
+      "get": {
+        "summary": "ListGalleries returns all open galleries, optionally filtered to the caller's memberships.",
+        "operationId": "GalleryService_ListGalleries",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoListGalleriesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "myGalleries",
+            "description": "Optional: filter to galleries the caller belongs to.",
+            "in": "query",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      },
+      "post": {
+        "summary": "CreateGallery creates a new gallery. Caller must be MODERATOR.",
+        "operationId": "GalleryService_CreateGallery",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoGallery"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoCreateGalleryRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    },
+    "/photogallery/galleries/{galleryId}": {
+      "get": {
+        "summary": "GetGallery returns the details of a single gallery.",
+        "operationId": "GalleryService_GetGallery",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoGallery"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    },
+    "/photogallery/galleries/{galleryId}/alert": {
+      "post": {
+        "summary": "SendModeratorAlert broadcasts a special alert to all gallery members.\nCaller must be MODERATOR.",
+        "operationId": "GalleryService_SendModeratorAlert",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoSendModeratorAlertResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GalleryServiceSendModeratorAlertBody"
+            }
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    },
+    "/photogallery/galleries/{galleryId}/close": {
+      "post": {
+        "summary": "CloseGallery marks a gallery as closed. Caller must be MODERATOR.",
+        "operationId": "GalleryService_CloseGallery",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoCloseGalleryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GalleryServiceCloseGalleryBody"
+            }
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    },
+    "/photogallery/galleries/{galleryId}/members": {
+      "get": {
+        "summary": "ListMembers returns all members of a gallery.",
+        "operationId": "GalleryService_ListMembers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoListMembersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      },
+      "post": {
+        "summary": "AddMember adds a user to a gallery. Any authenticated user may join.",
+        "operationId": "GalleryService_AddMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoAddMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GalleryServiceAddMemberBody"
+            }
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    },
+    "/photogallery/galleries/{galleryId}/members/{userId}": {
+      "delete": {
+        "summary": "RemoveMember removes a member. Caller must be MODERATOR or the member themselves.",
+        "operationId": "GalleryService_RemoveMember",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoRemoveMemberResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "GalleryServiceAddMemberBody": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        }
+      }
+    },
+    "GalleryServiceCloseGalleryBody": {
+      "type": "object"
+    },
+    "GalleryServiceSendModeratorAlertBody": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string"
+        }
+      },
+      "description": "SendModeratorAlertRequest is only accepted when role == MODERATOR."
+    },
+    "protoAddMemberResponse": {
+      "type": "object"
+    },
+    "protoCloseGalleryResponse": {
+      "type": "object"
+    },
+    "protoCreateGalleryRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string",
+          "title": "moderator_id is taken from the validated JWT claims in the gateway;"
+        }
+      }
+    },
+    "protoGallery": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/protoGalleryStatus"
+        },
+        "moderatorId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "protoGalleryStatus": {
+      "type": "string",
+      "enum": [
+        "GALLERY_STATUS_UNSPECIFIED",
+        "GALLERY_STATUS_OPEN",
+        "GALLERY_STATUS_CLOSED"
+      ],
+      "default": "GALLERY_STATUS_UNSPECIFIED"
+    },
+    "protoListGalleriesResponse": {
+      "type": "object",
+      "properties": {
+        "galleries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protoGallery"
+          }
+        },
+        "nextPageToken": {
+          "type": "string"
+        }
+      }
+    },
+    "protoListMembersResponse": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protoMember"
+          }
+        }
+      }
+    },
+    "protoLoginRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "protoMember": {
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "galleryId": {
+          "type": "string"
+        },
+        "joinedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "protoRegisterRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/definitions/protoRole"
+        }
+      }
+    },
+    "protoRemoveMemberResponse": {
+      "type": "object"
+    },
+    "protoRole": {
+      "type": "string",
+      "enum": [
+        "ROLE_UNSPECIFIED",
+        "ROLE_USER",
+        "ROLE_MODERATOR"
+      ],
+      "default": "ROLE_UNSPECIFIED"
+    },
+    "protoSendModeratorAlertResponse": {
+      "type": "object"
+    },
+    "protoTokenResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "expiresIn": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  }
+}

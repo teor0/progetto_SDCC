@@ -1,0 +1,58 @@
+services:
+
+  user_postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: matteo
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matteo -d user_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - user_pgdata:/var/lib/postgresql/data
+
+  user-service:
+    build:
+      context: .
+      dockerfile: internal/user/Dockerfile.user
+    image: user-service:latest
+    ports:
+      - "8080:8080"
+      - "8090:8090"
+    environment:
+      DB_HOST: user_postgres
+      DB_USER: matteo
+      DB_PASSWORD: password
+      DB_NAME_USER: user_db
+      DB_PORT_USER: 5432
+      JWT_SECRET: ciaobelli
+    depends_on:
+      user_postgres:
+        condition: service_healthy # necessary to make the container work
+
+  gallery_postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: matteo
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gallery_db
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U matteo -d gallery_db" ]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - gallery_pgdata:/var/lib/postgresql/data
+
+volumes:
+  user_pgdata:
+  gallery_pgdata:
+
+

@@ -1,0 +1,163 @@
+syntax = "proto3";
+option go_package = "photogallery/gen/gallery";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+package proto;
+
+enum GalleryStatus {
+  GALLERY_STATUS_UNSPECIFIED = 0;
+  GALLERY_STATUS_OPEN        = 1;
+  GALLERY_STATUS_CLOSED      = 2;
+}
+
+message Gallery {
+  string                    id           = 1;
+  string                    name         = 2;
+  string                    description  = 3;
+  GalleryStatus             status       = 4;
+  string                    moderator_id = 5;
+  google.protobuf.Timestamp created_at   = 6;
+  google.protobuf.Timestamp updated_at   = 7;
+}
+
+message Member {
+  string                    user_id   = 1;
+  string                    gallery_id = 2;
+  google.protobuf.Timestamp joined_at  = 3;
+}
+
+//  Command messages (write)
+
+message CreateGalleryRequest {
+  string name        = 1;
+  string description = 2;
+  // moderator_id is taken from the validated JWT claims in the gateway;
+}
+
+message CloseGalleryRequest {
+  string gallery_id = 1;
+}
+
+message CloseGalleryResponse {
+}
+
+message AddMemberRequest {
+  string gallery_id = 1;
+  string user_id    = 2;
+}
+
+message RemoveMemberRequest {
+  string gallery_id = 1;
+  string user_id    = 2;
+}
+message AddMemberResponse {
+}
+
+message RemoveMemberResponse {
+}
+
+// SendModeratorAlertRequest is only accepted when role == MODERATOR.
+message SendModeratorAlertRequest {
+  string gallery_id = 1;
+  string body    = 2;
+}
+
+message SendModeratorAlertResponse {}
+
+//  Query messages (read)
+
+message GetGalleryRequest {
+  string gallery_id = 1;
+}
+
+message ListGalleriesRequest {
+  // Optional: filter to galleries the caller belongs to.
+  bool   my_galleries = 1;
+  int32  page_size    = 2;
+  string page_token   = 3;
+}
+
+message ListGalleriesResponse {
+  repeated Gallery galleries       = 1;
+  string           next_page_token = 2;
+}
+
+message ListMembersRequest {
+  string gallery_id = 1;
+}
+
+message ListMembersResponse {
+  repeated Member members = 1;
+}
+
+//  CQRS split:
+//    Commands: mutate state, require MODERATOR role where noted.
+//    Queries: read-only, available to any authenticated user.
+
+service GalleryService {
+
+  // Commands
+
+  // CreateGallery creates a new gallery. Caller must be MODERATOR.
+  rpc CreateGallery(CreateGalleryRequest) returns (Gallery) {
+    option (google.api.http) = {
+      post: "/photogallery/galleries"
+      body: "*"
+    };
+  }
+
+  // CloseGallery marks a gallery as closed. Caller must be MODERATOR.
+  rpc CloseGallery(CloseGalleryRequest) returns (CloseGalleryResponse) {
+    option (google.api.http) = {
+      post: "/photogallery/galleries/{gallery_id}/close"
+      body: "*"
+    };
+  }
+
+  // AddMember adds a user to a gallery. Any authenticated user may join.
+  rpc AddMember(AddMemberRequest) returns (AddMemberResponse) {
+    option (google.api.http) = {
+      post: "/photogallery/galleries/{gallery_id}/members"
+      body: "*"
+    };
+  }
+
+  // RemoveMember removes a member. Caller must be MODERATOR or the member themselves.
+  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse) {
+    option (google.api.http) = {
+      delete: "/photogallery/galleries/{gallery_id}/members/{user_id}"
+    };
+  }
+
+  // SendModeratorAlert broadcasts a special alert to all gallery members.
+  // Caller must be MODERATOR.
+  rpc SendModeratorAlert(SendModeratorAlertRequest) returns (SendModeratorAlertResponse) {
+    option (google.api.http) = {
+      post: "/photogallery/galleries/{gallery_id}/alert"
+      body: "*"
+    };
+  }
+
+  // Queries
+
+  // GetGallery returns the details of a single gallery.
+  rpc GetGallery(GetGalleryRequest) returns (Gallery) {
+    option (google.api.http) = {
+      get: "/photogallery/galleries/{gallery_id}"
+    };
+  }
+
+  // ListGalleries returns all open galleries, optionally filtered to the caller's memberships.
+  rpc ListGalleries(ListGalleriesRequest) returns (ListGalleriesResponse) {
+    option (google.api.http) = {
+      get: "/photogallery/galleries"
+    };
+  }
+
+  // ListMembers returns all members of a gallery.
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse) {
+    option (google.api.http) = {
+      get: "/photogallery/galleries/{gallery_id}/members"
+    };
+  }
+}

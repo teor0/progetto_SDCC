@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+option go_package = "photogallery/gen/user";
+import "google/api/annotations.proto";
+package proto;
+
+
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER        = 1;
+  ROLE_MODERATOR   = 2;
+}
+
+message LoginRequest{
+  string email=1;
+  string password=2;
+}
+
+message RegisterRequest{
+  string email=1;
+  string password=2;
+  Role role=3;
+}
+
+message TokenResponse {
+  string token=1;
+  int64  expires_in=2;
+}
+
+service UserService {
+  rpc Register(RegisterRequest) returns (TokenResponse) {
+    option (google.api.http) = {
+      post: "/photogallery/auth/register"
+      body: "*"
+    };
+  }
+
+
+  // Login authenticates a user or moderator and returns a signed JWT.
+  rpc Login(LoginRequest) returns (TokenResponse) {
+    option (google.api.http) = {
+      post: "/photogallery/auth/login"
+      body: "*"
+    };
+  }
+}
+

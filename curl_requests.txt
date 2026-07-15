@@ -1,0 +1,7 @@
+curl -X POST -k http://localhost:8090/photogallery/auth/register -d '{"email": " prova@mail.com", "password": "mypass", "role":"user"}'
+curl -X POST -k http://localhost:8090/photogallery/auth/login -d '{"email": " prova@mail.com", "password": "mypass", "role":"user"}'
+curl -X POST -k http://localhost:8090/photogallery/auth/register -d '{"email": " admin@mail.com", "password": "mypass", "role":"ROLE_MODERATOR"}'
+curl -X GET -k http://localhost:8091/photogallery/galleries
+curl -X POST -k http://localhost:8091/photogallery/galleries -d '{"name": "test gallery", "description": "this is a test"}' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTU1Mzk3YzAtMWE4MC00NzQ4LTk0NTItYzc3ODVkYjZjOTAzIiwicm9sZSI6IlJPTEVfTU9ERVJBVE9SIiwiZXhwIjoxNzg0MTI4ODE5LCJpYXQiOjE3ODQxMjUyMTl9.ueWQGRlekO5_YWQ35oxOhVkbCcIsegxQP3jAJAt4XFU'
+curl -X POST -k 'http://localhost:8091/photogallery/galleries/a00ece86-8c7f-4edd-9c3c-28ee085fa06b/alert' -d '{"gallery_id": "a00ece86-8c7f-4edd-9c3c-28ee085fa06b", "body": "this test is working"}' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNTU1Mzk3YzAtMWE4MC00NzQ4LTk0NTItYzc3ODVkYjZjOTAzIiwicm9sZSI6IlJPTEVfTU9ERVJBVE9SIiwiZXhwIjoxNzg0MTI4ODE5LCJpYXQiOjE3ODQxMjUyMTl9.ueWQGRlekO5_YWQ35oxOhVkbCcIsegxQP3jAJAt4XFU'
+curl -X GET -k http://localhost:8091/photogallery/galleries/a00ece86-8c7f-4edd-9c3c-28ee085fa06b

@@ -1,0 +1,240 @@
+package api
+
+import (
+	"context"
+	"log"
+	userpb "photogallery/gen/user"
+	"photogallery/internal/auth"
+	"photogallery/internal/gallery/models"
+
+	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	gallerypb "photogallery/gen/gallery"
+)
+
+// Server implements proto.GalleryServiceServer, delegating writes
+// to CommandService and reads to QueryService. It contains no business
+// logic itself — only request/response translation and auth-context extraction.
+type Server struct {
+	gallerypb.UnimplementedGalleryServiceServer
+	cmd       CommandRunner
+	qry       QueryRunner
+	jwtSecret string
+}
+
+func NewServer(cmd CommandRunner, qry QueryRunner, jwtSecret string) *Server {
+	return &Server{cmd: cmd, qry: qry, jwtSecret: jwtSecret}
+}
+
+// publicMethods lists the fully-qualified RPC names that do not require a JWT.
+// The grpc-gateway auth middleware calls AuthFuncOverride with the full method
+// name so we can selectively bypass authentication for Login and Register.
+var publicMethods = map[string]bool{
+	"/proto.GalleryService/GetGallery":    true,
+	"/proto.GalleryService/ListGalleries": true,
+}
+
+// AuthFuncOverride implements grpcauth.ServiceAuthFuncOverride.
+// and delegates to the shared AuthFunc for everything else.
+func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if publicMethods[fullMethodName] {
+		return ctx, nil // no auth required
+	}
+	return auth.AuthFunc(s.jwtSecret)(ctx)
+}
+
+// --- Commands ---
+
+func (s *Server) CreateGallery(ctx context.Context, req *gallerypb.CreateGalleryRequest) (*gallerypb.Gallery, error) {
+	moderatorID, err := moderatorIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	g, err := s.cmd.CreateGallery(ctx, req.GetName(), req.GetDescription(), moderatorID)
+	if err != nil {
+		return nil, err
+	}
+	return toProtoGallery(g), nil
+}
+
+func (s *Server) CloseGallery(ctx context.Context, req *gallerypb.CloseGalleryRequest) (*gallerypb.CloseGalleryResponse, error) {
+	callerID, err := callerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cmd.CloseGallery(ctx, id, callerID); err != nil {
+		return nil, err
+	}
+	return &gallerypb.CloseGalleryResponse{}, nil
+}
+
+func (s *Server) AddMember(ctx context.Context, req *gallerypb.AddMemberRequest) (*gallerypb.AddMemberResponse, error) {
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cmd.AddMember(ctx, id, req.GetUserId()); err != nil {
+		return nil, err
+	}
+	return &gallerypb.AddMemberResponse{}, nil
+}
+
+func (s *Server) RemoveMember(ctx context.Context, req *gallerypb.RemoveMemberRequest) (*gallerypb.RemoveMemberResponse, error) {
+	callerID, err := callerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cmd.RemoveMember(ctx, id, req.GetUserId(), callerID); err != nil {
+		return nil, err
+	}
+	return &gallerypb.RemoveMemberResponse{}, nil
+}
+
+func (s *Server) SendModeratorAlert(ctx context.Context, req *gallerypb.SendModeratorAlertRequest) (*gallerypb.SendModeratorAlertResponse, error) {
+	callerID, err := callerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.cmd.SendModeratorAlert(ctx, id, callerID, req.GetBody()); err != nil {
+		return nil, err
+	}
+	return &gallerypb.SendModeratorAlertResponse{}, nil
+}
+
+// --- Queries ---
+
+func (s *Server) GetGallery(ctx context.Context, req *gallerypb.GetGalleryRequest) (*gallerypb.Gallery, error) {
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("GetGallery: %+v", id)
+	g, err := s.qry.GetGallery(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return toProtoGallery(g), nil
+}
+
+func (s *Server) ListGalleries(ctx context.Context, req *gallerypb.ListGalleriesRequest) (*gallerypb.ListGalleriesResponse, error) {
+	var callerID string
+	if req.GetMyGalleries() {
+		id, err := callerIDFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		callerID = id
+	}
+
+	galleries, nextToken, err := s.qry.ListGalleries(ctx, req.GetMyGalleries(), callerID, int(req.GetPageSize()), req.GetPageToken())
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &gallerypb.ListGalleriesResponse{
+		Galleries:     make([]*gallerypb.Gallery, 0, len(galleries)),
+		NextPageToken: nextToken,
+	}
+	for i := range galleries {
+		resp.Galleries = append(resp.Galleries, toProtoGallery(&galleries[i]))
+	}
+	return resp, nil
+}
+
+func (s *Server) ListMembers(ctx context.Context, req *gallerypb.ListMembersRequest) (*gallerypb.ListMembersResponse, error) {
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := s.qry.ListMembers(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &gallerypb.ListMembersResponse{Members: make([]*gallerypb.Member, 0, len(members))}
+	for _, m := range members {
+		resp.Members = append(resp.Members, toProtoMember(&m))
+	}
+	return resp, nil
+}
+
+// --- helpers ---
+
+func parseUUID(s string) (uuid.UUID, error) {
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return uuid.Nil, status.Error(codes.InvalidArgument, "invalid gallery_id")
+	}
+	return id, nil
+}
+
+func toProtoGallery(g *models.Gallery) *gallerypb.Gallery {
+	pg := &gallerypb.Gallery{
+		Id:          g.ID.String(),
+		Name:        g.Name,
+		Description: g.Description,
+		ModeratorId: g.ModeratorID,
+		CreatedAt:   timestamppb.New(g.CreatedAt),
+		UpdatedAt:   timestamppb.New(g.UpdatedAt),
+	}
+	if g.Status == models.GalleryClosed {
+		pg.Status = gallerypb.GalleryStatus_GALLERY_STATUS_CLOSED
+	} else {
+		pg.Status = gallerypb.GalleryStatus_GALLERY_STATUS_OPEN
+	}
+	return pg
+}
+
+func toProtoMember(m *models.Member) *gallerypb.Member {
+	return &gallerypb.Member{
+		UserId:    m.UserID,
+		GalleryId: m.GalleryID.String(),
+		JoinedAt:  timestamppb.New(m.JoinedAt),
+	}
+}
+
+// callerIDFromContext returns the authenticated caller's user ID.
+// The interceptor guarantees claims are present; FromContext already
+// returns Unauthenticated if somehow missing.
+func callerIDFromContext(ctx context.Context) (string, error) {
+	claims, err := auth.FromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	return claims.UserID, nil
+}
+
+// moderatorIDFromContext returns the caller's user ID, but only if their
+// role is MODERATOR. Used for endpoints restricted to moderators
+// (CreateGallery, CloseGallery, SendModeratorAlert).
+func moderatorIDFromContext(ctx context.Context) (string, error) {
+	claims, err := auth.FromContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	if claims.Role != userpb.Role_ROLE_MODERATOR.String() {
+		return "", status.Error(codes.PermissionDenied, "moderator role required")
+	}
+	return claims.UserID, nil
+}
