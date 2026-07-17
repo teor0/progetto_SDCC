@@ -29,7 +29,7 @@ func (s *Service) GetGallery(ctx context.Context, galleryID uuid.UUID) (*models.
 // ListGalleries returns a page of galleries. If myGalleries is true and a
 // callerID is provided, results are filtered to galleries the caller
 // belongs to; otherwise all (open) galleries are returned.
-func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID string, pageSize int, pageToken string) ([]models.Gallery, string, error) {
+func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID uuid.UUID, pageSize int, pageToken string) ([]models.Gallery, string, error) {
 	var after uuid.UUID
 	if pageToken != "" {
 		parsed, err := uuid.Parse(pageToken)
@@ -45,7 +45,7 @@ func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID 
 	}
 
 	if myGalleries {
-		if callerID == "" {
+		if callerID == uuid.Nil {
 			return nil, "", status.Error(codes.Unauthenticated, "missing caller identity")
 		}
 		filtered := make([]models.Gallery, 0, len(galleries))
@@ -83,4 +83,20 @@ func (s *Service) ListMembers(ctx context.Context, galleryID uuid.UUID) ([]model
 		return nil, status.Errorf(codes.Internal, "list members: %v", err)
 	}
 	return members, nil
+}
+
+func (s *Service) IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error) {
+	exists, err := s.repo.GalleryExists(ctx, galleryID)
+	if err != nil {
+		return false, models.GalleryClosed, status.Errorf(codes.Internal, "check gallery existence: %v", err)
+	}
+	if !exists {
+		return false, models.GalleryClosed, status.Error(codes.NotFound, "gallery not found")
+	}
+	membership, galleryStatus, err := s.repo.IsMember(ctx, galleryID, userID)
+	if err != nil {
+		return false, models.GalleryClosed, status.Errorf(codes.Internal, err.Error())
+	}
+	return membership, galleryStatus, nil
+
 }

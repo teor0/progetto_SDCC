@@ -152,6 +152,22 @@ func (mr *MockQueryRunnerMockRecorder) GetGallery(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGallery", reflect.TypeOf((*MockQueryRunner)(nil).GetGallery), ctx, id)
 }
 
+// IsMember mocks base method.
+func (m *MockQueryRunner) IsMember(ctx context.Context, galleryID, userID uuid.UUID) (bool, models.GalleryStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMember", ctx, galleryID, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(models.GalleryStatus)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// IsMember indicates an expected call of IsMember.
+func (mr *MockQueryRunnerMockRecorder) IsMember(ctx, galleryID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockQueryRunner)(nil).IsMember), ctx, galleryID, userID)
+}
+
 // ListGalleries mocks base method.
 func (m *MockQueryRunner) ListGalleries(ctx context.Context, myGalleries bool, callerID string, pageSize int, pageToken string) ([]models.Gallery, string, error) {
 	m.ctrl.T.Helper()

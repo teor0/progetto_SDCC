@@ -90,6 +90,21 @@ message ListMembersResponse {
   repeated Member members = 1;
 }
 
+// IsMember is a cheap existence check, intended for other services
+// (e.g. Upload Service) to validate a single user's membership without
+// pulling the full member list. Also returns gallery status so callers
+// can validate "open" state in the same round trip.
+message IsMemberRequest {
+  string gallery_id = 1;
+  string user_id    = 2;
+}
+
+message IsMemberResponse {
+  bool          is_member      = 1;
+  GalleryStatus gallery_status = 2;
+}
+
+
 //  CQRS split:
 //    Commands: mutate state, require MODERATOR role where noted.
 //    Queries: read-only, available to any authenticated user.
@@ -160,4 +175,12 @@ service GalleryService {
       get: "/photogallery/galleries/{gallery_id}/members"
     };
   }
+
+  // IsMember is used internally (not exposed via the HTTP gateway) by
+  // other services -- primarily Upload Service -- to check membership
+  // and gallery status in a single low-cost call before accepting work.
+  // This is the call Upload Service wraps in its circuit breaker.
+  rpc IsMember(IsMemberRequest) returns (IsMemberResponse);
+
 }
+

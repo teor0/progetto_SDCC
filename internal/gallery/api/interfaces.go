@@ -26,4 +26,5 @@ type QueryRunner interface {
 	GetGallery(ctx context.Context, id uuid.UUID) (*models.Gallery, error)
 	ListGalleries(ctx context.Context, myGalleries bool, callerID string, pageSize int, pageToken string) ([]models.Gallery, string, error)
 	ListMembers(ctx context.Context, galleryID uuid.UUID) ([]models.Member, error)
+	IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error)
 }

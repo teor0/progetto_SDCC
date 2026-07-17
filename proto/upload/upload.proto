@@ -1,0 +1,108 @@
+syntax="proto3";
+
+option go_package = "photogallery/gen/upload";
+package proto;
+import "google/protobuf/timestamp.proto";
+
+enum UploadStatus {
+  UPLOAD_STATUS_UNSPECIFIED = 0;
+  UPLOAD_STATUS_PENDING = 1;    // received, being written to MinIO
+  UPLOAD_STATUS_STORED = 2;     // saved to MinIO, event not yet published
+  UPLOAD_STATUS_COMPLETED = 3;  // stored + event published to RabbitMQ
+  UPLOAD_STATUS_FAILED = 4;
+  UPLOAD_STATUS_REJECTED= 5;
+}
+
+message UploadPhotoRequest {
+  oneof payload {
+    UploadMetadata metadata = 1; // must be the first message in the stream
+    bytes chunk_data = 2;        // subsequent messages
+  }
+}
+
+message UploadMetadata {
+  string gallery_id = 1;
+  string user_id = 2;          // resolved/validated upstream by User Service
+  string filename = 3;
+  string content_type = 4;     // e.g. "image/jpeg"
+  int64 total_size_bytes = 5;
+}
+
+message UploadPhotoResponse {
+  string photo_id = 1;
+  string gallery_id = 2;
+  string storage_key = 3;      // MinIO object key/path
+  int64 size_bytes = 4;
+  // Publicly accessible URL (or presigned URL) for the stored photo.
+  string url        = 5;
+  UploadStatus status = 6;
+  google.protobuf.Timestamp uploaded_at = 7;
+  string error_message = 8;    // populated when status == FAILED
+}
+
+message GetUploadStatusRequest {
+  string photo_id = 1;
+}
+
+message GetUploadStatusResponse {
+  string photo_id = 1;
+  string gallery_id = 2;
+  UploadStatus status = 3;
+  string error_message = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message ListUploadsRequest {
+  string gallery_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message ListUploadsResponse {
+  repeated UploadSummary uploads = 1;
+  string next_page_token = 2;
+}
+
+message UploadSummary {
+  string photo_id = 1;
+  string gallery_id = 2;
+  string uploader_user_id = 3;
+  string storage_key = 4;
+  int64 size_bytes = 5;
+  UploadStatus status = 6;
+  google.protobuf.Timestamp uploaded_at = 7;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+}
+
+// UploadService receives photos from clients (via the API Gateway),
+// persists them to object storage (MinIO), and emits an upload event
+// to RabbitMQ once storage succeeds. It calls out to GalleryService to
+// verify the gallery exists and the user is a member; that call is
+// wrapped in a circuit breaker on the server implementation side.
+service UploadService {
+  // UploadPhoto is client-streaming: the first message carries metadata,
+  // all subsequent messages carry raw chunk data. Streaming avoids
+  // loading full images into a single gRPC message (default max is 4MB).
+  rpc UploadPhoto(stream UploadPhotoRequest) returns (UploadPhotoResponse);
+
+  // GetUploadStatus lets a client (or the Notification Service) poll
+  // the state of a previously submitted upload.
+  rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
+
+  // ListUploads returns uploads for a gallery, most recent first.
+  rpc ListUploads(ListUploadsRequest) returns (ListUploadsResponse);
+
+  // HealthCheck is used by Docker Compose healthchecks and by callers'
+  // circuit breakers to probe service availability.
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}

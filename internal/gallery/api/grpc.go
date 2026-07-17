@@ -179,6 +179,28 @@ func (s *Server) ListMembers(ctx context.Context, req *gallerypb.ListMembersRequ
 	return resp, nil
 }
 
+func (s *Server) IsMember(ctx context.Context, req *gallerypb.IsMemberRequest) (*gallerypb.IsMemberResponse, error) {
+
+	galleryID, err := uuid.Parse(req.GalleryId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid gallery id")
+	}
+	userID, err := uuid.Parse(req.UserId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user id")
+	}
+
+	isMember, galleryStatus, err := s.qry.IsMember(ctx, galleryID, userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &gallerypb.IsMemberResponse{
+		IsMember:      isMember,
+		GalleryStatus: gallerypb.GalleryStatus(gallerypb.GalleryStatus_value[string(galleryStatus)]),
+	}, nil
+}
+
 // --- helpers ---
 
 func parseUUID(s string) (uuid.UUID, error) {
@@ -208,7 +230,7 @@ func toProtoGallery(g *models.Gallery) *gallerypb.Gallery {
 
 func toProtoMember(m *models.Member) *gallerypb.Member {
 	return &gallerypb.Member{
-		UserId:    m.UserID,
+		UserId:    m.UserID.String(),
 		GalleryId: m.GalleryID.String(),
 		JoinedAt:  timestamppb.New(m.JoinedAt),
 	}

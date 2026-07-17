@@ -9,6 +9,9 @@
       "name": "GalleryService"
     },
     {
+      "name": "UploadService"
+    },
+    {
       "name": "UserService"
     }
   ],

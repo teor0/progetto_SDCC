@@ -27,6 +27,7 @@ const (
 	GalleryService_GetGallery_FullMethodName         = "/proto.GalleryService/GetGallery"
 	GalleryService_ListGalleries_FullMethodName      = "/proto.GalleryService/ListGalleries"
 	GalleryService_ListMembers_FullMethodName        = "/proto.GalleryService/ListMembers"
+	GalleryService_IsMember_FullMethodName           = "/proto.GalleryService/IsMember"
 )
 
 // GalleryServiceClient is the client API for GalleryService service.
@@ -50,6 +51,11 @@ type GalleryServiceClient interface {
 	ListGalleries(ctx context.Context, in *ListGalleriesRequest, opts ...grpc.CallOption) (*ListGalleriesResponse, error)
 	// ListMembers returns all members of a gallery.
 	ListMembers(ctx context.Context, in *ListMembersRequest, opts ...grpc.CallOption) (*ListMembersResponse, error)
+	// IsMember is used internally (not exposed via the HTTP gateway) by
+	// other services -- primarily Upload Service -- to check membership
+	// and gallery status in a single low-cost call before accepting work.
+	// This is the call Upload Service wraps in its circuit breaker.
+	IsMember(ctx context.Context, in *IsMemberRequest, opts ...grpc.CallOption) (*IsMemberResponse, error)
 }
 
 type galleryServiceClient struct {
@@ -140,6 +146,16 @@ func (c *galleryServiceClient) ListMembers(ctx context.Context, in *ListMembersR
 	return out, nil
 }
 
+func (c *galleryServiceClient) IsMember(ctx context.Context, in *IsMemberRequest, opts ...grpc.CallOption) (*IsMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IsMemberResponse)
+	err := c.cc.Invoke(ctx, GalleryService_IsMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GalleryServiceServer is the server API for GalleryService service.
 // All implementations should embed UnimplementedGalleryServiceServer
 // for forward compatibility.
@@ -161,6 +177,11 @@ type GalleryServiceServer interface {
 	ListGalleries(context.Context, *ListGalleriesRequest) (*ListGalleriesResponse, error)
 	// ListMembers returns all members of a gallery.
 	ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error)
+	// IsMember is used internally (not exposed via the HTTP gateway) by
+	// other services -- primarily Upload Service -- to check membership
+	// and gallery status in a single low-cost call before accepting work.
+	// This is the call Upload Service wraps in its circuit breaker.
+	IsMember(context.Context, *IsMemberRequest) (*IsMemberResponse, error)
 }
 
 // UnimplementedGalleryServiceServer should be embedded to have
@@ -193,6 +214,9 @@ func (UnimplementedGalleryServiceServer) ListGalleries(context.Context, *ListGal
 }
 func (UnimplementedGalleryServiceServer) ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMembers not implemented")
+}
+func (UnimplementedGalleryServiceServer) IsMember(context.Context, *IsMemberRequest) (*IsMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method IsMember not implemented")
 }
 func (UnimplementedGalleryServiceServer) testEmbeddedByValue() {}
 
@@ -358,6 +382,24 @@ func _GalleryService_ListMembers_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GalleryService_IsMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IsMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GalleryServiceServer).IsMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GalleryService_IsMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GalleryServiceServer).IsMember(ctx, req.(*IsMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GalleryService_ServiceDesc is the grpc.ServiceDesc for GalleryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -396,6 +438,10 @@ var GalleryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMembers",
 			Handler:    _GalleryService_ListMembers_Handler,
+		},
+		{
+			MethodName: "IsMember",
+			Handler:    _GalleryService_IsMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

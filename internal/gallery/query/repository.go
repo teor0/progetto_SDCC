@@ -14,6 +14,7 @@ type QueryRepository interface {
 	ListGalleries(context.Context, int, uuid.UUID) ([]models.Gallery, error)
 	ListMembers(context.Context, uuid.UUID) ([]models.Member, error)
 	GalleryExists(context.Context, uuid.UUID) (bool, error)
+	IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error)
 	Close() error
 }
 
@@ -62,4 +63,24 @@ func (r *GormQueryRepository) GalleryExists(ctx context.Context, id uuid.UUID) (
 	var c int64
 	err := r.db.WithContext(ctx).Model(&models.Gallery{}).Where("id=?", id).Count(&c).Error
 	return c > 0, err
+}
+
+func (r *GormQueryRepository) IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error) {
+	var gallery models.Gallery
+
+	err := r.db.WithContext(ctx).
+		Preload("Members", "user_id = ?", userID).
+		First(&gallery, "id = ?", galleryID).Error
+
+	// oppure
+	//err := r.db.WithContext(ctx).
+	//	Model(&models.Member{}).
+	//	Where("gallery_id = ? AND user_id = ?", galleryID, userID).
+	//	Count(&c).Error
+
+	if err != nil {
+		return false, models.GalleryClosed, err
+	}
+
+	return len(gallery.Members) > 0, gallery.Status, nil
 }
