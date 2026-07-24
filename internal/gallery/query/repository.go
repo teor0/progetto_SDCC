@@ -8,10 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockgen -source=repository.go -destination=../mocks/query_mock.go -package=mocks
 type QueryRepository interface {
 	GetGallery(context.Context, uuid.UUID) (*models.Gallery, error)
 	ListGalleries(context.Context, int, uuid.UUID) ([]models.Gallery, error)
+	ListGalleriesByMember(ctx context.Context, userID uuid.UUID, limit int, after uuid.UUID) ([]models.Gallery, error)
 	ListMembers(context.Context, uuid.UUID) ([]models.Member, error)
 	GalleryExists(context.Context, uuid.UUID) (bool, error)
 	IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error)
@@ -48,6 +48,27 @@ func (r *GormQueryRepository) ListGalleries(ctx context.Context, limit int, afte
 		limit = 20
 	}
 	err := q.Order("id").Limit(limit).Find(&g).Error
+	return g, err
+}
+
+// ListGalleriesByMember queries galleries a specific user belongs to
+// directly via a join, instead of the paginate-all-then-filter approach
+// ListGalleries(my_galleries=true) uses at the service layer. This is the
+// query Notification Service's Subscribe handler needs: for a user in a
+// handful of galleries out of a large total, this is one indexed query
+// instead of potentially many pages of "everything."
+func (r *GormQueryRepository) ListGalleriesByMember(ctx context.Context, userID uuid.UUID, limit int, after uuid.UUID) ([]models.Gallery, error) {
+	var g []models.Gallery
+	q := r.db.WithContext(ctx).
+		Joins("JOIN members ON members.gallery_id = galleries.id").
+		Where("members.user_id = ?", userID)
+	if after != uuid.Nil {
+		q = q.Where("galleries.id > ?", after)
+	}
+	if limit == 0 {
+		limit = 20
+	}
+	err := q.Order("galleries.id").Limit(limit).Find(&g).Error
 	return g, err
 }
 

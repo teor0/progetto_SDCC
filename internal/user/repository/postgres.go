@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-//go:generate mockgen -source=postgres.go -destination=../mocks/user_mock.go -package=mocks
 type Repository interface {
 	CreateUser(context.Context, *models.User) (uuid.UUID, error)
 	GetByEmail(context.Context, string) (*models.User, error)

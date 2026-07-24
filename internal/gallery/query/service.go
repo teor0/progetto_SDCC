@@ -68,6 +68,38 @@ func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID 
 	return galleries, nextPageToken, nil
 }
 
+// ListGalleriesByMember returns a page of galleries a specific user
+// belongs to, queried directly rather than filtered client-side out of
+// "all galleries" the way ListGalleries(myGalleries=true) does. Intended
+// for internal callers (e.g. Notification Service) that already know
+// exactly which user they're asking about.
+func (s *Service) ListGalleriesByMember(ctx context.Context, userID uuid.UUID, pageSize int, pageToken string) ([]models.Gallery, string, error) {
+	if userID == uuid.Nil {
+		return nil, "", status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	var after uuid.UUID
+	if pageToken != "" {
+		parsed, err := uuid.Parse(pageToken)
+		if err != nil {
+			return nil, "", status.Error(codes.InvalidArgument, "invalid page token")
+		}
+		after = parsed
+	}
+
+	galleries, err := s.repo.ListGalleriesByMember(ctx, userID, pageSize, after)
+	if err != nil {
+		return nil, "", status.Errorf(codes.Internal, "list galleries by member: %v", err)
+	}
+
+	var nextPageToken string
+	if len(galleries) > 0 {
+		nextPageToken = galleries[len(galleries)-1].ID.String()
+	}
+
+	return galleries, nextPageToken, nil
+}
+
 // ListMembers returns all members of a gallery.
 func (s *Service) ListMembers(ctx context.Context, galleryID uuid.UUID) ([]models.Member, error) {
 	exists, err := s.repo.GalleryExists(ctx, galleryID)
@@ -85,6 +117,7 @@ func (s *Service) ListMembers(ctx context.Context, galleryID uuid.UUID) ([]model
 	return members, nil
 }
 
+// IsMember check if a user is a member of the gallery.
 func (s *Service) IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) (bool, models.GalleryStatus, error) {
 	exists, err := s.repo.GalleryExists(ctx, galleryID)
 	if err != nil {

@@ -25,9 +25,8 @@ func NewServer(db repository.Repository, jwtSecret string) *Server {
 // The grpc-gateway auth middleware calls AuthFuncOverride with the full method
 // name so we can selectively bypass authentication for Login and Register.
 var publicMethods = map[string]bool{
-	"/proto.UserService/Login":         true,
-	"/proto.UserService/Register":      true,
-	"/proto.UserService/ValidateToken": true, // called internally by the gateway
+	"/proto.UserService/Login":    true,
+	"/proto.UserService/Register": true,
 }
 
 // AuthFuncOverride implements grpcauth.ServiceAuthFuncOverride.
@@ -43,8 +42,6 @@ func (s *Server) Register(ctx context.Context, req *userpb.RegisterRequest) (*us
 	if req.Email == "" || req.Password == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-
-	// Simple role assignment
 	role := userpb.Role_ROLE_USER.String()
 	if req.Role == userpb.Role_ROLE_MODERATOR {
 		role = userpb.Role_ROLE_MODERATOR.String()
@@ -55,14 +52,12 @@ func (s *Server) Register(ctx context.Context, req *userpb.RegisterRequest) (*us
 	}
 	id, err := s.db.CreateUser(ctx, &models.User{Email: req.Email, Password: hash, Role: role})
 	if err != nil {
-		// Unique constraint violation → email already taken.
 		return nil, status.Errorf(codes.AlreadyExists, "email already registered")
 	}
 	token, err := auth.SignToken(s.jwtSecret, id.String(), role)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error for token: %v", err)
 	}
-
 	return &userpb.TokenResponse{
 		Token:     token,
 		ExpiresIn: int64(auth.TokenTTL.Seconds()),
@@ -73,18 +68,17 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 	if req.Email == "" || req.Password == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-	u, err := s.db.GetByEmail(ctx, req.Email)
-	if err := auth.CheckPassword(u.Password, req.Password); err != nil {
-		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
-	}
+	user, err := s.db.GetByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
-	token, err := auth.SignToken(s.jwtSecret, u.ID.String(), u.Role)
+	if err := auth.CheckPassword(user.Password, req.Password); err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+	token, err := auth.SignToken(s.jwtSecret, user.ID.String(), user.Role)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error for token: %v", err)
 	}
-
 	return &userpb.TokenResponse{
 		Token:     token,
 		ExpiresIn: int64(auth.TokenTTL.Seconds()),

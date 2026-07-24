@@ -32,14 +32,14 @@ func newTestServer(t *testing.T) (*api.Server, *mocks.MockCommandRunner, *mocks.
 	return api.NewServer(cmd, qry, jwtSecret), cmd, qry
 }
 
-func moderatorCtx(userID string) context.Context {
+func moderatorCtx(userID uuid.UUID) context.Context {
 	return auth.NewContext(context.Background(), &auth.Claims{
 		UserID: userID,
 		Role:   userpb.Role_ROLE_MODERATOR.String(),
 	})
 }
 
-func memberCtx(userID string) context.Context {
+func memberCtx(userID uuid.UUID) context.Context {
 	return auth.NewContext(context.Background(), &auth.Claims{
 		UserID: userID,
 		Role:   userpb.Role_ROLE_USER.String(),
@@ -58,20 +58,21 @@ func TestServer_CreateGallery(t *testing.T) {
 	t.Run("moderator succeeds and maps the response", func(t *testing.T) {
 		srv, cmd, _ := newTestServer(t)
 		now := time.Now()
+		moderatorID := uuid.New()
 		g := &models.Gallery{
 			ID:          uuid.New(),
 			Name:        "Test gallery",
 			Description: "this is a test",
 			Status:      models.GalleryOpen,
-			ModeratorID: "mod-1",
+			ModeratorID: moderatorID,
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		}
 		cmd.EXPECT().
-			CreateGallery(gomock.Any(), "Test gallery", "this is a test", "mod-1").
+			CreateGallery(gomock.Any(), "Test gallery", "this is a test", moderatorID).
 			Return(g, nil)
 
-		resp, err := srv.CreateGallery(moderatorCtx("mod-1"), &gallerypb.CreateGalleryRequest{
+		resp, err := srv.CreateGallery(moderatorCtx(moderatorID), &gallerypb.CreateGalleryRequest{
 			Name:        "Test gallery",
 			Description: "this is a test",
 		})
@@ -79,14 +80,14 @@ func TestServer_CreateGallery(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, g.ID.String(), resp.Id)
 		assert.Equal(t, gallerypb.GalleryStatus_GALLERY_STATUS_OPEN, resp.Status)
-		assert.Equal(t, "mod-1", resp.ModeratorId)
+		assert.Equal(t, moderatorID.String(), resp.ModeratorId)
 	})
 
 	t.Run("non-moderator rejected before hitting the command layer", func(t *testing.T) {
 		srv, cmd, _ := newTestServer(t)
 		cmd.EXPECT().CreateGallery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-
-		_, err := srv.CreateGallery(memberCtx("user-1"), &gallerypb.CreateGalleryRequest{Name: "x"})
+		userID := uuid.New()
+		_, err := srv.CreateGallery(memberCtx(userID), &gallerypb.CreateGalleryRequest{Name: "x"})
 
 		requireGRPCCode(t, err, codes.PermissionDenied)
 	})
@@ -96,8 +97,8 @@ func TestServer_CreateGallery(t *testing.T) {
 		cmd.EXPECT().
 			CreateGallery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 			Return(nil, status.Error(codes.InvalidArgument, "gallery name is required"))
-
-		_, err := srv.CreateGallery(moderatorCtx("mod-1"), &gallerypb.CreateGalleryRequest{Name: ""})
+		moderatorID := uuid.New()
+		_, err := srv.CreateGallery(moderatorCtx(moderatorID), &gallerypb.CreateGalleryRequest{Name: ""})
 
 		requireGRPCCode(t, err, codes.InvalidArgument)
 	})
@@ -107,8 +108,8 @@ func TestServer_CloseGallery(t *testing.T) {
 	t.Run("invalid gallery id rejected before hitting the command layer", func(t *testing.T) {
 		srv, cmd, _ := newTestServer(t)
 		cmd.EXPECT().CloseGallery(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
-
-		_, err := srv.CloseGallery(moderatorCtx("mod-1"), &gallerypb.CloseGalleryRequest{GalleryId: "not-a-uuid"})
+		moderatorID := uuid.New()
+		_, err := srv.CloseGallery(moderatorCtx(moderatorID), &gallerypb.CloseGalleryRequest{GalleryId: "not-a-uuid"})
 
 		requireGRPCCode(t, err, codes.InvalidArgument)
 	})
@@ -116,12 +117,12 @@ func TestServer_CloseGallery(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		srv, cmd, _ := newTestServer(t)
 		id := uuid.New()
-		cmd.EXPECT().CloseGallery(gomock.Any(), id, "mod-1").Return(nil)
-
-		resp, err := srv.CloseGallery(moderatorCtx("mod-1"), &gallerypb.CloseGalleryRequest{GalleryId: id.String()})
+		moderatorID := uuid.New()
+		cmd.EXPECT().CloseGallery(gomock.Any(), id, moderatorID).Return(nil)
+		resp, err := srv.CloseGallery(moderatorCtx(moderatorID), &gallerypb.CloseGalleryRequest{GalleryId: id.String()})
 
 		require.NoError(t, err)
-		assert.True(t, resp.Success)
+		assert.Empty(t, resp)
 	})
 }
 
@@ -140,12 +141,12 @@ func TestServer_ListGalleries(t *testing.T) {
 		srv, _, qry := newTestServer(t)
 		g1 := models.Gallery{ID: uuid.New(), Name: "A", Status: models.GalleryOpen}
 		g2 := models.Gallery{ID: uuid.New(), Name: "B", Status: models.GalleryClosed}
-
+		userID := uuid.New()
 		qry.EXPECT().
-			ListGalleries(gomock.Any(), true, "user-1", 10, "cursor-1").
+			ListGalleries(gomock.Any(), true, userID, 10, "cursor-1").
 			Return([]models.Gallery{g1, g2}, "cursor-2", nil)
 
-		resp, err := srv.ListGalleries(memberCtx("user-1"), &gallerypb.ListGalleriesRequest{
+		resp, err := srv.ListGalleries(memberCtx(userID), &gallerypb.ListGalleriesRequest{
 			MyGalleries: true,
 			PageSize:    10,
 			PageToken:   "cursor-1",
@@ -180,8 +181,8 @@ func TestServer_AuthFuncOverride(t *testing.T) {
 
 	t.Run("non-public method with a valid token authenticates", func(t *testing.T) {
 		srv, _, _ := newTestServer(t)
-
-		token, err := auth.SignToken(jwtSecret, "mod-1", userpb.Role_ROLE_MODERATOR.String())
+		userID := uuid.New()
+		token, err := auth.SignToken(jwtSecret, userID, userpb.Role_ROLE_MODERATOR.String())
 		require.NoError(t, err)
 
 		md := metadata.Pairs("authorization", "bearer "+token)
@@ -192,7 +193,7 @@ func TestServer_AuthFuncOverride(t *testing.T) {
 
 		claims, err := auth.FromContext(outCtx)
 		require.NoError(t, err)
-		assert.Equal(t, "mod-1", claims.UserID)
+		assert.Equal(t, userID, claims.UserID)
 		assert.Equal(t, userpb.Role_ROLE_MODERATOR.String(), claims.Role)
 	})
 
@@ -201,7 +202,8 @@ func TestServer_AuthFuncOverride(t *testing.T) {
 
 		// Sign with a secret the server won't accept, to simulate an invalid token
 		// without waiting on a real TTL expiry.
-		token, err := auth.SignToken("wrong-secret", "mod-1", userpb.Role_ROLE_MODERATOR.String())
+		userID := uuid.New()
+		token, err := auth.SignToken("wrong-secret", userID, userpb.Role_ROLE_MODERATOR.String())
 		require.NoError(t, err)
 
 		md := metadata.Pairs("authorization", "bearer "+token)

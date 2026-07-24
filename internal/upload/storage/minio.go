@@ -1,4 +1,3 @@
-// Package storage wraps the MinIO client used to persist photo bytes.
 package storage
 
 import (
@@ -17,6 +16,13 @@ type Config struct {
 	SecretKey string
 	Bucket    string
 	UseSSL    bool
+}
+
+// Uploader is the subset of Storage's behavior that Server depends on.
+// Declaring it lets tests substitute a GoMock-generated mock instead of a
+// real MinIO connection, without Storage itself needing to change.
+type Uploader interface {
+	Upload(ctx context.Context, objectKey string, contentType string, data []byte) (string, error)
 }
 
 type Storage struct {

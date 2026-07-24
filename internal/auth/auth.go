@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
@@ -20,13 +21,13 @@ type claimsKey struct{}
 
 // claims is the JWT payload structure, matching what UserService signs.
 type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // SignToken creates and signs a JWT for the given user.
-func SignToken(secret, userID, role string) (string, error) {
+func SignToken(secret string, userID uuid.UUID, role string) (string, error) {
 	c := Claims{
 		UserID: userID,
 		Role:   role,
@@ -55,7 +56,7 @@ func AuthFunc(jwtSecret string) grpcauth.AuthFunc {
 			return nil, status.Error(codes.Unauthenticated, "missing or malformed Authorization header")
 		}
 
-		parsed, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+		parsed, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (any, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, status.Errorf(codes.Unauthenticated, "unexpected signing method: %v", t.Header["alg"])
 			}

@@ -19,7 +19,7 @@ type Gallery struct {
 	Name        string        `gorm:"size:255;not null"`
 	Description string        `gorm:"type:text"`
 	Status      GalleryStatus `gorm:"type:text;default:GALLERY_STATUS_OPEN;index"`
-	ModeratorID string        `gorm:"not null;index"`
+	ModeratorID uuid.UUID     `gorm:"type:uuid;not null;index"`
 	Members     []Member      `gorm:"constraint:OnDelete:CASCADE;foreignKey:GalleryID"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

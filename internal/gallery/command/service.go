@@ -40,11 +40,11 @@ func NewCommandService(repo CommandRepository, publisher EventPublisher) *Comman
 // CreateGallery creates a new gallery. Caller must be MODERATOR;
 // that check happens upstream (gRPC interceptor / gateway JWT validation),
 // moderatorID arrives here already trusted.
-func (s *CommandService) CreateGallery(ctx context.Context, name, description, moderatorID string) (*models.Gallery, error) {
+func (s *CommandService) CreateGallery(ctx context.Context, name, description string, moderatorID uuid.UUID) (*models.Gallery, error) {
 	if name == "" {
 		return nil, status.Error(codes.InvalidArgument, "gallery name is required")
 	}
-	if moderatorID == "" {
+	if moderatorID == uuid.Nil {
 		return nil, status.Error(codes.Unauthenticated, "missing moderator identity")
 	}
 
@@ -65,7 +65,7 @@ func (s *CommandService) CreateGallery(ctx context.Context, name, description, m
 }
 
 // CloseGallery marks a gallery closed. Only its moderator may do this.
-func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, callerID string) error {
+func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, callerID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
 		return status.Error(codes.NotFound, "gallery not found")
@@ -89,7 +89,7 @@ func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, 
 }
 
 // AddMember lets any authenticated user join an open gallery.
-func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, userID string) error {
+func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
 		return status.Error(codes.NotFound, "gallery not found")
@@ -104,13 +104,13 @@ func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, use
 
 	_ = s.publisher.Publish(ctx, "MemberAdded", map[string]string{
 		"gallery_id": galleryID.String(),
-		"user_id":    userID,
+		"user_id":    userID.String(),
 	})
 	return nil
 }
 
 // RemoveMember allows the moderator, or the member themselves, to leave/be removed.
-func (s *CommandService) RemoveMember(ctx context.Context, galleryID uuid.UUID, targetUserID, callerID string) error {
+func (s *CommandService) RemoveMember(ctx context.Context, galleryID uuid.UUID, targetUserID, callerID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
 		return status.Error(codes.NotFound, "gallery not found")
@@ -125,7 +125,7 @@ func (s *CommandService) RemoveMember(ctx context.Context, galleryID uuid.UUID, 
 
 	_ = s.publisher.Publish(ctx, "MemberRemoved", map[string]string{
 		"gallery_id": galleryID.String(),
-		"user_id":    targetUserID,
+		"user_id":    targetUserID.String(),
 	})
 	return nil
 }
@@ -134,7 +134,7 @@ func (s *CommandService) RemoveMember(ctx context.Context, galleryID uuid.UUID, 
 // This writes no gallery state itself — it's a command in the CQRS sense
 // (it triggers a side effect) but persistence stays with the Notification
 // Service; here we just validate authorization and hand off the event.
-func (s *CommandService) SendModeratorAlert(ctx context.Context, galleryID uuid.UUID, callerID, message string) error {
+func (s *CommandService) SendModeratorAlert(ctx context.Context, galleryID, callerID uuid.UUID, message string) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
 		return status.Error(codes.NotFound, "gallery not found")

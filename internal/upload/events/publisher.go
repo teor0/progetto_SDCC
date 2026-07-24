@@ -16,12 +16,24 @@ import (
 
 const (
 	exchange       = "gallery.events"
-	routingPhoto   = "photo.uploaded"
-	routingAlert   = "moderator.alert"
+	routingPhoto   = "gallery.photo_uploaded" // matches Gallery Service's dot-separated convention
 	url            = "amqp://guest:guest@localhost:5672/"
 	maxFailures    = 3
 	publishTimeout = 30 * time.Second
 )
+
+// envelope mirrors the wire shape Gallery Service's command.Envelope uses
+// (internal/gallery/command/events.go). It's intentionally a separate,
+// duplicated type rather than an import of that package: services should
+// stay independently buildable/deployable, and this struct is small enough
+// that keeping the JSON *shape* in sync is simpler than sharing the Go type
+// across service boundaries. If a third producer needs this, promote it to
+// a small shared package instead of duplicating a third time.
+type envelope struct {
+	EventType string          `json:"event_type"`
+	Timestamp time.Time       `json:"timestamp"`
+	Payload   json.RawMessage `json:"payload"`
+}
 
 // UploadEvent is the payload published whenever a photo finishes
 // uploading and is durably stored in MinIO.
@@ -35,6 +47,11 @@ type UploadEvent struct {
 	SizeBytes   int64     `json:"size_bytes"`
 	MemberIDs   []string  `json:"member_ids"`
 	UploadedAt  time.Time `json:"uploaded_at"`
+}
+
+// Notifier is the subset of Publisher's behavior that Server depends on.
+type Notifier interface {
+	PublishPhoto(ctx context.Context, event *UploadEvent)
 }
 
 type Publisher struct {
@@ -103,9 +120,20 @@ func (p *Publisher) Close() error {
 }
 
 func (p *Publisher) PublishPhoto(ctx context.Context, event *UploadEvent) {
-	body, err := json.Marshal(event)
+	payload, err := json.Marshal(event)
 	if err != nil {
 		log.Printf("Publisher: marshal error: %v", err)
+		return
+	}
+
+	env := envelope{
+		EventType: "PhotoUploaded",
+		Timestamp: time.Now().UTC(),
+		Payload:   payload,
+	}
+	body, err := json.Marshal(env)
+	if err != nil {
+		log.Printf("Publisher: marshal envelope error: %v", err)
 		return
 	}
 

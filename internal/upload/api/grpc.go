@@ -10,6 +10,7 @@ import (
 	gallerypb "photogallery/gen/gallery"
 	uploadpb "photogallery/gen/upload"
 	"photogallery/internal/auth"
+	"photogallery/internal/upload"
 	"photogallery/internal/upload/events"
 	"photogallery/internal/upload/storage"
 	"time"
@@ -20,34 +21,62 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const maxPhotoBytes = 25 * 1024 * 1024 // 25 MB
+const (
+	galleryMaxFailures  = 3
+	galleryResetTimeout = 10 * time.Second
+	galleryCallTimeout  = 2 * time.Second
+	maxPhotoBytes       = 25 * 1024 * 1024 // 25 MB
+)
 
 type Server struct {
 	uploadpb.UnimplementedUploadServiceServer
-	storage       *storage.Storage
-	publisher     *events.Publisher
-	galleryClient gallerypb.GalleryServiceClient
+	storage        storage.Uploader
+	publisher      events.Notifier
+	galleryClient  gallerypb.GalleryServiceClient
+	galleryBreaker *upload.CircuitBreaker
 }
 
-// NewServer constructs a Server with all required dependencies.
-func NewServer(storage *storage.Storage, publisher *events.Publisher, galleryClient gallerypb.GalleryServiceClient) *Server {
+// NewServer constructs a Server with all required dependencies. storage and
+// publisher are accepted as interfaces so tests can pass GoMock mocks; the
+// real *storage.Storage and *events.Publisher types satisfy them unchanged.
+func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClient gallerypb.GalleryServiceClient) *Server {
 	return &Server{
-		storage:       storage,
-		publisher:     publisher,
-		galleryClient: galleryClient,
+		storage:        storage,
+		publisher:      publisher,
+		galleryClient:  galleryClient,
+		galleryBreaker: upload.NewCircuitBreaker(galleryMaxFailures, galleryResetTimeout),
 	}
+}
+
+// uploadStream is the subset of uploadpb.UploadService_UploadPhotoServer
+// that UploadPhoto actually uses. Depending on your grpc-go /
+// protoc-gen-go-grpc version, the generated stream interface may be a type
+// alias to a generic grpc.ClientStreamingServer[Req, Res] rather than a
+// plain named interface -- GoMock can struggle to mock those directly,
+// producing a mock type with unfilled type parameters. Defining our own
+// minimal, non-generic interface sidesteps that: the real stream value
+// satisfies it automatically (Go interfaces are structural), and tests can
+// mock this instead without caring what grpc-go's internals look like.
+type uploadStream interface {
+	Context() context.Context
+	Recv() (*uploadpb.UploadPhotoRequest, error)
+	SendAndClose(*uploadpb.UploadPhotoResponse) error
 }
 
 // UploadPhoto receives a client-streaming sequence of chunks:
 //  1. First chunk must contain UploadMetadata.
 //  2. All subsequent chunks carry raw binary data.
 //
-// On completion it:
+// On completion, it:
 //   - stores the assembled image in MinIO
 //   - resolves gallery members via GalleryService.ListMembers
 //   - publishes a UploadedEvent to RabbitMQ (circuit-breaker protected)
 //   - returns an UploadResponse to the caller
 func (s *Server) UploadPhoto(stream uploadpb.UploadService_UploadPhotoServer) error {
+	return s.uploadPhoto(stream)
+}
+
+func (s *Server) uploadPhoto(stream uploadStream) error {
 	// Extract caller identity forwarded by the gateway.
 	uploaderID, err := uploaderFromMeta(stream.Context())
 	if err != nil {
@@ -123,7 +152,7 @@ func (s *Server) UploadPhoto(stream uploadpb.UploadService_UploadPhotoServer) er
 		}
 	}*/
 
-	membership, galleryStatus, err := s.isMember(meta.GalleryId, uploaderID)
+	membership, galleryStatus, err := s.isMember(stream.Context(), meta.GalleryId, uploaderID)
 	if err != nil {
 		return err
 	}
@@ -205,15 +234,44 @@ func (s *Server) resolveMembers(galleryID string) []string {
 	return ids
 }
 
-func (s *Server) isMember(galleryID string, userID string) (bool, gallerypb.GalleryStatus, error) {
-	resp, err := s.galleryClient.IsMember(context.Background(), &gallerypb.IsMemberRequest{
-		GalleryId: galleryID,
-		UserId:    userID,
+// isMember calls GalleryService.IsMember through the gallery circuit
+// breaker. ctx should be the caller's context (e.g. stream.Context()) so
+// that if the client disconnects or the parent request is cancelled, that
+// cancellation actually propagates into the outbound call instead of it
+// running to its own independent timeout regardless.
+//
+// If the breaker is open (or trips as a result of this call), it returns
+// a gRPC Unavailable error — the caller treats that the same as any other
+// rejection, it just doesn't retry synchronously against a dependency
+// that's already known to be unhealthy.
+func (s *Server) isMember(ctx context.Context, galleryID, userID string) (bool, gallerypb.GalleryStatus, error) {
+	var resp *gallerypb.IsMemberResponse
+
+	err := s.galleryBreaker.Call(func() error {
+		callCtx, cancel := context.WithTimeout(ctx, galleryCallTimeout)
+		defer cancel()
+
+		r, err := s.galleryClient.IsMember(callCtx, &gallerypb.IsMemberRequest{
+			GalleryId: galleryID,
+			UserId:    userID,
+		})
+		if err != nil {
+			return err
+		}
+		resp = r
+		return nil
 	})
+
 	if err != nil {
-		return resp.GetIsMember(), resp.GetGalleryStatus(), err
+		if err == upload.ErrCircuitOpen {
+			return false, gallerypb.GalleryStatus_GALLERY_STATUS_UNSPECIFIED,
+				status.Error(codes.Unavailable, "gallery service unavailable (circuit breaker open)")
+		}
+		return false, gallerypb.GalleryStatus_GALLERY_STATUS_UNSPECIFIED,
+			status.Errorf(codes.Internal, "checking membership: %v", err)
 	}
-	return resp.IsMember, resp.GalleryStatus, err
+
+	return resp.GetIsMember(), resp.GetGalleryStatus(), nil
 }
 
 // uploaderFromMeta extracts x-user-id from the incoming gRPC metadata set by

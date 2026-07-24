@@ -9,14 +9,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-//go:generate mockgen -source=repository.go -destination=../mocks/command_mock.go -package=mocks
 type CommandRepository interface {
 	CreateGallery(ctx context.Context, g *models.Gallery) error
 	GetGallery(ctx context.Context, id uuid.UUID) (*models.Gallery, error)
 	UpdateGallery(ctx context.Context, g *models.Gallery) error
 	DeleteGallery(ctx context.Context, id uuid.UUID) error
-	AddMember(ctx context.Context, galleryID uuid.UUID, userID string) error
-	RemoveMember(ctx context.Context, galleryID uuid.UUID, userID string) error
+	AddMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error
+	RemoveMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error
 	Close() error
 }
 
@@ -50,9 +49,9 @@ func (r *GormCommandRepository) UpdateGallery(ctx context.Context, g *models.Gal
 func (r *GormCommandRepository) DeleteGallery(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Delete(&models.Gallery{}, "id=?", id).Error
 }
-func (r *GormCommandRepository) AddMember(ctx context.Context, id uuid.UUID, u string) error {
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.Member{GalleryID: id, UserID: u}).Error
+func (r *GormCommandRepository) AddMember(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.Member{GalleryID: id, UserID: userID}).Error
 }
-func (r *GormCommandRepository) RemoveMember(ctx context.Context, id uuid.UUID, u string) error {
-	return r.db.WithContext(ctx).Delete(&models.Member{}, "gallery_id=? AND user_id=?", id, u).Error
+func (r *GormCommandRepository) RemoveMember(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&models.Member{}, "gallery_id=? AND user_id=?", id, userID).Error
 }

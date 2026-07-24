@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GalleryService_CreateGallery_FullMethodName      = "/proto.GalleryService/CreateGallery"
-	GalleryService_CloseGallery_FullMethodName       = "/proto.GalleryService/CloseGallery"
-	GalleryService_AddMember_FullMethodName          = "/proto.GalleryService/AddMember"
-	GalleryService_RemoveMember_FullMethodName       = "/proto.GalleryService/RemoveMember"
-	GalleryService_SendModeratorAlert_FullMethodName = "/proto.GalleryService/SendModeratorAlert"
-	GalleryService_GetGallery_FullMethodName         = "/proto.GalleryService/GetGallery"
-	GalleryService_ListGalleries_FullMethodName      = "/proto.GalleryService/ListGalleries"
-	GalleryService_ListMembers_FullMethodName        = "/proto.GalleryService/ListMembers"
-	GalleryService_IsMember_FullMethodName           = "/proto.GalleryService/IsMember"
+	GalleryService_CreateGallery_FullMethodName         = "/proto.GalleryService/CreateGallery"
+	GalleryService_CloseGallery_FullMethodName          = "/proto.GalleryService/CloseGallery"
+	GalleryService_AddMember_FullMethodName             = "/proto.GalleryService/AddMember"
+	GalleryService_RemoveMember_FullMethodName          = "/proto.GalleryService/RemoveMember"
+	GalleryService_SendModeratorAlert_FullMethodName    = "/proto.GalleryService/SendModeratorAlert"
+	GalleryService_GetGallery_FullMethodName            = "/proto.GalleryService/GetGallery"
+	GalleryService_ListGalleries_FullMethodName         = "/proto.GalleryService/ListGalleries"
+	GalleryService_ListMembers_FullMethodName           = "/proto.GalleryService/ListMembers"
+	GalleryService_IsMember_FullMethodName              = "/proto.GalleryService/IsMember"
+	GalleryService_ListGalleriesByMember_FullMethodName = "/proto.GalleryService/ListGalleriesByMember"
 )
 
 // GalleryServiceClient is the client API for GalleryService service.
@@ -56,6 +57,11 @@ type GalleryServiceClient interface {
 	// and gallery status in a single low-cost call before accepting work.
 	// This is the call Upload Service wraps in its circuit breaker.
 	IsMember(ctx context.Context, in *IsMemberRequest, opts ...grpc.CallOption) (*IsMemberResponse, error)
+	// ListGalleriesByMember is used internally (not exposed via the HTTP
+	// gateway) by other services -- primarily Notification Service, to
+	// resolve which galleries a subscribing user belongs to -- to query
+	// membership directly instead of paginating over every gallery.
+	ListGalleriesByMember(ctx context.Context, in *ListGalleriesByMemberRequest, opts ...grpc.CallOption) (*ListGalleriesResponse, error)
 }
 
 type galleryServiceClient struct {
@@ -156,6 +162,16 @@ func (c *galleryServiceClient) IsMember(ctx context.Context, in *IsMemberRequest
 	return out, nil
 }
 
+func (c *galleryServiceClient) ListGalleriesByMember(ctx context.Context, in *ListGalleriesByMemberRequest, opts ...grpc.CallOption) (*ListGalleriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGalleriesResponse)
+	err := c.cc.Invoke(ctx, GalleryService_ListGalleriesByMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GalleryServiceServer is the server API for GalleryService service.
 // All implementations should embed UnimplementedGalleryServiceServer
 // for forward compatibility.
@@ -182,6 +198,11 @@ type GalleryServiceServer interface {
 	// and gallery status in a single low-cost call before accepting work.
 	// This is the call Upload Service wraps in its circuit breaker.
 	IsMember(context.Context, *IsMemberRequest) (*IsMemberResponse, error)
+	// ListGalleriesByMember is used internally (not exposed via the HTTP
+	// gateway) by other services -- primarily Notification Service, to
+	// resolve which galleries a subscribing user belongs to -- to query
+	// membership directly instead of paginating over every gallery.
+	ListGalleriesByMember(context.Context, *ListGalleriesByMemberRequest) (*ListGalleriesResponse, error)
 }
 
 // UnimplementedGalleryServiceServer should be embedded to have
@@ -217,6 +238,9 @@ func (UnimplementedGalleryServiceServer) ListMembers(context.Context, *ListMembe
 }
 func (UnimplementedGalleryServiceServer) IsMember(context.Context, *IsMemberRequest) (*IsMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsMember not implemented")
+}
+func (UnimplementedGalleryServiceServer) ListGalleriesByMember(context.Context, *ListGalleriesByMemberRequest) (*ListGalleriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGalleriesByMember not implemented")
 }
 func (UnimplementedGalleryServiceServer) testEmbeddedByValue() {}
 
@@ -400,6 +424,24 @@ func _GalleryService_IsMember_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GalleryService_ListGalleriesByMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGalleriesByMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GalleryServiceServer).ListGalleriesByMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GalleryService_ListGalleriesByMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GalleryServiceServer).ListGalleriesByMember(ctx, req.(*ListGalleriesByMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GalleryService_ServiceDesc is the grpc.ServiceDesc for GalleryService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -442,6 +484,10 @@ var GalleryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsMember",
 			Handler:    _GalleryService_IsMember_Handler,
+		},
+		{
+			MethodName: "ListGalleriesByMember",
+			Handler:    _GalleryService_ListGalleriesByMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

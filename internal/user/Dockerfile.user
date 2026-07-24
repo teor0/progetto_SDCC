@@ -30,4 +30,5 @@ USER app
 # gRPC server + gRPC-Gateway HTTP proxy, per main.go
 EXPOSE 8080 8090
 
+# container name alias
 ENTRYPOINT ["/user-service"]

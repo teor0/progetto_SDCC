@@ -82,8 +82,11 @@ func (s *Server) AddMember(ctx context.Context, req *gallerypb.AddMemberRequest)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := s.cmd.AddMember(ctx, id, req.GetUserId()); err != nil {
+	userID, err := parseUUID(req.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.cmd.AddMember(ctx, id, userID); err != nil {
 		return nil, err
 	}
 	return &gallerypb.AddMemberResponse{}, nil
@@ -98,8 +101,11 @@ func (s *Server) RemoveMember(ctx context.Context, req *gallerypb.RemoveMemberRe
 	if err != nil {
 		return nil, err
 	}
-
-	if err := s.cmd.RemoveMember(ctx, id, req.GetUserId(), callerID); err != nil {
+	userID, err := parseUUID(req.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.cmd.RemoveMember(ctx, id, userID, callerID); err != nil {
 		return nil, err
 	}
 	return &gallerypb.RemoveMemberResponse{}, nil
@@ -137,7 +143,7 @@ func (s *Server) GetGallery(ctx context.Context, req *gallerypb.GetGalleryReques
 }
 
 func (s *Server) ListGalleries(ctx context.Context, req *gallerypb.ListGalleriesRequest) (*gallerypb.ListGalleriesResponse, error) {
-	var callerID string
+	var callerID uuid.UUID
 	if req.GetMyGalleries() {
 		id, err := callerIDFromContext(ctx)
 		if err != nil {
@@ -159,6 +165,28 @@ func (s *Server) ListGalleries(ctx context.Context, req *gallerypb.ListGalleries
 		resp.Galleries = append(resp.Galleries, toProtoGallery(&galleries[i]))
 	}
 	return resp, nil
+}
+
+func (s *Server) ListGalleriesByMember(ctx context.Context, req *gallerypb.ListGalleriesByMemberRequest) (*gallerypb.ListGalleriesResponse, error) {
+	userID, err := uuid.Parse(req.GetUserId())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid user_id")
+	}
+
+	galleries, nextPageToken, err := s.qry.ListGalleriesByMember(ctx, userID, int(req.GetPageSize()), req.GetPageToken())
+	if err != nil {
+		return nil, err
+	}
+
+	pbGalleries := make([]*gallerypb.Gallery, 0, len(galleries))
+	for i := range galleries {
+		pbGalleries = append(pbGalleries, toProtoGallery(&galleries[i]))
+	}
+
+	return &gallerypb.ListGalleriesResponse{
+		Galleries:     pbGalleries,
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
 func (s *Server) ListMembers(ctx context.Context, req *gallerypb.ListMembersRequest) (*gallerypb.ListMembersResponse, error) {
@@ -216,7 +244,7 @@ func toProtoGallery(g *models.Gallery) *gallerypb.Gallery {
 		Id:          g.ID.String(),
 		Name:        g.Name,
 		Description: g.Description,
-		ModeratorId: g.ModeratorID,
+		ModeratorId: g.ModeratorID.String(),
 		CreatedAt:   timestamppb.New(g.CreatedAt),
 		UpdatedAt:   timestamppb.New(g.UpdatedAt),
 	}
@@ -239,10 +267,10 @@ func toProtoMember(m *models.Member) *gallerypb.Member {
 // callerIDFromContext returns the authenticated caller's user ID.
 // The interceptor guarantees claims are present; FromContext already
 // returns Unauthenticated if somehow missing.
-func callerIDFromContext(ctx context.Context) (string, error) {
+func callerIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
-		return "", err
+		return uuid.Nil, err
 	}
 	return claims.UserID, nil
 }
@@ -250,13 +278,13 @@ func callerIDFromContext(ctx context.Context) (string, error) {
 // moderatorIDFromContext returns the caller's user ID, but only if their
 // role is MODERATOR. Used for endpoints restricted to moderators
 // (CreateGallery, CloseGallery, SendModeratorAlert).
-func moderatorIDFromContext(ctx context.Context) (string, error) {
+func moderatorIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
-		return "", err
+		return uuid.Nil, err
 	}
 	if claims.Role != userpb.Role_ROLE_MODERATOR.String() {
-		return "", status.Error(codes.PermissionDenied, "moderator role required")
+		return uuid.Nil, status.Error(codes.PermissionDenied, "moderator role required")
 	}
 	return claims.UserID, nil
 }

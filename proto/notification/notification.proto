@@ -1,0 +1,39 @@
+syntax="proto3";
+option go_package = "photogallery/gen/notification";
+package proto;
+import "google/protobuf/timestamp.proto";
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_PHOTO_UPLOADED = 1;
+  NOTIFICATION_TYPE_MODERATOR_ALERT = 2;
+}
+
+message Notification {
+  string id = 1;
+  NotificationType type = 2;
+  string photo_id=3;
+  string gallery_id   = 4;
+  string gallery_name = 5;
+  string uploader_id = 6;
+  // Human-readable description of the event.
+  string message = 7;
+  string photo_url = 8;
+  google.protobuf.Timestamp occurred_at = 9;
+}
+
+// SubscribeRequest opens a long-lived server-streaming connection.
+// The service fans out events for every gallery the caller is a member of.
+message SubscribeRequest {}
+
+service NotificationService {
+  // Subscribe opens a persistent server-side stream.
+  // The service consumes photo.uploaded events from RabbitMQ, resolves gallery
+  // membership via GalleryService, and pushes Notification messages to all
+  // subscribers who are members of the relevant gallery.
+  // The stream remains open until the client disconnects or the server closes it.
+  // Clients should reconnect with exponential back-off on stream termination.
+  // Not exposed via grpc-gateway (server-streaming is unsupported over HTTP/1.1);
+  // clients must connect over HTTP/2 directly or via a WebSocket bridge.
+  rpc Subscribe(SubscribeRequest) returns (stream Notification);
+}
