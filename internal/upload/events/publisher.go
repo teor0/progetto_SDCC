@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -39,8 +40,8 @@ type envelope struct {
 // uploading and is durably stored in MinIO.
 type UploadEvent struct {
 	PhotoID     string    `json:"photo_id"`
-	GalleryID   string    `json:"gallery_id"`
-	UploaderID  string    `json:"uploader_id"`
+	GalleryID   uuid.UUID `json:"gallery_id"`
+	UploaderID  uuid.UUID `json:"uploader_id"`
 	StorageKey  string    `json:"storage_key"`
 	PhotoURL    string    `json:"photo_url"`
 	ContentType string    `json:"content_type"`

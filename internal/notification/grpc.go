@@ -7,6 +7,7 @@ import (
 	notificationpb "photogallery/gen/notification"
 	"photogallery/internal/auth"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,7 +46,7 @@ func (s *Server) Subscribe(_ *notificationpb.SubscribeRequest, stream notificati
 		return err
 	}
 	userID := claims.UserID
-	if userID == "" {
+	if userID == uuid.Nil {
 		return status.Error(codes.Unauthenticated, "missing caller identity")
 	}
 
@@ -75,12 +76,14 @@ func (s *Server) Subscribe(_ *notificationpb.SubscribeRequest, stream notificati
 // gallery and filtering client-side. Unlike a plain ListGalleries call,
 // this doesn't need any identity forwarding: userID is passed explicitly,
 // the same trust model as IsMember.
-func (s *Server) resolveMemberships(ctx context.Context, userID string) ([]string, error) {
-	var galleryIDs []string
+func (s *Server) resolveMemberships(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	var galleryIDs []uuid.UUID
+
 	pageToken := ""
+
 	for {
 		resp, err := s.galleryClient.ListGalleriesByMember(ctx, &gallerypb.ListGalleriesByMemberRequest{
-			UserId:    userID,
+			UserId:    userID.String(),
 			PageSize:  membershipPageSize,
 			PageToken: pageToken,
 		})
@@ -89,13 +92,24 @@ func (s *Server) resolveMemberships(ctx context.Context, userID string) ([]strin
 		}
 
 		for _, g := range resp.Galleries {
-			galleryIDs = append(galleryIDs, g.Id)
+			id, err := uuid.Parse(g.Id)
+			if err != nil {
+				return nil, status.Errorf(
+					codes.Internal,
+					"gallery service returned invalid gallery id: %v",
+					err,
+				)
+			}
+
+			galleryIDs = append(galleryIDs, id)
 		}
 
 		if resp.NextPageToken == "" || resp.NextPageToken == pageToken {
 			break
 		}
+
 		pageToken = resp.NextPageToken
 	}
+
 	return galleryIDs, nil
 }

@@ -1,5 +1,17 @@
 services:
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      # if needed for code tests - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
   user_postgres:
     image: postgres:16-alpine
     environment:
@@ -35,6 +47,7 @@ services:
       user_postgres:
         condition: service_healthy # necessary to make the container work
 
+
   gallery_postgres:
     image: postgres:16-alpine
     environment:
@@ -50,6 +63,30 @@ services:
       retries: 10
     volumes:
       - gallery_pgdata:/var/lib/postgresql/data
+
+  gallery-service:
+    build:
+      context: .
+      dockerfile: internal/gallery/Dockerfile.gallery
+    image: gallery-service:latest
+    ports:
+      - "8081:8081"
+      - "8091:8091"
+    environment:
+      DB_HOST: gallery_postgres
+      DB_USER: matteo
+      DB_PASSWORD: password
+      DB_NAME_GALLERY: gallery_db
+      DB_PORT_GALLERY: 5432
+      GALLERY_GRPC_PORT: 8081
+      GALLERY_GATEWAY_PORT: 8091
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      JWT_SECRET: ciaobelli
+    depends_on:
+      gallery_postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   user_pgdata:

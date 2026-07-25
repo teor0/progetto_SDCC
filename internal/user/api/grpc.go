@@ -54,7 +54,7 @@ func (s *Server) Register(ctx context.Context, req *userpb.RegisterRequest) (*us
 	if err != nil {
 		return nil, status.Errorf(codes.AlreadyExists, "email already registered")
 	}
-	token, err := auth.SignToken(s.jwtSecret, id.String(), role)
+	token, err := auth.SignToken(s.jwtSecret, id, role)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error for token: %v", err)
 	}
@@ -75,7 +75,7 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 	if err := auth.CheckPassword(user.Password, req.Password); err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
-	token, err := auth.SignToken(s.jwtSecret, user.ID.String(), user.Role)
+	token, err := auth.SignToken(s.jwtSecret, user.ID, user.Role)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error for token: %v", err)
 	}

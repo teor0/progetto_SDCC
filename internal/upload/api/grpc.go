@@ -152,7 +152,12 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 		}
 	}*/
 
-	membership, galleryStatus, err := s.isMember(stream.Context(), meta.GalleryId, uploaderID)
+	galleryID, err := parseUUID(meta.GalleryId)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, "gallery_id is invalid")
+	}
+
+	membership, galleryStatus, err := s.isMember(stream.Context(), galleryID, uploaderID)
 	if err != nil {
 		return err
 	}
@@ -168,7 +173,7 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 
 	// ── 2. Store in MinIO ────────────────────────────────────────────────────
 	photoID := uuid.NewString()
-	objectKey := fmt.Sprintf("galleries/%s/%s", meta.GalleryId, photoID)
+	objectKey := fmt.Sprintf("galleries/%s/%s", galleryID.String(), photoID)
 	if meta.Filename != "" {
 		objectKey = fmt.Sprintf("galleries/%s/%s_%s", meta.GalleryId, photoID, meta.Filename)
 	}
@@ -186,12 +191,12 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 
 	log.Printf("UploadPhoto: stored photo_id=%s url=%s", photoID, photoURL)
 
-	memberIDs := s.resolveMembers(meta.GalleryId)
+	memberIDs := s.resolveMembers(galleryID)
 
 	// ── 4. Publish event (circuit-breaker protected, fire-and-forget) ────────
 	s.publisher.PublishPhoto(stream.Context(), &events.UploadEvent{
 		PhotoID:     photoID,
-		GalleryID:   meta.GalleryId,
+		GalleryID:   galleryID,
 		UploaderID:  uploaderID,
 		StorageKey:  objectKey,
 		PhotoURL:    photoURL,
@@ -215,12 +220,12 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 // resolveMembers calls GalleryService.ListMembers and returns the member IDs.
 // On any error it logs and returns an empty slice — the upload still succeeds,
 // but no notifications will be delivered for this event.
-func (s *Server) resolveMembers(galleryID string) []string {
+func (s *Server) resolveMembers(galleryID uuid.UUID) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	resp, err := s.galleryClient.ListMembers(ctx, &gallerypb.ListMembersRequest{
-		GalleryId: galleryID,
+		GalleryId: galleryID.String(),
 	})
 	if err != nil {
 		log.Printf("resolveMembers: ListMembers failed for gallery=%s: %v", galleryID, err)
@@ -244,7 +249,7 @@ func (s *Server) resolveMembers(galleryID string) []string {
 // a gRPC Unavailable error — the caller treats that the same as any other
 // rejection, it just doesn't retry synchronously against a dependency
 // that's already known to be unhealthy.
-func (s *Server) isMember(ctx context.Context, galleryID, userID string) (bool, gallerypb.GalleryStatus, error) {
+func (s *Server) isMember(ctx context.Context, galleryID, userID uuid.UUID) (bool, gallerypb.GalleryStatus, error) {
 	var resp *gallerypb.IsMemberResponse
 
 	err := s.galleryBreaker.Call(func() error {
@@ -252,8 +257,8 @@ func (s *Server) isMember(ctx context.Context, galleryID, userID string) (bool, 
 		defer cancel()
 
 		r, err := s.galleryClient.IsMember(callCtx, &gallerypb.IsMemberRequest{
-			GalleryId: galleryID,
-			UserId:    userID,
+			GalleryId: galleryID.String(),
+			UserId:    userID.String(),
 		})
 		if err != nil {
 			return err
@@ -276,10 +281,10 @@ func (s *Server) isMember(ctx context.Context, galleryID, userID string) (bool, 
 
 // uploaderFromMeta extracts x-user-id from the incoming gRPC metadata set by
 // the API Gateway after JWT validation.
-func uploaderFromMeta(ctx context.Context) (string, error) {
+func uploaderFromMeta(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
-		return "", err
+		return uuid.Nil, err
 	}
 	return claims.UserID, nil
 }
@@ -287,4 +292,8 @@ func uploaderFromMeta(ctx context.Context) (string, error) {
 // isEOF checks whether err signals the end of a client stream.
 func isEOF(err error) bool {
 	return err != nil && errors.Is(err, io.EOF)
+}
+
+func parseUUID(s string) (uuid.UUID, error) {
+	return uuid.Parse(s)
 }
