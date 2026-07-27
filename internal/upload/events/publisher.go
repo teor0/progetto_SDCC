@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"photogallery/internal/upload"
 	"sync"
 	"time"
@@ -18,7 +19,6 @@ import (
 const (
 	exchange       = "gallery.events"
 	routingPhoto   = "gallery.photo_uploaded" // matches Gallery Service's dot-separated convention
-	url            = "amqp://guest:guest@localhost:5672/"
 	maxFailures    = 3
 	publishTimeout = 30 * time.Second
 )
@@ -39,7 +39,7 @@ type envelope struct {
 // UploadEvent is the payload published whenever a photo finishes
 // uploading and is durably stored in MinIO.
 type UploadEvent struct {
-	PhotoID     string    `json:"photo_id"`
+	PhotoID     uuid.UUID `json:"photo_id"`
 	GalleryID   uuid.UUID `json:"gallery_id"`
 	UploaderID  uuid.UUID `json:"uploader_id"`
 	StorageKey  string    `json:"storage_key"`
@@ -76,7 +76,7 @@ func NewPublisher() (*Publisher, error) {
 // connect (re)establishes the AMQP connection and channel.
 // Must be called with p.mu held or before the publisher is shared.
 func (p *Publisher) connect() error {
-	conn, err := amqp.Dial(url)
+	conn, err := amqp.Dial(os.Getenv("RABBITMQ_URL"))
 	if err != nil {
 		return fmt.Errorf("dial: %w", err)
 	}

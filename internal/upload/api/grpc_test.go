@@ -13,6 +13,7 @@ import (
 	"photogallery/internal/upload/events"
 	"photogallery/internal/upload/mocks"
 
+	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,7 +23,7 @@ import (
 // that internal/auth.FromContext reads to resolve the caller's identity.
 // Adjust this helper if your actual auth implementation resolves claims
 // a different way (e.g. a context value set by an interceptor).
-func newAuthedContext(userID string) context.Context {
+func newAuthedContext(userID uuid.UUID) context.Context {
 	return auth.NewContext(context.Background(), &auth.Claims{
 		UserID: userID,
 		Role:   userpb.Role_ROLE_USER.String(),
@@ -102,7 +103,7 @@ func TestUploadPhoto_Success(t *testing.T) {
 			return nil
 		})
 
-	srv := NewServer(uploader, notifier, galleryClient)
+	srv := NewServer(uploader, notifier, galleryClient, nil)
 
 	if err := srv.uploadPhoto(stream); err != nil {
 		t.Fatalf("UploadPhoto returned unexpected error: %v", err)
@@ -133,7 +134,7 @@ func TestUploadPhoto_RejectsNonMember(t *testing.T) {
 	// Deliberately no EXPECT() on uploader/notifier/stream.SendAndClose --
 	// if UploadPhoto calls any of them, the test fails on an unexpected call.
 
-	srv := NewServer(uploader, notifier, galleryClient)
+	srv := NewServer(uploader, notifier, galleryClient, nil)
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.InvalidArgument {
@@ -162,7 +163,7 @@ func TestUploadPhoto_RejectsClosedGallery(t *testing.T) {
 			GalleryStatus: gallerypb.GalleryStatus_GALLERY_STATUS_CLOSED,
 		}, nil)
 
-	srv := NewServer(uploader, notifier, galleryClient)
+	srv := NewServer(uploader, notifier, galleryClient, nil)
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.InvalidArgument {
@@ -195,7 +196,7 @@ func TestUploadPhoto_StorageFailure(t *testing.T) {
 		Upload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("", errors.New("minio: connection refused"))
 
-	srv := NewServer(uploader, notifier, galleryClient)
+	srv := NewServer(uploader, notifier, galleryClient, nil)
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.Internal {
@@ -219,7 +220,7 @@ func TestIsMember_CircuitBreakerOpensAfterConsecutiveFailures(t *testing.T) {
 		Return(nil, errors.New("gallery service unreachable")).
 		Times(galleryMaxFailures)
 
-	srv := NewServer(nil, nil, galleryClient)
+	srv := NewServer(nil, nil, galleryClient, nil)
 	ctx := context.Background()
 
 	var lastErr error

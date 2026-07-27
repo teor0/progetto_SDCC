@@ -36,25 +36,25 @@ type envelope struct {
 // photoUploadedPayload matches events.UploadEvent's JSON shape (Upload
 // Service, internal/upload/events/publisher.go).
 type photoUploadedPayload struct {
-	PhotoID    string `json:"photo_id"`
-	GalleryID  string `json:"gallery_id"`
-	UploaderID string `json:"uploader_id"`
-	PhotoURL   string `json:"photo_url"`
+	PhotoID    string    `json:"photo_id"`
+	GalleryID  uuid.UUID `json:"gallery_id"`
+	UploaderID uuid.UUID `json:"uploader_id"`
+	PhotoURL   string    `json:"photo_url"`
 }
 
 // moderatorAlertPayload matches the map Gallery Service's
 // CommandService.SendModeratorAlert publishes (internal/gallery/command/service.go).
 type moderatorAlertPayload struct {
-	GalleryID string `json:"gallery_id"`
-	Message   string `json:"message"`
+	GalleryID uuid.UUID `json:"gallery_id"`
+	Message   string    `json:"message"`
 }
 
 // memberChangedPayload matches the map Gallery Service's AddMember and
 // RemoveMember publish (internal/gallery/command/service.go: "MemberAdded"
 // / "MemberRemoved" events).
 type memberChangedPayload struct {
-	GalleryID string `json:"gallery_id"`
-	UserID    string `json:"user_id"`
+	GalleryID uuid.UUID `json:"gallery_id"`
+	UserID    uuid.UUID `json:"user_id"`
 }
 
 func (c *Consumer) Consume(ctx context.Context, deliveries <-chan amqp.Delivery) {
@@ -119,7 +119,13 @@ func (c *Consumer) handle(ctx context.Context, msg amqp.Delivery) {
 		return
 	}
 
-	c.registry.Notify(ctx, notif.GalleryId, notif)
+	galleryID, err := uuid.Parse(notif.GalleryId)
+	if err != nil {
+		msg.Nack(false, false)
+		return
+	}
+
+	c.registry.Notify(ctx, galleryID, notif)
 	msg.Ack(false)
 }
 
@@ -131,7 +137,7 @@ func (c *Consumer) handleMemberAdded(env envelope) error {
 	if err := json.Unmarshal(env.Payload, &p); err != nil {
 		return fmt.Errorf("unmarshal MemberAdded payload: %w", err)
 	}
-	if p.GalleryID == "" || p.UserID == "" {
+	if p.GalleryID == uuid.Nil || p.UserID == uuid.Nil {
 		return fmt.Errorf("MemberAdded payload missing gallery_id or user_id")
 	}
 	c.registry.AddGalleryForClient(p.GalleryID, p.UserID)
@@ -146,7 +152,7 @@ func (c *Consumer) handleMemberRemoved(env envelope) error {
 	if err := json.Unmarshal(env.Payload, &p); err != nil {
 		return fmt.Errorf("unmarshal MemberRemoved payload: %w", err)
 	}
-	if p.GalleryID == "" || p.UserID == "" {
+	if p.GalleryID == uuid.Nil || p.UserID == uuid.Nil {
 		return fmt.Errorf("MemberRemoved payload missing gallery_id or user_id")
 	}
 	c.registry.Unsubscribe(p.GalleryID, p.UserID)
@@ -162,15 +168,15 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 		if err := json.Unmarshal(env.Payload, &p); err != nil {
 			return nil, fmt.Errorf("unmarshal PhotoUploaded payload: %w", err)
 		}
-		if p.GalleryID == "" {
+		if p.GalleryID == uuid.Nil {
 			return nil, fmt.Errorf("PhotoUploaded payload missing gallery_id")
 		}
 		return &notificationpb.Notification{
 			Id:         uuid.NewString(),
 			Type:       notificationpb.NotificationType_NOTIFICATION_TYPE_PHOTO_UPLOADED,
-			GalleryId:  p.GalleryID,
+			GalleryId:  p.GalleryID.String(),
 			PhotoId:    p.PhotoID,
-			UploaderId: p.UploaderID,
+			UploaderId: p.UploaderID.String(),
 			PhotoUrl:   p.PhotoURL,
 			Message:    "A new photo was uploaded to this gallery.",
 			OccurredAt: timestamppb.New(env.Timestamp),
@@ -181,13 +187,13 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 		if err := json.Unmarshal(env.Payload, &p); err != nil {
 			return nil, fmt.Errorf("unmarshal ModeratorAlert payload: %w", err)
 		}
-		if p.GalleryID == "" {
+		if p.GalleryID == uuid.Nil {
 			return nil, fmt.Errorf("ModeratorAlert payload missing gallery_id")
 		}
 		return &notificationpb.Notification{
 			Id:         uuid.NewString(),
 			Type:       notificationpb.NotificationType_NOTIFICATION_TYPE_MODERATOR_ALERT,
-			GalleryId:  p.GalleryID,
+			GalleryId:  p.GalleryID.String(),
 			Message:    p.Message,
 			OccurredAt: timestamppb.New(env.Timestamp),
 		}, nil
@@ -200,7 +206,7 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 		return nil, nil
 
 	default:
-		// An event type we don't recognize -- possibly a newer producer
+		// An event type not recognized -- possibly a newer producer
 		// publishing something this build predates. Treat as
 		// forward-compatible no-op rather than a hard error: a malformed message
 		// (bad JSON) is a real bug worth Nack-ing and logging loudly; an

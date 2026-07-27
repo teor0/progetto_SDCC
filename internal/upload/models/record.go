@@ -7,12 +7,14 @@ import (
 	"time"
 
 	uploadpb "photogallery/gen/upload"
+
+	"github.com/google/uuid"
 )
 
 type Record struct {
-	PhotoID      string
-	GalleryID    string
-	UploaderID   string
+	PhotoID      uuid.UUID
+	GalleryID    uuid.UUID
+	UploaderID   uuid.UUID
 	Filename     string
 	ContentType  string
 	StorageKey   string

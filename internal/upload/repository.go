@@ -12,30 +12,31 @@ package upload
 
 import (
 	"context"
+	"photogallery/internal/upload/models"
 	"sync"
 
-	"photogallery/internal/upload/models"
+	"github.com/google/uuid"
 )
 
 type Repository interface {
 	Save(ctx context.Context, rec *model.Record) error
-	Get(ctx context.Context, photoID string) (*model.Record, bool, error)
+	Get(ctx context.Context, photoID uuid.UUID) (*model.Record, bool, error)
 	// ListByGallery returns up to `limit` records for a gallery, most
 	// recent first, starting after `offset` records, plus the total
 	// count of records for that gallery (for pagination).
-	ListByGallery(ctx context.Context, galleryID string, offset, limit int) ([]*model.Record, int, error)
+	ListByGallery(ctx context.Context, galleryID uuid.UUID, offset, limit int) ([]*model.Record, int, error)
 }
 
 type InMemoryRepository struct {
 	mu           sync.RWMutex
-	records      map[string]*model.Record
-	galleryIndex map[string][]string // gallery_id -> photo_ids, insertion order
+	records      map[uuid.UUID]*model.Record
+	galleryIndex map[uuid.UUID][]uuid.UUID // gallery_id -> photo_ids, insertion order
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
 	return &InMemoryRepository{
-		records:      make(map[string]*model.Record),
-		galleryIndex: make(map[string][]string),
+		records:      make(map[uuid.UUID]*model.Record),
+		galleryIndex: make(map[uuid.UUID][]uuid.UUID),
 	}
 }
 
@@ -51,7 +52,7 @@ func (r *InMemoryRepository) Save(_ context.Context, rec *model.Record) error {
 	return nil
 }
 
-func (r *InMemoryRepository) Get(_ context.Context, photoID string) (*model.Record, bool, error) {
+func (r *InMemoryRepository) Get(_ context.Context, photoID uuid.UUID) (*model.Record, bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -63,7 +64,7 @@ func (r *InMemoryRepository) Get(_ context.Context, photoID string) (*model.Reco
 	return &copyRec, true, nil
 }
 
-func (r *InMemoryRepository) ListByGallery(_ context.Context, galleryID string, offset, limit int) ([]*model.Record, int, error) {
+func (r *InMemoryRepository) ListByGallery(_ context.Context, galleryID uuid.UUID, offset, limit int) ([]*model.Record, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -71,7 +72,7 @@ func (r *InMemoryRepository) ListByGallery(_ context.Context, galleryID string, 
 	total := len(ids)
 
 	// most recent first
-	reversed := make([]string, total)
+	reversed := make([]uuid.UUID, total)
 	for i, id := range ids {
 		reversed[total-1-i] = id
 	}

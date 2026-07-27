@@ -12,7 +12,9 @@ import (
 	"photogallery/internal/auth"
 	"photogallery/internal/upload"
 	"photogallery/internal/upload/events"
+	model "photogallery/internal/upload/models"
 	"photogallery/internal/upload/storage"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,6 +28,9 @@ const (
 	galleryResetTimeout = 10 * time.Second
 	galleryCallTimeout  = 2 * time.Second
 	maxPhotoBytes       = 25 * 1024 * 1024 // 25 MB
+
+	defaultListPageSize = 20
+	maxListPageSize     = 100
 )
 
 type Server struct {
@@ -34,17 +39,26 @@ type Server struct {
 	publisher      events.Notifier
 	galleryClient  gallerypb.GalleryServiceClient
 	galleryBreaker *upload.CircuitBreaker
+	repo           upload.Repository
 }
 
-// NewServer constructs a Server with all required dependencies. storage and
-// publisher are accepted as interfaces so tests can pass GoMock mocks; the
-// real *storage.Storage and *events.Publisher types satisfy them unchanged.
-func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClient gallerypb.GalleryServiceClient) *Server {
+// NewServer constructs a Server with all required dependencies. storage,
+// publisher, and repo are accepted as interfaces so tests can pass GoMock
+// mocks; the real *storage.Storage, *events.Publisher, and
+// *upload.InMemoryRepository types satisfy them unchanged. repo may be
+// nil, in which case an InMemoryRepository is used -- convenient for tests
+// and for the current single-replica deployment; swap it for a
+// Postgres-backed implementation before running more than one replica.
+func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClient gallerypb.GalleryServiceClient, repo upload.Repository) *Server {
+	if repo == nil {
+		repo = upload.NewInMemoryRepository()
+	}
 	return &Server{
 		storage:        storage,
 		publisher:      publisher,
 		galleryClient:  galleryClient,
 		galleryBreaker: upload.NewCircuitBreaker(galleryMaxFailures, galleryResetTimeout),
+		repo:           repo,
 	}
 }
 
@@ -152,7 +166,7 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 		}
 	}*/
 
-	galleryID, err := parseUUID(meta.GalleryId)
+	galleryID, _ := uuid.Parse(meta.GalleryId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, "gallery_id is invalid")
 	}
@@ -169,13 +183,13 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 	}
 
 	log.Printf("UploadPhoto: gallery=%s uploader=%s size=%d bytes filename=%s",
-		meta.GalleryId, uploaderID, buf.Len(), meta.Filename)
+		galleryID, uploaderID, buf.Len(), meta.Filename)
 
 	// ── 2. Store in MinIO ────────────────────────────────────────────────────
-	photoID := uuid.NewString()
-	objectKey := fmt.Sprintf("galleries/%s/%s", galleryID.String(), photoID)
+	photoID := uuid.New()
+	objectKey := fmt.Sprintf("galleries/%s/%s", galleryID.String(), photoID.String())
 	if meta.Filename != "" {
-		objectKey = fmt.Sprintf("galleries/%s/%s_%s", meta.GalleryId, photoID, meta.Filename)
+		objectKey = fmt.Sprintf("galleries/%s/%s_%s", galleryID, photoID, meta.Filename)
 	}
 
 	contentType := meta.ContentType
@@ -190,6 +204,27 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 	}
 
 	log.Printf("UploadPhoto: stored photo_id=%s url=%s", photoID, photoURL)
+
+	// Persist a queryable record for GetUploadStatus/ListUploads. This is
+	// best-effort: the RabbitMQ event below is the durable "an upload
+	// happened" fact, so a save failure here shouldn't fail the request --
+	// it just means this upload won't show up in status/list queries.
+	now := time.Now().UTC()
+	rec := &model.Record{
+		PhotoID:     photoID,
+		GalleryID:   galleryID,
+		UploaderID:  uploaderID,
+		Filename:    meta.Filename,
+		ContentType: contentType,
+		StorageKey:  objectKey,
+		SizeBytes:   int64(buf.Len()),
+		Status:      uploadpb.UploadStatus_UPLOAD_STATUS_COMPLETED,
+		UploadedAt:  now,
+		UpdatedAt:   now,
+	}
+	if err := s.repo.Save(stream.Context(), rec); err != nil {
+		log.Printf("UploadPhoto: failed to save upload record photo_id=%s: %v", photoID, err)
+	}
 
 	memberIDs := s.resolveMembers(galleryID)
 
@@ -207,8 +242,8 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 	})
 
 	return stream.SendAndClose(&uploadpb.UploadPhotoResponse{
-		PhotoId:    photoID,
-		GalleryId:  meta.GalleryId,
+		PhotoId:    photoID.String(),
+		GalleryId:  galleryID.String(),
 		StorageKey: objectKey,
 		SizeBytes:  int64(buf.Len()),
 		Url:        photoURL,
@@ -279,6 +314,105 @@ func (s *Server) isMember(ctx context.Context, galleryID, userID uuid.UUID) (boo
 	return resp.GetIsMember(), resp.GetGalleryStatus(), nil
 }
 
+// GetUploadStatus returns the persisted status of a single upload.
+func (s *Server) GetUploadStatus(ctx context.Context, req *uploadpb.GetUploadStatusRequest) (*uploadpb.GetUploadStatusResponse, error) {
+	if req.GetPhotoId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "photo_id is required")
+	}
+
+	photoID, _ := uuid.Parse(req.GetPhotoId())
+
+	rec, found, err := s.repo.Get(ctx, photoID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "get upload status: %v", err)
+	}
+	if !found {
+		return nil, status.Error(codes.NotFound, "upload not found")
+	}
+
+	return &uploadpb.GetUploadStatusResponse{
+		PhotoId:      rec.PhotoID.String(),
+		GalleryId:    rec.GalleryID.String(),
+		Status:       rec.Status,
+		ErrorMessage: rec.ErrorMessage,
+		UpdatedAt:    timestamppb.New(rec.UpdatedAt),
+	}, nil
+}
+
+// ListUploads returns a page of uploads for a gallery, most recent first.
+// Pagination is offset-based: page_token is the decimal offset to resume
+// from, and next_page_token comes back empty once the last page has been
+// returned.
+func (s *Server) ListUploads(ctx context.Context, req *uploadpb.ListUploadsRequest) (*uploadpb.ListUploadsResponse, error) {
+	if req.GetGalleryId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "gallery_id is required")
+	}
+
+	offset, err := parsePageToken(req.GetPageToken())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid page_token")
+	}
+
+	limit := int(req.GetPageSize())
+	if limit <= 0 {
+		limit = defaultListPageSize
+	}
+	if limit > maxListPageSize {
+		limit = maxListPageSize
+	}
+
+	galleryID, _ := uuid.Parse(req.GetGalleryId())
+
+	records, total, err := s.repo.ListByGallery(ctx, galleryID, offset, limit)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list uploads: %v", err)
+	}
+
+	resp := &uploadpb.ListUploadsResponse{
+		Uploads: make([]*uploadpb.UploadSummary, 0, len(records)),
+	}
+	for _, rec := range records {
+		resp.Uploads = append(resp.Uploads, &uploadpb.UploadSummary{
+			PhotoId:        rec.PhotoID.String(),
+			GalleryId:      rec.GalleryID.String(),
+			UploaderUserId: rec.UploaderID.String(),
+			StorageKey:     rec.StorageKey,
+			SizeBytes:      rec.SizeBytes,
+			Status:         rec.Status,
+			UploadedAt:     timestamppb.New(rec.UploadedAt),
+		})
+	}
+
+	if next := offset + len(records); next < total {
+		resp.NextPageToken = strconv.Itoa(next)
+	}
+
+	return resp, nil
+}
+
+func parsePageToken(token string) (int, error) {
+	if token == "" {
+		return 0, nil
+	}
+	offset, err := strconv.Atoi(token)
+	if err != nil || offset < 0 {
+		return 0, fmt.Errorf("invalid page token %q", token)
+	}
+	return offset, nil
+}
+
+// HealthCheck reports SERVING as long as the process is up and able to
+// answer gRPC calls. It deliberately does not probe MinIO, RabbitMQ, or
+// Gallery Service -- those already have their own failure handling (the
+// gallery circuit breaker, and the publisher's own breaker + reconnect
+// logic), and a health check that itself blocks on a flaky dependency
+// defeats the point of a fast liveness probe.
+func (s *Server) HealthCheck(_ context.Context, _ *uploadpb.HealthCheckRequest) (*uploadpb.HealthCheckResponse, error) {
+	return &uploadpb.HealthCheckResponse{
+		Status: uploadpb.HealthCheckResponse_SERVING,
+	}, nil
+}
+
 // uploaderFromMeta extracts x-user-id from the incoming gRPC metadata set by
 // the API Gateway after JWT validation.
 func uploaderFromMeta(ctx context.Context) (uuid.UUID, error) {
@@ -292,8 +426,4 @@ func uploaderFromMeta(ctx context.Context) (uuid.UUID, error) {
 // isEOF checks whether err signals the end of a client stream.
 func isEOF(err error) bool {
 	return err != nil && errors.Is(err, io.EOF)
-}
-
-func parseUUID(s string) (uuid.UUID, error) {
-	return uuid.Parse(s)
 }
