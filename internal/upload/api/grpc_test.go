@@ -52,18 +52,21 @@ func TestUploadPhoto_Success(t *testing.T) {
 	uploader := mocks.NewMockUploader(ctrl)
 	notifier := mocks.NewMockNotifier(ctrl)
 
-	ctx := newAuthedContext("user-123")
+	galleryID := uuid.New()
+	userID := uuid.New()
+
+	ctx := newAuthedContext(userID)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 
 	meta := &uploadpb.UploadMetadata{
-		GalleryId:   "gallery-1",
+		GalleryId:   galleryID.String(),
 		Filename:    "sunset.jpg",
 		ContentType: "image/jpeg",
 	}
 	expectRecvSequence(stream, meta, []byte("fake-image-bytes"))
 
 	galleryClient.EXPECT().
-		IsMember(gomock.Any(), &gallerypb.IsMemberRequest{GalleryId: "gallery-1", UserId: "user-123"}).
+		IsMember(gomock.Any(), &gallerypb.IsMemberRequest{GalleryId: galleryID.String(), UserId: userID.String()}).
 		Return(&gallerypb.IsMemberResponse{
 			IsMember:      true,
 			GalleryStatus: gallerypb.GalleryStatus_GALLERY_STATUS_OPEN,
@@ -72,9 +75,9 @@ func TestUploadPhoto_Success(t *testing.T) {
 	// UploadPhoto also calls resolveMembers (-> ListMembers) to build the
 	// notification fan-out list before publishing.
 	galleryClient.EXPECT().
-		ListMembers(gomock.Any(), &gallerypb.ListMembersRequest{GalleryId: "gallery-1"}).
+		ListMembers(gomock.Any(), &gallerypb.ListMembersRequest{GalleryId: galleryID.String()}).
 		Return(&gallerypb.ListMembersResponse{
-			Members: []*gallerypb.Member{{UserId: "user-123", GalleryId: "gallery-1"}},
+			Members: []*gallerypb.Member{{UserId: userID.String(), GalleryId: galleryID.String()}},
 		}, nil)
 
 	uploader.EXPECT().
@@ -86,7 +89,7 @@ func TestUploadPhoto_Success(t *testing.T) {
 	notifier.EXPECT().
 		PublishPhoto(gomock.Any(), gomock.Any()).
 		Do(func(_ context.Context, e *events.UploadEvent) {
-			if e.GalleryID != "gallery-1" || e.UploaderID != "user-123" {
+			if e.GalleryID != galleryID || e.UploaderID != userID {
 				t.Errorf("unexpected event: gallery=%s uploader=%s", e.GalleryID, e.UploaderID)
 			}
 		})
@@ -97,7 +100,7 @@ func TestUploadPhoto_Success(t *testing.T) {
 			if resp.Status != uploadpb.UploadStatus_UPLOAD_STATUS_COMPLETED {
 				t.Errorf("expected status COMPLETED, got %v", resp.Status)
 			}
-			if resp.GalleryId != "gallery-1" {
+			if resp.GalleryId != galleryID.String() {
 				t.Errorf("expected gallery_id gallery-1, got %q", resp.GalleryId)
 			}
 			return nil
@@ -118,10 +121,12 @@ func TestUploadPhoto_RejectsNonMember(t *testing.T) {
 	uploader := mocks.NewMockUploader(ctrl) // no calls expected
 	notifier := mocks.NewMockNotifier(ctrl) // no calls expected
 
-	ctx := newAuthedContext("user-123")
+	galleryID := uuid.New()
+	userID := uuid.New()
+	ctx := newAuthedContext(userID)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 
-	meta := &uploadpb.UploadMetadata{GalleryId: "gallery-1", Filename: "x.jpg"}
+	meta := &uploadpb.UploadMetadata{GalleryId: galleryID.String(), Filename: "x.jpg"}
 	expectRecvSequence(stream, meta, []byte("bytes"))
 
 	galleryClient.EXPECT().
@@ -150,10 +155,12 @@ func TestUploadPhoto_RejectsClosedGallery(t *testing.T) {
 	uploader := mocks.NewMockUploader(ctrl)
 	notifier := mocks.NewMockNotifier(ctrl)
 
-	ctx := newAuthedContext("user-123")
+	galleryID := uuid.New()
+	userID := uuid.New()
+	ctx := newAuthedContext(userID)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 
-	meta := &uploadpb.UploadMetadata{GalleryId: "gallery-1", Filename: "x.jpg"}
+	meta := &uploadpb.UploadMetadata{GalleryId: galleryID.String(), Filename: "x.jpg"}
 	expectRecvSequence(stream, meta, []byte("bytes"))
 
 	galleryClient.EXPECT().
@@ -179,10 +186,12 @@ func TestUploadPhoto_StorageFailure(t *testing.T) {
 	uploader := mocks.NewMockUploader(ctrl)
 	notifier := mocks.NewMockNotifier(ctrl) // no calls expected: we never get to publish
 
-	ctx := newAuthedContext("user-123")
+	galleryID := uuid.New()
+	userID := uuid.New()
+	ctx := newAuthedContext(userID)
 	stream.EXPECT().Context().Return(ctx).AnyTimes()
 
-	meta := &uploadpb.UploadMetadata{GalleryId: "gallery-1", Filename: "x.jpg"}
+	meta := &uploadpb.UploadMetadata{GalleryId: galleryID.String(), Filename: "x.jpg"}
 	expectRecvSequence(stream, meta, []byte("bytes"))
 
 	galleryClient.EXPECT().
@@ -223,9 +232,12 @@ func TestIsMember_CircuitBreakerOpensAfterConsecutiveFailures(t *testing.T) {
 	srv := NewServer(nil, nil, galleryClient, nil)
 	ctx := context.Background()
 
+	galleryID := uuid.New()
+	userID := uuid.New()
+
 	var lastErr error
 	for range galleryMaxFailures + 1 {
-		_, _, lastErr = srv.isMember(ctx, "gallery-1", "user-123")
+		_, _, lastErr = srv.isMember(ctx, galleryID, userID)
 	}
 
 	if status.Code(lastErr) != codes.Unavailable {

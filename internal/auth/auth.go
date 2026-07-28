@@ -9,7 +9,9 @@ import (
 	"github.com/google/uuid"
 	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -25,6 +27,11 @@ type Claims struct {
 	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
+
+// ServiceRole labels the token minted by ServiceCredentials. It isn't a
+// value from userpb.Role (that enum only covers human accounts) -- just an
+// informational string services can log if they ever need to.
+const ServiceRole = "ROLE_SERVICE"
 
 // SignToken creates and signs a JWT for the given user.
 func SignToken(secret string, userID uuid.UUID, role string) (string, error) {
@@ -98,4 +105,37 @@ func HashPassword(password string) (string, error) {
 
 func CheckPassword(hashed, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
+}
+
+// serviceAuthInterceptor signs a fresh JWT with jwtSecret and attaches it
+// as a bearer token to every outgoing unary call. Split out from
+// ServiceCredentials so it can be unit tested directly without dialing a
+// real connection.
+func serviceAuthInterceptor(jwtSecret string) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		req, reply any,
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		token, err := SignToken(jwtSecret, uuid.Nil, ServiceRole)
+		if err != nil {
+			return err
+		}
+		ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "bearer "+token)
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+}
+
+// ServiceCredentials returns a grpc.DialOption for service-to-service
+// calls that hit RPCs which require *a* valid token but don't check
+// identity or role -- e.g. GalleryService.IsMember, ListMembers, and
+// ListGalleriesByMember, none of which read claims out of the context.
+// A fresh token is signed on every call rather than cached and refreshed;
+// that's cheap (HMAC signing, no I/O) at this project's scale, and avoids
+// having to track TokenTTL expiry across a long-lived connection.
+func ServiceCredentials(jwtSecret string) grpc.DialOption {
+	return grpc.WithUnaryInterceptor(serviceAuthInterceptor(jwtSecret))
 }

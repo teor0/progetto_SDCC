@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	gallerypb "photogallery/gen/gallery"
 	uploadpb "photogallery/gen/upload"
 	"photogallery/internal/auth"
@@ -40,6 +41,7 @@ type Server struct {
 	galleryClient  gallerypb.GalleryServiceClient
 	galleryBreaker *upload.CircuitBreaker
 	repo           upload.Repository
+	jwtSecret      string
 }
 
 // NewServer constructs a Server with all required dependencies. storage,
@@ -59,7 +61,19 @@ func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClien
 		galleryClient:  galleryClient,
 		galleryBreaker: upload.NewCircuitBreaker(galleryMaxFailures, galleryResetTimeout),
 		repo:           repo,
+		jwtSecret:      os.Getenv("JWT_SECRET"),
 	}
+}
+
+var publicMethods = map[string]bool{
+	"/proto.UploadService/HealthCheck": true,
+}
+
+func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
+	if publicMethods[fullMethodName] {
+		return ctx, nil
+	}
+	return auth.AuthFunc(s.jwtSecret)(ctx)
 }
 
 // uploadStream is the subset of uploadpb.UploadService_UploadPhotoServer
@@ -303,7 +317,7 @@ func (s *Server) isMember(ctx context.Context, galleryID, userID uuid.UUID) (boo
 	})
 
 	if err != nil {
-		if err == upload.ErrCircuitOpen {
+		if errors.Is(err, upload.ErrCircuitOpen) {
 			return false, gallerypb.GalleryStatus_GALLERY_STATUS_UNSPECIFIED,
 				status.Error(codes.Unavailable, "gallery service unavailable (circuit breaker open)")
 		}

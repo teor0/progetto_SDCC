@@ -22,10 +22,9 @@ message UploadPhotoRequest {
 
 message UploadMetadata {
   string gallery_id = 1;
-  string user_id = 2;          // resolved/validated upstream by User Service
-  string filename = 3;
-  string content_type = 4;     // e.g. "image/jpeg"
-  int64 total_size_bytes = 5;
+  string filename = 2;
+  string content_type = 3;    
+  int64 total_size_bytes = 4;
 }
 
 message UploadPhotoResponse {

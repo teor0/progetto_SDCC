@@ -214,10 +214,9 @@ func (*UploadPhotoRequest_ChunkData) isUploadPhotoRequest_Payload() {}
 type UploadMetadata struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId      string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	UserId         string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // resolved/validated upstream by User Service
-	Filename       string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
-	ContentType    string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"` // e.g. "image/jpeg"
-	TotalSizeBytes int64                  `protobuf:"varint,5,opt,name=total_size_bytes,json=totalSizeBytes,proto3" json:"total_size_bytes,omitempty"`
+	Filename       string                 `protobuf:"bytes,2,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType    string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	TotalSizeBytes int64                  `protobuf:"varint,4,opt,name=total_size_bytes,json=totalSizeBytes,proto3" json:"total_size_bytes,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -255,13 +254,6 @@ func (*UploadMetadata) Descriptor() ([]byte, []int) {
 func (x *UploadMetadata) GetGalleryId() string {
 	if x != nil {
 		return x.GalleryId
-	}
-	return ""
-}
-
-func (x *UploadMetadata) GetUserId() string {
-	if x != nil {
-		return x.UserId
 	}
 	return ""
 }
@@ -801,14 +793,13 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\bmetadata\x18\x01 \x01(\v2\x15.proto.UploadMetadataH\x00R\bmetadata\x12\x1f\n" +
 	"\n" +
 	"chunk_data\x18\x02 \x01(\fH\x00R\tchunkDataB\t\n" +
-	"\apayload\"\xb1\x01\n" +
+	"\apayload\"\x98\x01\n" +
 	"\x0eUploadMetadata\x12\x1d\n" +
 	"\n" +
-	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1a\n" +
-	"\bfilename\x18\x03 \x01(\tR\bfilename\x12!\n" +
-	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12(\n" +
-	"\x10total_size_bytes\x18\x05 \x01(\x03R\x0etotalSizeBytes\"\xb0\x02\n" +
+	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x1a\n" +
+	"\bfilename\x18\x02 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12(\n" +
+	"\x10total_size_bytes\x18\x04 \x01(\x03R\x0etotalSizeBytes\"\xb0\x02\n" +
 	"\x13UploadPhotoResponse\x12\x19\n" +
 	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\x12\x1d\n" +
 	"\n" +

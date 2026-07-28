@@ -7,14 +7,16 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy only what the user service actually needs to build.
-COPY gen/gallery   ./gen/gallery
+COPY gen/upload   ./gen/upload
 COPY gen/user      ./gen/user
 COPY internal/auth  ./internal/auth
+COPY gen/gallery   ./gen/gallery
 COPY internal/gallery  ./internal/gallery
-COPY cmd/gallery       ./cmd/gallery
+COPY internal/upload  ./internal/upload
+COPY cmd/upload       ./cmd/upload
 
 # build user-service
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /gallery-service ./cmd/gallery
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /upload-service ./cmd/upload
 
 # stage 2
 FROM alpine:3.24
@@ -24,12 +26,12 @@ RUN apk add --no-cache ca-certificates && \
 
 WORKDIR /
 
-COPY --from=builder --chown=app:app /gallery-service /gallery-service
+COPY --from=builder --chown=app:app /upload-service /upload-service
 
 USER app
 
 # gRPC server + gRPC-Gateway HTTP proxy, per main.go
-EXPOSE 8081 8091
+EXPOSE 8092
 
 # container name alias
-ENTRYPOINT ["/gallery-service"]
+ENTRYPOINT ["/upload-service"]

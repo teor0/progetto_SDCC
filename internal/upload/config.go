@@ -24,15 +24,15 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		GRPCPort:              getEnv("GRPC_PORT", "50052"),
-		MinIOEndpoint:         getEnv("MINIO_ENDPOINT", "minio:9000"),
+		GRPCPort:              os.Getenv("UPLOAD_GRPC_PORT"),
+		MinIOEndpoint:         os.Getenv("MINIO_ENDPOINT"),
 		MinIOAccessKey:        os.Getenv("MINIO_ACCESS_KEY"),
 		MinIOSecretKey:        os.Getenv("MINIO_SECRET_KEY"),
-		MinIOBucket:           getEnv("MINIO_BUCKET", "photos"),
-		MinIOUseSSL:           getEnv("MINIO_USE_SSL", "false") == "true",
-		RabbitMQURL:           getEnv("RABBITMQ_URL", "amqp://guest:guest@rabbitmq:5672/"),
-		RabbitMQExchange:      getEnv("RABBITMQ_EXCHANGE", "gallery.events"),
-		GalleryServiceAddress: getEnv("GALLERY_SERVICE_ADDRESS", "gallery-service:50051"),
+		MinIOBucket:           os.Getenv("MINIO_BUCKET"),
+		MinIOUseSSL:           os.Getenv("MINIO_USE_SSL") == "true",
+		RabbitMQURL:           os.Getenv("RABBITMQ_URL"),
+		RabbitMQExchange:      os.Getenv("RABBITMQ_EXCHANGE"),
+		GalleryServiceAddress: os.Getenv("GALLERY_SERVICE_ADDRESS"),
 		GalleryCallTimeout:    2 * time.Second,
 	}
 
