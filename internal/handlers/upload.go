@@ -16,15 +16,12 @@ import (
 const chunkSize = 64 * 1024 // 64KB
 
 type UploadHandler struct {
-	uploadClient *clients.UploadClient
+	client *clients.UploadClient
 }
 
-func NewUploadHandler(
-	uploadClient *clients.UploadClient,
-) *UploadHandler {
-
+func NewUploadHandler(client *clients.UploadClient) *UploadHandler {
 	return &UploadHandler{
-		uploadClient: uploadClient,
+		client: client,
 	}
 }
 
@@ -60,7 +57,7 @@ func (h *UploadHandler) UploadPhoto(c *gin.Context) {
 			authHeader,
 		),
 	)
-	stream, err := h.uploadClient.Client.UploadPhoto(ctx)
+	stream, err := h.client.Upload.UploadPhoto(ctx)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": err.Error(),

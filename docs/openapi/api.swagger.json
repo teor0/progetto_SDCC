@@ -9,6 +9,9 @@
       "name": "GalleryService"
     },
     {
+      "name": "NotificationService"
+    },
+    {
       "name": "UploadService"
     },
     {
@@ -22,6 +25,36 @@
     "application/json"
   ],
   "paths": {
+    "/photogallery/auth/info/{email}": {
+      "get": {
+        "operationId": "UserService_Info",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "email",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
     "/photogallery/auth/login": {
       "post": {
         "summary": "Login authenticates a user or moderator and returns a signed JWT.",
@@ -453,6 +486,14 @@
         "GALLERY_STATUS_CLOSED"
       ],
       "default": "GALLERY_STATUS_UNSPECIFIED"
+    },
+    "protoInfoResponse": {
+      "type": "object",
+      "properties": {
+        "userID": {
+          "type": "string"
+        }
+      }
     },
     "protoListGalleriesResponse": {
       "type": "object",

@@ -102,6 +102,7 @@ func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, use
 		return status.Errorf(codes.Internal, "add member: %v", err)
 	}
 
+	//se voglio aggiungere questo evento.
 	_ = s.publisher.Publish(ctx, "MemberAdded", map[string]string{
 		"gallery_id": galleryID.String(),
 		"user_id":    userID.String(),

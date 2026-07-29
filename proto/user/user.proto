@@ -27,6 +27,14 @@ message TokenResponse {
   int64  expires_in=2;
 }
 
+message InfoRequest {
+  string email=1;
+}
+
+message InfoResponse {
+  string userID=1;
+}
+
 service UserService {
   rpc Register(RegisterRequest) returns (TokenResponse) {
     option (google.api.http) = {
@@ -43,5 +51,12 @@ service UserService {
       body: "*"
     };
   }
+
+  rpc Info(InfoRequest) returns (InfoResponse){
+    option(google.api.http)={
+      get: "/photogallery/auth/info/{email}"
+    };
+  }
+
 }
 

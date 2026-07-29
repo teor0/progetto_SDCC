@@ -19,7 +19,7 @@ func NewDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connect to db: %w", err)
 	}
-	if err := conn.AutoMigrate(&models.Gallery{}); err != nil {
+	if err := conn.AutoMigrate(&models.Gallery{}, &models.Member{}); err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
 	return conn, nil

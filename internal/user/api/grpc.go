@@ -7,6 +7,7 @@ import (
 	"photogallery/internal/user/models"
 	"photogallery/internal/user/repository"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -83,4 +84,32 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 		Token:     token,
 		ExpiresIn: int64(auth.TokenTTL.Seconds()),
 	}, nil
+}
+
+func (s *Server) Info(ctx context.Context, req *userpb.InfoRequest) (*userpb.InfoResponse, error) {
+	if req.Email == "" {
+		return nil, status.Error(codes.InvalidArgument, "email is required")
+	}
+	user, err := s.db.GetByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+	callerID, err := callerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if user.ID != callerID {
+		return nil, status.Error(codes.InvalidArgument, "invalid info request")
+	}
+	return &userpb.InfoResponse{
+		UserID: user.ID.String(),
+	}, nil
+}
+
+func callerIDFromContext(ctx context.Context) (uuid.UUID, error) {
+	claims, err := auth.FromContext(ctx)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return claims.UserID, nil
 }

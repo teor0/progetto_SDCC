@@ -24,28 +24,41 @@ func main() {
 
 	uploadAddr := os.Getenv("UPLOAD_SERVICE_ADDRESS")
 	if uploadAddr == "" {
-		log.Fatal("UPLOAD_SERVICE_ADDR environment variable is required")
+		log.Fatal("UPLOAD_SERVICE_ADDRESS environment variable is required")
 	}
 
-	conn, err := grpc.NewClient(
-		"localhost:8092",
+	notificationAddr := os.Getenv("NOTIFICATION_SERVICE_ADDRESS")
+	if notificationAddr == "" {
+		log.Fatal("NOTIFICATION_SERVICE_ADDRESS environment variable is required")
+	}
+
+	uploadConn, err := grpc.NewClient(
+		uploadAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to UploadService: %v", err)
 	}
-	defer conn.Close()
+	defer uploadConn.Close()
+	uploadClient := clients.NewUploadClient(uploadConn)
 
-	uploadClient := clients.NewUploadClient(conn)
+	notificationConn, err := grpc.NewClient(
+		notificationAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("failed to connect to NotificationService: %v", err)
+	}
+	defer notificationConn.Close()
+	notificationClient := clients.NewNotificationClient(notificationConn)
 
 	router := gin.Default()
 
 	uploadHandler := handlers.NewUploadHandler(uploadClient)
+	notificationHandler := handlers.NewNotificationHandler(notificationClient)
 
-	router.POST(
-		"/api/uploads",
-		uploadHandler.UploadPhoto,
-	)
+	router.POST("/api/uploads", uploadHandler.UploadPhoto)
+	router.GET("/api/notifications/stream", notificationHandler.Stream)
 
 	log.Printf("API Gateway listening on :%s", httpPort)
 	log.Fatal(router.Run(":" + httpPort))

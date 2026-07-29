@@ -7,15 +7,16 @@ import (
 )
 
 type UploadClient struct {
-	Client uploadpb.UploadServiceClient
 	//possible general use
-	//Upload uploadpb.UploadServiceClient
-	//Gallery gallerypb.GalleryServiceClient
-	//User userpb.UserServiceClient
+	Upload uploadpb.UploadServiceClient
+	//Gallery      gallerypb.GalleryServiceClient
+	//User         userpb.UserServiceClient
 }
 
 func NewUploadClient(conn *grpc.ClientConn) *UploadClient {
 	return &UploadClient{
-		Client: uploadpb.NewUploadServiceClient(conn),
+		Upload: uploadpb.NewUploadServiceClient(conn),
+		//Gallery:      gallerypb.NewGalleryServiceClient(conn),
+		//User:         userpb.NewUserServiceClient(conn),
 	}
 }

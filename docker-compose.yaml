@@ -88,6 +88,60 @@ services:
       rabbitmq:
         condition: service_healthy
 
+
+  upload-service:
+    build:
+      context: .
+      dockerfile: internal/upload/Dockerfile.upload
+    image: upload-service:latest
+    ports:
+      - "8092:8092"
+    environment:
+      JWT_SECRET: ciaobelli
+      UPLOAD_GRPC_PORT: 8092
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      RABBITMQ_EXCHANGE: gallery.events
+      MINIO_ENDPOINT: aistor-server:9000
+      MINIO_ACCESS_KEY: "7H0cN5tSiXmSM8wumtsO"
+      MINIO_SECRET_KEY: "xOcy6oMl72BhQJAIrx0weMmQ8ph8blBVua2KVcDa"
+      MINIO_BUCKET: photos
+      MINIO_USE_SSL: false
+      GALLERY_SERVICE_ADDRESS: gallery-service:8081
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  aistor-server:
+    image: quay.io/minio/aistor/minio:latest
+    command: [ "minio", "server", "/mnt/data", "--license", "/minio.license" ]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ${HOME}/minio/data:/mnt/data
+      - ${HOME}/minio/minio.license:/minio.license
+      - ${HOME}/minio/certs:/etc/minio/certs
+    container_name: aistor-server
+    restart: unless-stopped
+
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: internal/notification/Dockerfile.notification
+    image: notification-service:latest
+    ports:
+      - "8083:8083"
+    environment:
+      JWT_SECRET: ciaobelli
+      NOTIFICATION_GRPC_PORT: 8083
+      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      GALLERY_SERVICE_ADDRESS: gallery-service:8081
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+
 volumes:
   user_pgdata:
   gallery_pgdata:

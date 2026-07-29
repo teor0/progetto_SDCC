@@ -1,0 +1,35 @@
+# stage 1
+FROM golang:1.26-alpine3.24 AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy only what the user service actually needs to build.
+COPY gen/notification   ./gen/notification
+COPY gen/gallery      ./gen/gallery
+COPY internal/auth  ./internal/auth
+COPY internal/notification  ./internal/notification
+COPY cmd/notification       ./cmd/notification
+
+# build user-service
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /notification-service ./cmd/notification
+
+# stage 2
+FROM alpine:3.24
+
+RUN apk add --no-cache ca-certificates && \
+    addgroup -S app && adduser -S app -G app
+
+WORKDIR /
+
+COPY --from=builder --chown=app:app /notification-service /notification-service
+
+USER app
+
+# gRPC server + gRPC-Gateway HTTP proxy, per main.go
+EXPOSE 8083
+
+# container name alias
+ENTRYPOINT ["/notification-service"]
