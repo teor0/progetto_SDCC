@@ -3,7 +3,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management
     ports:
-      # if needed for code tests - "5672:5672"    # AMQP
+      - "5672:5672" # needed for code tests - "5672:5672"    # AMQP
       - "15672:15672"  # Management UI
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
@@ -34,15 +34,15 @@ services:
       dockerfile: internal/user/Dockerfile.user
     image: user-service:latest
     ports:
-      - "8080:8080"
-      - "8090:8090"
+      - "8081:8081"
+      - "8091:8091"
     environment:
       DB_HOST: user_postgres
       DB_USER: matteo
       DB_PASSWORD: password
       DB_NAME_USER: user_db
       DB_PORT_USER: 5432
-      JWT_SECRET: ciaobelli
+      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
     depends_on:
       user_postgres:
         condition: service_healthy # necessary to make the container work
@@ -70,8 +70,8 @@ services:
       dockerfile: internal/gallery/Dockerfile.gallery
     image: gallery-service:latest
     ports:
-      - "8081:8081"
-      - "8091:8091"
+      - "8082:8082"
+      - "8092:8092"
     environment:
       DB_HOST: gallery_postgres
       DB_USER: matteo
@@ -81,7 +81,7 @@ services:
       GALLERY_GRPC_PORT: 8081
       GALLERY_GATEWAY_PORT: 8091
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      JWT_SECRET: ciaobelli
+      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
     depends_on:
       gallery_postgres:
         condition: service_healthy
@@ -97,8 +97,8 @@ services:
     ports:
       - "8092:8092"
     environment:
-      JWT_SECRET: ciaobelli
-      UPLOAD_GRPC_PORT: 8092
+      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
+      UPLOAD_GRPC_PORT: 8093
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       RABBITMQ_EXCHANGE: gallery.events
       MINIO_ENDPOINT: aistor-server:9000
@@ -106,7 +106,7 @@ services:
       MINIO_SECRET_KEY: "xOcy6oMl72BhQJAIrx0weMmQ8ph8blBVua2KVcDa"
       MINIO_BUCKET: photos
       MINIO_USE_SSL: false
-      GALLERY_SERVICE_ADDRESS: gallery-service:8081
+      GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -139,11 +139,28 @@ services:
     ports:
       - "8083:8083"
     environment:
-      JWT_SECRET: ciaobelli
+      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
       NOTIFICATION_GRPC_PORT: 8083
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      GALLERY_SERVICE_ADDRESS: gallery-service:8081
+      GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+
+  gateway:
+    build:
+      context: .
+      dockerfile: internal/handlers/Dockerfile.gateway
+    image: gateway:latest
+    ports:
+      - "8080:8080"
+    environment:
+      HTTP_PORT: 8080
+      NOTIFICATION_SERVICE_ADDRESS: notification-service:8083
+      UPLOAD_SERVICE_ADDRESS: upload-service:8093
+    depends_on:
+      # to fix
       rabbitmq:
         condition: service_healthy
 
