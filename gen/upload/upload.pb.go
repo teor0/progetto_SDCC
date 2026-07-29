@@ -289,7 +289,7 @@ type UploadPhotoResponse struct {
 	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
 	Status        UploadStatus           `protobuf:"varint,6,opt,name=status,proto3,enum=proto.UploadStatus" json:"status,omitempty"`
 	UploadedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=uploaded_at,json=uploadedAt,proto3" json:"uploaded_at,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,8,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"` // populated when status == FAILED
+	ErrorMessage  *string                `protobuf:"bytes,8,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"` // populated when status == FAILED
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -374,8 +374,8 @@ func (x *UploadPhotoResponse) GetUploadedAt() *timestamppb.Timestamp {
 }
 
 func (x *UploadPhotoResponse) GetErrorMessage() string {
-	if x != nil {
-		return x.ErrorMessage
+	if x != nil && x.ErrorMessage != nil {
+		return *x.ErrorMessage
 	}
 	return ""
 }
@@ -799,7 +799,7 @@ const file_upload_upload_proto_rawDesc = "" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x1a\n" +
 	"\bfilename\x18\x02 \x01(\tR\bfilename\x12!\n" +
 	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12(\n" +
-	"\x10total_size_bytes\x18\x04 \x01(\x03R\x0etotalSizeBytes\"\xb0\x02\n" +
+	"\x10total_size_bytes\x18\x04 \x01(\x03R\x0etotalSizeBytes\"\xc7\x02\n" +
 	"\x13UploadPhotoResponse\x12\x19\n" +
 	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\x12\x1d\n" +
 	"\n" +
@@ -811,8 +811,9 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\x03url\x18\x05 \x01(\tR\x03url\x12+\n" +
 	"\x06status\x18\x06 \x01(\x0e2\x13.proto.UploadStatusR\x06status\x12;\n" +
 	"\vuploaded_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"uploadedAt\x12#\n" +
-	"\rerror_message\x18\b \x01(\tR\ferrorMessage\"3\n" +
+	"uploadedAt\x12(\n" +
+	"\rerror_message\x18\b \x01(\tH\x00R\ferrorMessage\x88\x01\x01B\x10\n" +
+	"\x0e_error_message\"3\n" +
 	"\x16GetUploadStatusRequest\x12\x19\n" +
 	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\"\xe0\x01\n" +
 	"\x17GetUploadStatusResponse\x12\x19\n" +
@@ -928,6 +929,7 @@ func file_upload_upload_proto_init() {
 		(*UploadPhotoRequest_Metadata)(nil),
 		(*UploadPhotoRequest_ChunkData)(nil),
 	}
+	file_upload_upload_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

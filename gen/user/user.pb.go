@@ -237,7 +237,6 @@ func (x *TokenResponse) GetExpiresIn() int64 {
 
 type InfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -272,16 +271,9 @@ func (*InfoRequest) Descriptor() ([]byte, []int) {
 	return file_user_user_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *InfoRequest) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
 type InfoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserID        string                 `protobuf:"bytes,1,opt,name=userID,proto3" json:"userID,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -316,9 +308,9 @@ func (*InfoResponse) Descriptor() ([]byte, []int) {
 	return file_user_user_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *InfoResponse) GetUserID() string {
+func (x *InfoResponse) GetUserId() string {
 	if x != nil {
-		return x.UserID
+		return x.UserId
 	}
 	return ""
 }
@@ -338,19 +330,18 @@ const file_user_user_proto_rawDesc = "" +
 	"\rTokenResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
 	"\n" +
-	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"#\n" +
-	"\vInfoRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"&\n" +
-	"\fInfoResponse\x12\x16\n" +
-	"\x06userID\x18\x01 \x01(\tR\x06userID*?\n" +
+	"expires_in\x18\x02 \x01(\x03R\texpiresIn\"\r\n" +
+	"\vInfoRequest\"'\n" +
+	"\fInfoResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId*?\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tROLE_USER\x10\x01\x12\x12\n" +
-	"\x0eROLE_MODERATOR\x10\x022\xa2\x02\n" +
+	"\x0eROLE_MODERATOR\x10\x022\x98\x02\n" +
 	"\vUserService\x12`\n" +
 	"\bRegister\x12\x16.proto.RegisterRequest\x1a\x14.proto.TokenResponse\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/photogallery/auth/register\x12W\n" +
-	"\x05Login\x12\x13.proto.LoginRequest\x1a\x14.proto.TokenResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/photogallery/auth/login\x12X\n" +
-	"\x04Info\x12\x12.proto.InfoRequest\x1a\x13.proto.InfoResponse\"'\x82\xd3\xe4\x93\x02!\x12\x1f/photogallery/auth/info/{email}Ba\n" +
+	"\x05Login\x12\x13.proto.LoginRequest\x1a\x14.proto.TokenResponse\"#\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/photogallery/auth/login\x12N\n" +
+	"\x04Info\x12\x12.proto.InfoRequest\x1a\x13.proto.InfoResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/photogallery/auth/meBa\n" +
 	"\tcom.protoB\tUserProtoP\x01Z\x15photogallery/gen/user\xa2\x02\x03PXX\xaa\x02\x05Proto\xca\x02\x05Proto\xe2\x02\x11Proto\\GPBMetadata\xea\x02\x05Protob\x06proto3"
 
 var (

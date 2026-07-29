@@ -42,20 +42,6 @@ func (m *MockCommandRunner) EXPECT() *MockCommandRunnerMockRecorder {
 	return m.recorder
 }
 
-// AddMember mocks base method.
-func (m *MockCommandRunner) AddMember(ctx context.Context, galleryID, userID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddMember", ctx, galleryID, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddMember indicates an expected call of AddMember.
-func (mr *MockCommandRunnerMockRecorder) AddMember(ctx, galleryID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMember", reflect.TypeOf((*MockCommandRunner)(nil).AddMember), ctx, galleryID, userID)
-}
-
 // CloseGallery mocks base method.
 func (m *MockCommandRunner) CloseGallery(ctx context.Context, galleryID, callerID uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -85,18 +71,32 @@ func (mr *MockCommandRunnerMockRecorder) CreateGallery(ctx, name, description, m
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGallery", reflect.TypeOf((*MockCommandRunner)(nil).CreateGallery), ctx, name, description, moderatorID)
 }
 
-// RemoveMember mocks base method.
-func (m *MockCommandRunner) RemoveMember(ctx context.Context, galleryID, targetUserID, callerID uuid.UUID) error {
+// JoinGallery mocks base method.
+func (m *MockCommandRunner) JoinGallery(ctx context.Context, galleryID, userID uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RemoveMember", ctx, galleryID, targetUserID, callerID)
+	ret := m.ctrl.Call(m, "JoinGallery", ctx, galleryID, userID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// RemoveMember indicates an expected call of RemoveMember.
-func (mr *MockCommandRunnerMockRecorder) RemoveMember(ctx, galleryID, targetUserID, callerID any) *gomock.Call {
+// JoinGallery indicates an expected call of JoinGallery.
+func (mr *MockCommandRunnerMockRecorder) JoinGallery(ctx, galleryID, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveMember", reflect.TypeOf((*MockCommandRunner)(nil).RemoveMember), ctx, galleryID, targetUserID, callerID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JoinGallery", reflect.TypeOf((*MockCommandRunner)(nil).JoinGallery), ctx, galleryID, userID)
+}
+
+// LeaveGallery mocks base method.
+func (m *MockCommandRunner) LeaveGallery(ctx context.Context, galleryID, callerID uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LeaveGallery", ctx, galleryID, callerID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveGallery indicates an expected call of LeaveGallery.
+func (mr *MockCommandRunnerMockRecorder) LeaveGallery(ctx, galleryID, callerID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveGallery", reflect.TypeOf((*MockCommandRunner)(nil).LeaveGallery), ctx, galleryID, callerID)
 }
 
 // SendModeratorAlert mocks base method.

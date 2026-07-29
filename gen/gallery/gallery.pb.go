@@ -356,28 +356,27 @@ func (*CloseGalleryResponse) Descriptor() ([]byte, []int) {
 	return file_gallery_gallery_proto_rawDescGZIP(), []int{4}
 }
 
-type AddMemberRequest struct {
+type JoinGalleryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AddMemberRequest) Reset() {
-	*x = AddMemberRequest{}
+func (x *JoinGalleryRequest) Reset() {
+	*x = JoinGalleryRequest{}
 	mi := &file_gallery_gallery_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AddMemberRequest) String() string {
+func (x *JoinGalleryRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AddMemberRequest) ProtoMessage() {}
+func (*JoinGalleryRequest) ProtoMessage() {}
 
-func (x *AddMemberRequest) ProtoReflect() protoreflect.Message {
+func (x *JoinGalleryRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_gallery_gallery_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -389,47 +388,39 @@ func (x *AddMemberRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AddMemberRequest.ProtoReflect.Descriptor instead.
-func (*AddMemberRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use JoinGalleryRequest.ProtoReflect.Descriptor instead.
+func (*JoinGalleryRequest) Descriptor() ([]byte, []int) {
 	return file_gallery_gallery_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *AddMemberRequest) GetGalleryId() string {
+func (x *JoinGalleryRequest) GetGalleryId() string {
 	if x != nil {
 		return x.GalleryId
 	}
 	return ""
 }
 
-func (x *AddMemberRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type RemoveMemberRequest struct {
+type LeaveGalleryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RemoveMemberRequest) Reset() {
-	*x = RemoveMemberRequest{}
+func (x *LeaveGalleryRequest) Reset() {
+	*x = LeaveGalleryRequest{}
 	mi := &file_gallery_gallery_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RemoveMemberRequest) String() string {
+func (x *LeaveGalleryRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RemoveMemberRequest) ProtoMessage() {}
+func (*LeaveGalleryRequest) ProtoMessage() {}
 
-func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
+func (x *LeaveGalleryRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_gallery_gallery_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -441,45 +432,38 @@ func (x *RemoveMemberRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RemoveMemberRequest.ProtoReflect.Descriptor instead.
-func (*RemoveMemberRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use LeaveGalleryRequest.ProtoReflect.Descriptor instead.
+func (*LeaveGalleryRequest) Descriptor() ([]byte, []int) {
 	return file_gallery_gallery_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *RemoveMemberRequest) GetGalleryId() string {
+func (x *LeaveGalleryRequest) GetGalleryId() string {
 	if x != nil {
 		return x.GalleryId
 	}
 	return ""
 }
 
-func (x *RemoveMemberRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type AddMemberResponse struct {
+type JoinGalleryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AddMemberResponse) Reset() {
-	*x = AddMemberResponse{}
+func (x *JoinGalleryResponse) Reset() {
+	*x = JoinGalleryResponse{}
 	mi := &file_gallery_gallery_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AddMemberResponse) String() string {
+func (x *JoinGalleryResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AddMemberResponse) ProtoMessage() {}
+func (*JoinGalleryResponse) ProtoMessage() {}
 
-func (x *AddMemberResponse) ProtoReflect() protoreflect.Message {
+func (x *JoinGalleryResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_gallery_gallery_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -491,31 +475,31 @@ func (x *AddMemberResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AddMemberResponse.ProtoReflect.Descriptor instead.
-func (*AddMemberResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use JoinGalleryResponse.ProtoReflect.Descriptor instead.
+func (*JoinGalleryResponse) Descriptor() ([]byte, []int) {
 	return file_gallery_gallery_proto_rawDescGZIP(), []int{7}
 }
 
-type RemoveMemberResponse struct {
+type LeaveGalleryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RemoveMemberResponse) Reset() {
-	*x = RemoveMemberResponse{}
+func (x *LeaveGalleryResponse) Reset() {
+	*x = LeaveGalleryResponse{}
 	mi := &file_gallery_gallery_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RemoveMemberResponse) String() string {
+func (x *LeaveGalleryResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RemoveMemberResponse) ProtoMessage() {}
+func (*LeaveGalleryResponse) ProtoMessage() {}
 
-func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
+func (x *LeaveGalleryResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_gallery_gallery_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -527,8 +511,8 @@ func (x *RemoveMemberResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RemoveMemberResponse.ProtoReflect.Descriptor instead.
-func (*RemoveMemberResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use LeaveGalleryResponse.ProtoReflect.Descriptor instead.
+func (*LeaveGalleryResponse) Descriptor() ([]byte, []int) {
 	return file_gallery_gallery_proto_rawDescGZIP(), []int{8}
 }
 
@@ -1068,17 +1052,15 @@ const file_gallery_gallery_proto_rawDesc = "" +
 	"\x13CloseGalleryRequest\x12\x1d\n" +
 	"\n" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\"\x16\n" +
-	"\x14CloseGalleryResponse\"J\n" +
-	"\x10AddMemberRequest\x12\x1d\n" +
+	"\x14CloseGalleryResponse\"3\n" +
+	"\x12JoinGalleryRequest\x12\x1d\n" +
 	"\n" +
-	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"M\n" +
-	"\x13RemoveMemberRequest\x12\x1d\n" +
+	"gallery_id\x18\x01 \x01(\tR\tgalleryId\"4\n" +
+	"\x13LeaveGalleryRequest\x12\x1d\n" +
 	"\n" +
-	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"\x13\n" +
-	"\x11AddMemberResponse\"\x16\n" +
-	"\x14RemoveMemberResponse\"N\n" +
+	"gallery_id\x18\x01 \x01(\tR\tgalleryId\"\x15\n" +
+	"\x13JoinGalleryResponse\"\x16\n" +
+	"\x14LeaveGalleryResponse\"N\n" +
 	"\x19SendModeratorAlertRequest\x12\x1d\n" +
 	"\n" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x12\n" +
@@ -1115,12 +1097,12 @@ const file_gallery_gallery_proto_rawDesc = "" +
 	"\rGalleryStatus\x12\x1e\n" +
 	"\x1aGALLERY_STATUS_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13GALLERY_STATUS_OPEN\x10\x01\x12\x19\n" +
-	"\x15GALLERY_STATUS_CLOSED\x10\x022\xf0\b\n" +
+	"\x15GALLERY_STATUS_CLOSED\x10\x022\xeb\b\n" +
 	"\x0eGalleryService\x12`\n" +
 	"\rCreateGallery\x12\x1b.proto.CreateGalleryRequest\x1a\x0e.proto.Gallery\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/photogallery/galleries\x12~\n" +
-	"\fCloseGallery\x12\x1a.proto.CloseGalleryRequest\x1a\x1b.proto.CloseGalleryResponse\"5\x82\xd3\xe4\x93\x02/:\x01*\"*/photogallery/galleries/{gallery_id}/close\x12w\n" +
-	"\tAddMember\x12\x17.proto.AddMemberRequest\x1a\x18.proto.AddMemberResponse\"7\x82\xd3\xe4\x93\x021:\x01*\",/photogallery/galleries/{gallery_id}/members\x12\x87\x01\n" +
-	"\fRemoveMember\x12\x1a.proto.RemoveMemberRequest\x1a\x1b.proto.RemoveMemberResponse\">\x82\xd3\xe4\x93\x028*6/photogallery/galleries/{gallery_id}/members/{user_id}\x12\x90\x01\n" +
+	"\fCloseGallery\x12\x1a.proto.CloseGalleryRequest\x1a\x1b.proto.CloseGalleryResponse\"5\x82\xd3\xe4\x93\x02/:\x01*\"*/photogallery/galleries/{gallery_id}/close\x12}\n" +
+	"\vJoinGallery\x12\x19.proto.JoinGalleryRequest\x1a\x1a.proto.JoinGalleryResponse\"7\x82\xd3\xe4\x93\x021:\x01*\",/photogallery/galleries/{gallery_id}/members\x12}\n" +
+	"\fLeaveGallery\x12\x1a.proto.LeaveGalleryRequest\x1a\x1b.proto.LeaveGalleryResponse\"4\x82\xd3\xe4\x93\x02.*,/photogallery/galleries/{gallery_id}/members\x12\x90\x01\n" +
 	"\x12SendModeratorAlert\x12 .proto.SendModeratorAlertRequest\x1a!.proto.SendModeratorAlertResponse\"5\x82\xd3\xe4\x93\x02/:\x01*\"*/photogallery/galleries/{gallery_id}/alert\x12d\n" +
 	"\n" +
 	"GetGallery\x12\x18.proto.GetGalleryRequest\x1a\x0e.proto.Gallery\",\x82\xd3\xe4\x93\x02&\x12$/photogallery/galleries/{gallery_id}\x12k\n" +
@@ -1151,10 +1133,10 @@ var file_gallery_gallery_proto_goTypes = []any{
 	(*CreateGalleryRequest)(nil),         // 3: proto.CreateGalleryRequest
 	(*CloseGalleryRequest)(nil),          // 4: proto.CloseGalleryRequest
 	(*CloseGalleryResponse)(nil),         // 5: proto.CloseGalleryResponse
-	(*AddMemberRequest)(nil),             // 6: proto.AddMemberRequest
-	(*RemoveMemberRequest)(nil),          // 7: proto.RemoveMemberRequest
-	(*AddMemberResponse)(nil),            // 8: proto.AddMemberResponse
-	(*RemoveMemberResponse)(nil),         // 9: proto.RemoveMemberResponse
+	(*JoinGalleryRequest)(nil),           // 6: proto.JoinGalleryRequest
+	(*LeaveGalleryRequest)(nil),          // 7: proto.LeaveGalleryRequest
+	(*JoinGalleryResponse)(nil),          // 8: proto.JoinGalleryResponse
+	(*LeaveGalleryResponse)(nil),         // 9: proto.LeaveGalleryResponse
 	(*SendModeratorAlertRequest)(nil),    // 10: proto.SendModeratorAlertRequest
 	(*SendModeratorAlertResponse)(nil),   // 11: proto.SendModeratorAlertResponse
 	(*GetGalleryRequest)(nil),            // 12: proto.GetGalleryRequest
@@ -1177,8 +1159,8 @@ var file_gallery_gallery_proto_depIdxs = []int32{
 	0,  // 6: proto.IsMemberResponse.gallery_status:type_name -> proto.GalleryStatus
 	3,  // 7: proto.GalleryService.CreateGallery:input_type -> proto.CreateGalleryRequest
 	4,  // 8: proto.GalleryService.CloseGallery:input_type -> proto.CloseGalleryRequest
-	6,  // 9: proto.GalleryService.AddMember:input_type -> proto.AddMemberRequest
-	7,  // 10: proto.GalleryService.RemoveMember:input_type -> proto.RemoveMemberRequest
+	6,  // 9: proto.GalleryService.JoinGallery:input_type -> proto.JoinGalleryRequest
+	7,  // 10: proto.GalleryService.LeaveGallery:input_type -> proto.LeaveGalleryRequest
 	10, // 11: proto.GalleryService.SendModeratorAlert:input_type -> proto.SendModeratorAlertRequest
 	12, // 12: proto.GalleryService.GetGallery:input_type -> proto.GetGalleryRequest
 	13, // 13: proto.GalleryService.ListGalleries:input_type -> proto.ListGalleriesRequest
@@ -1187,8 +1169,8 @@ var file_gallery_gallery_proto_depIdxs = []int32{
 	16, // 16: proto.GalleryService.ListGalleriesByMember:input_type -> proto.ListGalleriesByMemberRequest
 	1,  // 17: proto.GalleryService.CreateGallery:output_type -> proto.Gallery
 	5,  // 18: proto.GalleryService.CloseGallery:output_type -> proto.CloseGalleryResponse
-	8,  // 19: proto.GalleryService.AddMember:output_type -> proto.AddMemberResponse
-	9,  // 20: proto.GalleryService.RemoveMember:output_type -> proto.RemoveMemberResponse
+	8,  // 19: proto.GalleryService.JoinGallery:output_type -> proto.JoinGalleryResponse
+	9,  // 20: proto.GalleryService.LeaveGallery:output_type -> proto.LeaveGalleryResponse
 	11, // 21: proto.GalleryService.SendModeratorAlert:output_type -> proto.SendModeratorAlertResponse
 	1,  // 22: proto.GalleryService.GetGallery:output_type -> proto.Gallery
 	14, // 23: proto.GalleryService.ListGalleries:output_type -> proto.ListGalleriesResponse

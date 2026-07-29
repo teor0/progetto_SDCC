@@ -41,19 +41,18 @@ message CloseGalleryRequest {
 message CloseGalleryResponse {
 }
 
-message AddMemberRequest {
+message JoinGalleryRequest {
   string gallery_id = 1;
-  string user_id    = 2;
 }
 
-message RemoveMemberRequest {
+message LeaveGalleryRequest {
   string gallery_id = 1;
-  string user_id    = 2;
-}
-message AddMemberResponse {
 }
 
-message RemoveMemberResponse {
+message JoinGalleryResponse {
+}
+
+message LeaveGalleryResponse {
 }
 
 // SendModeratorAlertRequest is only accepted when role == MODERATOR.
@@ -144,17 +143,16 @@ service GalleryService {
   }
 
   // AddMember adds a user to a gallery. Any authenticated user may join.
-  rpc AddMember(AddMemberRequest) returns (AddMemberResponse) {
+  rpc JoinGallery(JoinGalleryRequest) returns (JoinGalleryResponse) {
     option (google.api.http) = {
       post: "/photogallery/galleries/{gallery_id}/members"
       body: "*"
     };
   }
 
-  // RemoveMember removes a member. Caller must be MODERATOR or the member themselves.
-  rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse) {
+  rpc LeaveGallery(LeaveGalleryRequest) returns (LeaveGalleryResponse) {
     option (google.api.http) = {
-      delete: "/photogallery/galleries/{gallery_id}/members/{user_id}"
+      delete: "/photogallery/galleries/{gallery_id}/members"
     };
   }
 

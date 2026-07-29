@@ -14,8 +14,8 @@ import (
 type CommandRunner interface {
 	CreateGallery(ctx context.Context, name, description string, moderatorID uuid.UUID) (*models.Gallery, error)
 	CloseGallery(ctx context.Context, galleryID uuid.UUID, callerID uuid.UUID) error
-	AddMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error
-	RemoveMember(ctx context.Context, galleryID uuid.UUID, targetUserID, callerID uuid.UUID) error
+	JoinGallery(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error
+	LeaveGallery(ctx context.Context, galleryID uuid.UUID, callerID uuid.UUID) error
 	SendModeratorAlert(ctx context.Context, galleryID, callerID uuid.UUID, message string) error
 }
 

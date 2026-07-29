@@ -3,13 +3,13 @@ package testing
 import (
 	"context"
 	"errors"
-	"photogallery/internal/notification/internal/notification/mocks"
-	mocknotification "photogallery/internal/notification/mocks"
+	mock "photogallery/internal/notification/mocks"
 	"testing"
 
 	notificationpb "photogallery/gen/notification"
 	"photogallery/internal/notification"
 
+	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
 )
 
@@ -19,15 +19,19 @@ func TestRegistryNotify(t *testing.T) {
 
 	registry := notification.New()
 
-	stream1 := mocknotification.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
-	stream2 := mocknotification.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
+	stream1 := mock.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
+	stream2 := mock.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
 
-	registry.Subscribe("gallery-1", "alice", stream1)
-	registry.Subscribe("gallery-1", "bob", stream2)
+	galleryID := uuid.New()
+	userID1 := uuid.New()
+	userID2 := uuid.New()
+
+	registry.Subscribe(galleryID, userID1, stream1)
+	registry.Subscribe(galleryID, userID2, stream2)
 
 	n := &notificationpb.Notification{
 		Id:        "notif-1",
-		GalleryId: "gallery-1",
+		GalleryId: galleryID.String(),
 		PhotoUrl:  "http://example.com/photo.jpg",
 	}
 
@@ -39,7 +43,7 @@ func TestRegistryNotify(t *testing.T) {
 		Send(n).
 		Return(nil)
 
-	registry.Notify(context.Background(), "gallery-1", n)
+	registry.Notify(context.Background(), galleryID, n)
 }
 
 func TestRegistryNotify_RemovesDisconnectedClient(t *testing.T) {
@@ -48,13 +52,15 @@ func TestRegistryNotify_RemovesDisconnectedClient(t *testing.T) {
 
 	registry := notification.New()
 
-	stream := mocknotification.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
+	stream := mock.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
 
-	registry.Subscribe("gallery-1", "alice", stream)
+	galleryID := uuid.New()
+	userID := uuid.New()
+	registry.Subscribe(galleryID, userID, stream)
 
 	n := &notificationpb.Notification{
 		Id:        "notif-1",
-		GalleryId: "gallery-1",
+		GalleryId: galleryID.String(),
 		Message:   "hello",
 	}
 
@@ -62,11 +68,11 @@ func TestRegistryNotify_RemovesDisconnectedClient(t *testing.T) {
 		Send(n).
 		Return(errors.New("stream closed"))
 
-	registry.Notify(context.Background(), "gallery-1", n)
+	registry.Notify(context.Background(), galleryID, n)
 
 	// No expectations here. If Send() is called again,
 	// gomock will fail the test.
-	registry.Notify(context.Background(), "gallery-1", n)
+	registry.Notify(context.Background(), galleryID, n)
 }
 
 func TestRegistryUnsubscribe(t *testing.T) {
@@ -75,17 +81,20 @@ func TestRegistryUnsubscribe(t *testing.T) {
 
 	registry := notification.New()
 
-	stream := mocks.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
+	stream := mock.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
 
-	registry.Subscribe("gallery-1", "alice", stream)
-	registry.Unsubscribe("gallery-1", "alice")
+	galleryID := uuid.New()
+	userID := uuid.New()
+	registry.Subscribe(galleryID, userID, stream)
+	registry.Unsubscribe(galleryID, userID)
 
 	n := &notificationpb.Notification{
-		GalleryId: "gallery-1",
+		GalleryId: galleryID.String(),
+		Message:   "hello",
 	}
 
 	// Since alice was unsubscribed, Notify should never call Send.
-	registry.Notify(context.Background(), "gallery-1", n)
+	registry.Notify(context.Background(), galleryID, n)
 }
 
 func TestRegistryRemoveClient(t *testing.T) {
@@ -94,18 +103,22 @@ func TestRegistryRemoveClient(t *testing.T) {
 
 	registry := notification.New()
 
-	stream := mocks.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
+	stream := mock.NewMockNotificationService_SubscribeServer[*notificationpb.Notification](ctrl)
 
-	registry.Subscribe("gallery-1", "alice", stream)
-	registry.Subscribe("gallery-2", "alice", stream)
+	galleryID1 := uuid.New()
+	galleryID2 := uuid.New()
+	userID := uuid.New()
 
-	registry.RemoveClient("alice")
+	registry.Subscribe(galleryID1, userID, stream)
+	registry.Subscribe(galleryID2, userID, stream)
 
-	registry.Notify(context.Background(), "gallery-1", &notificationpb.Notification{
-		GalleryId: "gallery-1",
+	registry.RemoveClient(userID)
+
+	registry.Notify(context.Background(), galleryID1, &notificationpb.Notification{
+		GalleryId: galleryID1.String(),
 	})
 
-	registry.Notify(context.Background(), "gallery-2", &notificationpb.Notification{
-		GalleryId: "gallery-2",
+	registry.Notify(context.Background(), galleryID2, &notificationpb.Notification{
+		GalleryId: galleryID2.String(),
 	})
 }

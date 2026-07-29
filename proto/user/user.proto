@@ -27,12 +27,10 @@ message TokenResponse {
   int64  expires_in=2;
 }
 
-message InfoRequest {
-  string email=1;
-}
+message InfoRequest {}
 
 message InfoResponse {
-  string userID=1;
+  string user_id=1;
 }
 
 service UserService {
@@ -54,7 +52,7 @@ service UserService {
 
   rpc Info(InfoRequest) returns (InfoResponse){
     option(google.api.http)={
-      get: "/photogallery/auth/info/{email}"
+      get: "/photogallery/auth/me"
     };
   }
 

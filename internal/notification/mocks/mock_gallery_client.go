@@ -42,26 +42,6 @@ func (m *MockGalleryServiceClient) EXPECT() *MockGalleryServiceClientMockRecorde
 	return m.recorder
 }
 
-// AddMember mocks base method.
-func (m *MockGalleryServiceClient) AddMember(ctx context.Context, in *gallery.AddMemberRequest, opts ...grpc.CallOption) (*gallery.AddMemberResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "AddMember", varargs...)
-	ret0, _ := ret[0].(*gallery.AddMemberResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AddMember indicates an expected call of AddMember.
-func (mr *MockGalleryServiceClientMockRecorder) AddMember(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMember", reflect.TypeOf((*MockGalleryServiceClient)(nil).AddMember), varargs...)
-}
-
 // CloseGallery mocks base method.
 func (m *MockGalleryServiceClient) CloseGallery(ctx context.Context, in *gallery.CloseGalleryRequest, opts ...grpc.CallOption) (*gallery.CloseGalleryResponse, error) {
 	m.ctrl.T.Helper()
@@ -142,6 +122,46 @@ func (mr *MockGalleryServiceClientMockRecorder) IsMember(ctx, in any, opts ...an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMember", reflect.TypeOf((*MockGalleryServiceClient)(nil).IsMember), varargs...)
 }
 
+// JoinGallery mocks base method.
+func (m *MockGalleryServiceClient) JoinGallery(ctx context.Context, in *gallery.JoinGalleryRequest, opts ...grpc.CallOption) (*gallery.JoinGalleryResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "JoinGallery", varargs...)
+	ret0, _ := ret[0].(*gallery.JoinGalleryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// JoinGallery indicates an expected call of JoinGallery.
+func (mr *MockGalleryServiceClientMockRecorder) JoinGallery(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JoinGallery", reflect.TypeOf((*MockGalleryServiceClient)(nil).JoinGallery), varargs...)
+}
+
+// LeaveGallery mocks base method.
+func (m *MockGalleryServiceClient) LeaveGallery(ctx context.Context, in *gallery.LeaveGalleryRequest, opts ...grpc.CallOption) (*gallery.LeaveGalleryResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveGallery", varargs...)
+	ret0, _ := ret[0].(*gallery.LeaveGalleryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LeaveGallery indicates an expected call of LeaveGallery.
+func (mr *MockGalleryServiceClientMockRecorder) LeaveGallery(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveGallery", reflect.TypeOf((*MockGalleryServiceClient)(nil).LeaveGallery), varargs...)
+}
+
 // ListGalleries mocks base method.
 func (m *MockGalleryServiceClient) ListGalleries(ctx context.Context, in *gallery.ListGalleriesRequest, opts ...grpc.CallOption) (*gallery.ListGalleriesResponse, error) {
 	m.ctrl.T.Helper()
@@ -200,26 +220,6 @@ func (mr *MockGalleryServiceClientMockRecorder) ListMembers(ctx, in any, opts ..
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListMembers", reflect.TypeOf((*MockGalleryServiceClient)(nil).ListMembers), varargs...)
-}
-
-// RemoveMember mocks base method.
-func (m *MockGalleryServiceClient) RemoveMember(ctx context.Context, in *gallery.RemoveMemberRequest, opts ...grpc.CallOption) (*gallery.RemoveMemberResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "RemoveMember", varargs...)
-	ret0, _ := ret[0].(*gallery.RemoveMemberResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RemoveMember indicates an expected call of RemoveMember.
-func (mr *MockGalleryServiceClientMockRecorder) RemoveMember(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveMember", reflect.TypeOf((*MockGalleryServiceClient)(nil).RemoveMember), varargs...)
 }
 
 // SendModeratorAlert mocks base method.

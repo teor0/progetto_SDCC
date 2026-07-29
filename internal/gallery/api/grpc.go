@@ -77,38 +77,34 @@ func (s *Server) CloseGallery(ctx context.Context, req *gallerypb.CloseGalleryRe
 	return &gallerypb.CloseGalleryResponse{}, nil
 }
 
-func (s *Server) AddMember(ctx context.Context, req *gallerypb.AddMemberRequest) (*gallerypb.AddMemberResponse, error) {
-	id, err := parseUUID(req.GetGalleryId())
-	if err != nil {
-		return nil, err
-	}
-	userID, err := parseUUID(req.GetUserId())
-	if err != nil {
-		return nil, err
-	}
-	if err := s.cmd.AddMember(ctx, id, userID); err != nil {
-		return nil, err
-	}
-	return &gallerypb.AddMemberResponse{}, nil
-}
-
-func (s *Server) RemoveMember(ctx context.Context, req *gallerypb.RemoveMemberRequest) (*gallerypb.RemoveMemberResponse, error) {
+func (s *Server) JoinGallery(ctx context.Context, req *gallerypb.JoinGalleryRequest) (*gallerypb.JoinGalleryResponse, error) {
 	callerID, err := callerIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	id, err := parseUUID(req.GetGalleryId())
+	galleryID, err := parseUUID(req.GetGalleryId())
 	if err != nil {
 		return nil, err
 	}
-	userID, err := parseUUID(req.GetUserId())
+	if err := s.cmd.JoinGallery(ctx, galleryID, callerID); err != nil {
+		return nil, err
+	}
+	return &gallerypb.JoinGalleryResponse{}, nil
+}
+
+func (s *Server) LeaveGallery(ctx context.Context, req *gallerypb.LeaveGalleryRequest) (*gallerypb.LeaveGalleryResponse, error) {
+	callerID, err := callerIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.cmd.RemoveMember(ctx, id, userID, callerID); err != nil {
+	galleryID, err := parseUUID(req.GetGalleryId())
+	if err != nil {
 		return nil, err
 	}
-	return &gallerypb.RemoveMemberResponse{}, nil
+	if err := s.cmd.LeaveGallery(ctx, galleryID, callerID); err != nil {
+		return nil, err
+	}
+	return &gallerypb.LeaveGalleryResponse{}, nil
 }
 
 func (s *Server) SendModeratorAlert(ctx context.Context, req *gallerypb.SendModeratorAlertRequest) (*gallerypb.SendModeratorAlertResponse, error) {

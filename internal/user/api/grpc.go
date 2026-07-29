@@ -87,22 +87,12 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 }
 
 func (s *Server) Info(ctx context.Context, req *userpb.InfoRequest) (*userpb.InfoResponse, error) {
-	if req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, "email is required")
-	}
-	user, err := s.db.GetByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-	callerID, err := callerIDFromContext(ctx)
+	userID, err := callerIDFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if user.ID != callerID {
-		return nil, status.Error(codes.InvalidArgument, "invalid info request")
-	}
 	return &userpb.InfoResponse{
-		UserID: user.ID.String(),
+		UserId: userID.String(),
 	}, nil
 }
 

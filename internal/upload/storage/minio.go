@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -17,6 +16,18 @@ type Config struct {
 	Bucket    string
 	UseSSL    bool
 }
+
+const publicReadPolicy = `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {"AWS": ["*"]},
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::%s/*"]
+    }
+  ]
+}`
 
 // Uploader is the subset of Storage's behavior that Server depends on.
 // Declaring it lets tests substitute a GoMock-generated mock instead of a
@@ -45,36 +56,32 @@ func NewStorage(ctx context.Context, cfg Config) (*Storage, error) {
 	if err != nil {
 		return nil, fmt.Errorf("checking bucket %q: %w", cfg.Bucket, err)
 	}
+
 	if !exists {
 		if err := client.MakeBucket(ctx, cfg.Bucket, minio.MakeBucketOptions{}); err != nil {
 			return nil, fmt.Errorf("creating bucket %q: %w", cfg.Bucket, err)
 		}
 	}
 
+	policy := fmt.Sprintf(publicReadPolicy, cfg.Bucket)
+
+	if err := client.SetBucketPolicy(ctx, cfg.Bucket, policy); err != nil {
+		return nil, fmt.Errorf("setting bucket policy: %w", err)
+	}
+
 	return &Storage{client: client, bucket: cfg.Bucket}, nil
 }
 
-// Upload uploads photo bytes under objectKey and returns the ETag MinIO assigns.
+// Upload uploads photo bytes under objectKey and returns its plain URL.
 func (s *Storage) Upload(ctx context.Context, objectKey string, contentType string, data []byte) (string, error) {
 	reader := bytes.NewReader(data)
-	info, err := s.client.PutObject(ctx, s.bucket, objectKey, reader, int64(len(data)), minio.PutObjectOptions{
+	_, err := s.client.PutObject(ctx, s.bucket, objectKey, reader, int64(len(data)), minio.PutObjectOptions{
 		ContentType: contentType,
 	})
 	if err != nil {
 		return "", fmt.Errorf("putting object %q: %w", objectKey, err)
 	}
-	return info.ETag, nil
-}
-
-// PresignedURL returns a temporary GET URL for a stored photo, so clients
-// (or Notification Service, when building a link) fetch bytes directly
-// from MinIO instead of proxying them back through Upload Service.
-func (s *Storage) PresignedURL(ctx context.Context, objectKey string, expiry time.Duration) (string, error) {
-	//Build a plain URL — swap for a presigned URL if the bucket is private.
-	//url := fmt.Sprintf("http://%s/%s/%s", s.client.EndpointURL().Host, s.bucket, objectKey)
-	url, err := s.client.PresignedGetObject(ctx, s.bucket, objectKey, expiry, nil)
-	if err != nil {
-		return "", fmt.Errorf("presigning %q: %w", objectKey, err)
-	}
-	return url.String(), nil
+	endpoint := s.client.EndpointURL()
+	url := fmt.Sprintf("%s/%s/%s", endpoint.String(), s.bucket, objectKey)
+	return url, nil
 }

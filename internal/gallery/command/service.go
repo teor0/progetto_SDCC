@@ -88,8 +88,8 @@ func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, 
 	return nil
 }
 
-// AddMember lets any authenticated user join an open gallery.
-func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error {
+// JoinGallery lets any authenticated user join an open gallery.
+func (s *CommandService) JoinGallery(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
 		return status.Error(codes.NotFound, "gallery not found")
@@ -98,7 +98,7 @@ func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, use
 		return status.Error(codes.FailedPrecondition, "cannot join a closed gallery")
 	}
 
-	if err := s.repo.AddMember(ctx, galleryID, userID); err != nil {
+	if err := s.repo.JoinGallery(ctx, galleryID, userID); err != nil {
 		return status.Errorf(codes.Internal, "add member: %v", err)
 	}
 
@@ -110,23 +110,15 @@ func (s *CommandService) AddMember(ctx context.Context, galleryID uuid.UUID, use
 	return nil
 }
 
-// RemoveMember allows the moderator, or the member themselves, to leave/be removed.
-func (s *CommandService) RemoveMember(ctx context.Context, galleryID uuid.UUID, targetUserID, callerID uuid.UUID) error {
-	g, err := s.repo.GetGallery(ctx, galleryID)
-	if err != nil {
-		return status.Error(codes.NotFound, "gallery not found")
-	}
-	if callerID != targetUserID && callerID != g.ModeratorID {
-		return status.Error(codes.PermissionDenied, "not authorized to remove this member")
-	}
-
-	if err := s.repo.RemoveMember(ctx, galleryID, targetUserID); err != nil {
+// LeaveGallery allows the moderator, or the member themselves, to leave.
+func (s *CommandService) LeaveGallery(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error {
+	if err := s.repo.LeaveGallery(ctx, galleryID, userID); err != nil {
 		return status.Errorf(codes.Internal, "remove member: %v", err)
 	}
 
 	_ = s.publisher.Publish(ctx, "MemberRemoved", map[string]string{
 		"gallery_id": galleryID.String(),
-		"user_id":    targetUserID.String(),
+		"user_id":    userID.String(),
 	})
 	return nil
 }

@@ -21,8 +21,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	GalleryService_CreateGallery_FullMethodName         = "/proto.GalleryService/CreateGallery"
 	GalleryService_CloseGallery_FullMethodName          = "/proto.GalleryService/CloseGallery"
-	GalleryService_AddMember_FullMethodName             = "/proto.GalleryService/AddMember"
-	GalleryService_RemoveMember_FullMethodName          = "/proto.GalleryService/RemoveMember"
+	GalleryService_JoinGallery_FullMethodName           = "/proto.GalleryService/JoinGallery"
+	GalleryService_LeaveGallery_FullMethodName          = "/proto.GalleryService/LeaveGallery"
 	GalleryService_SendModeratorAlert_FullMethodName    = "/proto.GalleryService/SendModeratorAlert"
 	GalleryService_GetGallery_FullMethodName            = "/proto.GalleryService/GetGallery"
 	GalleryService_ListGalleries_FullMethodName         = "/proto.GalleryService/ListGalleries"
@@ -40,9 +40,8 @@ type GalleryServiceClient interface {
 	// CloseGallery marks a gallery as closed. Caller must be MODERATOR.
 	CloseGallery(ctx context.Context, in *CloseGalleryRequest, opts ...grpc.CallOption) (*CloseGalleryResponse, error)
 	// AddMember adds a user to a gallery. Any authenticated user may join.
-	AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error)
-	// RemoveMember removes a member. Caller must be MODERATOR or the member themselves.
-	RemoveMember(ctx context.Context, in *RemoveMemberRequest, opts ...grpc.CallOption) (*RemoveMemberResponse, error)
+	JoinGallery(ctx context.Context, in *JoinGalleryRequest, opts ...grpc.CallOption) (*JoinGalleryResponse, error)
+	LeaveGallery(ctx context.Context, in *LeaveGalleryRequest, opts ...grpc.CallOption) (*LeaveGalleryResponse, error)
 	// SendModeratorAlert broadcasts a special alert to all gallery members.
 	// Caller must be MODERATOR.
 	SendModeratorAlert(ctx context.Context, in *SendModeratorAlertRequest, opts ...grpc.CallOption) (*SendModeratorAlertResponse, error)
@@ -92,20 +91,20 @@ func (c *galleryServiceClient) CloseGallery(ctx context.Context, in *CloseGaller
 	return out, nil
 }
 
-func (c *galleryServiceClient) AddMember(ctx context.Context, in *AddMemberRequest, opts ...grpc.CallOption) (*AddMemberResponse, error) {
+func (c *galleryServiceClient) JoinGallery(ctx context.Context, in *JoinGalleryRequest, opts ...grpc.CallOption) (*JoinGalleryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AddMemberResponse)
-	err := c.cc.Invoke(ctx, GalleryService_AddMember_FullMethodName, in, out, cOpts...)
+	out := new(JoinGalleryResponse)
+	err := c.cc.Invoke(ctx, GalleryService_JoinGallery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *galleryServiceClient) RemoveMember(ctx context.Context, in *RemoveMemberRequest, opts ...grpc.CallOption) (*RemoveMemberResponse, error) {
+func (c *galleryServiceClient) LeaveGallery(ctx context.Context, in *LeaveGalleryRequest, opts ...grpc.CallOption) (*LeaveGalleryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RemoveMemberResponse)
-	err := c.cc.Invoke(ctx, GalleryService_RemoveMember_FullMethodName, in, out, cOpts...)
+	out := new(LeaveGalleryResponse)
+	err := c.cc.Invoke(ctx, GalleryService_LeaveGallery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -181,9 +180,8 @@ type GalleryServiceServer interface {
 	// CloseGallery marks a gallery as closed. Caller must be MODERATOR.
 	CloseGallery(context.Context, *CloseGalleryRequest) (*CloseGalleryResponse, error)
 	// AddMember adds a user to a gallery. Any authenticated user may join.
-	AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error)
-	// RemoveMember removes a member. Caller must be MODERATOR or the member themselves.
-	RemoveMember(context.Context, *RemoveMemberRequest) (*RemoveMemberResponse, error)
+	JoinGallery(context.Context, *JoinGalleryRequest) (*JoinGalleryResponse, error)
+	LeaveGallery(context.Context, *LeaveGalleryRequest) (*LeaveGalleryResponse, error)
 	// SendModeratorAlert broadcasts a special alert to all gallery members.
 	// Caller must be MODERATOR.
 	SendModeratorAlert(context.Context, *SendModeratorAlertRequest) (*SendModeratorAlertResponse, error)
@@ -218,11 +216,11 @@ func (UnimplementedGalleryServiceServer) CreateGallery(context.Context, *CreateG
 func (UnimplementedGalleryServiceServer) CloseGallery(context.Context, *CloseGalleryRequest) (*CloseGalleryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CloseGallery not implemented")
 }
-func (UnimplementedGalleryServiceServer) AddMember(context.Context, *AddMemberRequest) (*AddMemberResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AddMember not implemented")
+func (UnimplementedGalleryServiceServer) JoinGallery(context.Context, *JoinGalleryRequest) (*JoinGalleryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method JoinGallery not implemented")
 }
-func (UnimplementedGalleryServiceServer) RemoveMember(context.Context, *RemoveMemberRequest) (*RemoveMemberResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RemoveMember not implemented")
+func (UnimplementedGalleryServiceServer) LeaveGallery(context.Context, *LeaveGalleryRequest) (*LeaveGalleryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveGallery not implemented")
 }
 func (UnimplementedGalleryServiceServer) SendModeratorAlert(context.Context, *SendModeratorAlertRequest) (*SendModeratorAlertResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendModeratorAlert not implemented")
@@ -298,38 +296,38 @@ func _GalleryService_CloseGallery_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GalleryService_AddMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AddMemberRequest)
+func _GalleryService_JoinGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinGalleryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GalleryServiceServer).AddMember(ctx, in)
+		return srv.(GalleryServiceServer).JoinGallery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GalleryService_AddMember_FullMethodName,
+		FullMethod: GalleryService_JoinGallery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GalleryServiceServer).AddMember(ctx, req.(*AddMemberRequest))
+		return srv.(GalleryServiceServer).JoinGallery(ctx, req.(*JoinGalleryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GalleryService_RemoveMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RemoveMemberRequest)
+func _GalleryService_LeaveGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveGalleryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GalleryServiceServer).RemoveMember(ctx, in)
+		return srv.(GalleryServiceServer).LeaveGallery(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GalleryService_RemoveMember_FullMethodName,
+		FullMethod: GalleryService_LeaveGallery_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GalleryServiceServer).RemoveMember(ctx, req.(*RemoveMemberRequest))
+		return srv.(GalleryServiceServer).LeaveGallery(ctx, req.(*LeaveGalleryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -458,12 +456,12 @@ var GalleryService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GalleryService_CloseGallery_Handler,
 		},
 		{
-			MethodName: "AddMember",
-			Handler:    _GalleryService_AddMember_Handler,
+			MethodName: "JoinGallery",
+			Handler:    _GalleryService_JoinGallery_Handler,
 		},
 		{
-			MethodName: "RemoveMember",
-			Handler:    _GalleryService_RemoveMember_Handler,
+			MethodName: "LeaveGallery",
+			Handler:    _GalleryService_LeaveGallery_Handler,
 		},
 		{
 			MethodName: "SendModeratorAlert",

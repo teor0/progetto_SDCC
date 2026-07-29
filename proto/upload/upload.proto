@@ -36,7 +36,7 @@ message UploadPhotoResponse {
   string url        = 5;
   UploadStatus status = 6;
   google.protobuf.Timestamp uploaded_at = 7;
-  string error_message = 8;    // populated when status == FAILED
+  optional string error_message = 8;    // populated when status == FAILED
 }
 
 message GetUploadStatusRequest {
