@@ -3,7 +3,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management
     ports:
-      - "5672:5672" # needed for code tests - "5672:5672"    # AMQP
+      # - "5672:5672" # needed for code tests # AMQP
       - "15672:15672"  # Management UI
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
@@ -42,6 +42,8 @@ services:
       DB_PASSWORD: password
       DB_NAME_USER: user_db
       DB_PORT_USER: 5432
+      USER_GRPC_PORT: 8081
+      USER_GATEWAY_PORT: 8091
       JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
     depends_on:
       user_postgres:
@@ -78,8 +80,8 @@ services:
       DB_PASSWORD: password
       DB_NAME_GALLERY: gallery_db
       DB_PORT_GALLERY: 5432
-      GALLERY_GRPC_PORT: 8081
-      GALLERY_GATEWAY_PORT: 8091
+      GALLERY_GRPC_PORT: 8082
+      GALLERY_GATEWAY_PORT: 8092
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
     depends_on:
@@ -95,10 +97,10 @@ services:
       dockerfile: internal/upload/Dockerfile.upload
     image: upload-service:latest
     ports:
-      - "8092:8092"
+      - "8083:8083"
     environment:
       JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
-      UPLOAD_GRPC_PORT: 8093
+      UPLOAD_GRPC_PORT: 8083
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       RABBITMQ_EXCHANGE: gallery.events
       MINIO_ENDPOINT: aistor-server:9000
@@ -137,10 +139,10 @@ services:
       dockerfile: internal/notification/Dockerfile.notification
     image: notification-service:latest
     ports:
-      - "8083:8083"
+      - "8084:8084"
     environment:
       JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
-      NOTIFICATION_GRPC_PORT: 8083
+      NOTIFICATION_GRPC_PORT: 8084
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
@@ -157,8 +159,8 @@ services:
       - "8080:8080"
     environment:
       HTTP_PORT: 8080
-      NOTIFICATION_SERVICE_ADDRESS: notification-service:8083
-      UPLOAD_SERVICE_ADDRESS: upload-service:8093
+      NOTIFICATION_SERVICE_ADDRESS: notification-service:8084
+      UPLOAD_SERVICE_ADDRESS: upload-service:8083
     depends_on:
       # to fix
       rabbitmq:

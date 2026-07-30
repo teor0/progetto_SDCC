@@ -28,7 +28,7 @@ COPY --from=builder --chown=app:app /user-service /user-service
 USER app
 
 # gRPC server + gRPC-Gateway HTTP proxy, per main.go
-EXPOSE 8080 8090
+EXPOSE 8081 8091
 
 # container name alias
 ENTRYPOINT ["/user-service"]

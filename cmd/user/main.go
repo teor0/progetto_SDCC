@@ -26,8 +26,10 @@ func main() {
 	if jwtSecret == "" {
 		log.Fatalln("JWT_SECRET environment variable is required")
 	}
+	grpcPort := os.Getenv("USER_GRPC_PORT")
+	gatewayPort := os.Getenv("USER_GATEWAY_PORT")
 	//config del server per user service
-	lis, err := net.Listen("tcp", ":8080")
+	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatalln("Failed to listen:", err)
 	}
@@ -49,18 +51,18 @@ func main() {
 	// Attach the service to the server
 	userpb.RegisterUserServiceServer(s, srv)
 	// Serve gRPC server
-	log.Println("Serving gRPC on 0.0.0.0:8080")
+	log.Println("Serving gRPC on 0.0.0.0:" + grpcPort)
 	go func() {
 		log.Fatalln(s.Serve(lis))
 	}()
 	if err != nil {
-		log.Fatalln("Failed to connect to database:", err)
+		log.Fatalln("Failed to serve server:", err)
 	}
 
 	// Create a client connection to the gRPC server we just started
 	// This is where the gRPC-Gateway proxies the requests
 	conn, err := grpc.NewClient(
-		"0.0.0.0:8080",
+		"0.0.0.0:"+grpcPort,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -77,10 +79,10 @@ func main() {
 
 	//open the gatewayserver that handle all the clients request!
 	gwServer := &http.Server{
-		Addr:    ":8090",
+		Addr:    ":" + gatewayPort,
 		Handler: gatewaymux,
 	}
 
-	log.Println("Serving gRPC-Gateway on http://0.0.0.0:8090")
+	log.Println("Serving gRPC-Gateway on http://0.0.0.0:" + gatewayPort)
 	log.Fatalln(gwServer.ListenAndServe())
 }

@@ -25,36 +25,6 @@
     "application/json"
   ],
   "paths": {
-    "/photogallery/auth/info/{email}": {
-      "get": {
-        "operationId": "UserService_Info",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/protoInfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "email",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "tags": [
-          "UserService"
-        ]
-      }
-    },
     "/photogallery/auth/login": {
       "post": {
         "summary": "Login authenticates a user or moderator and returns a signed JWT.",
@@ -83,6 +53,28 @@
             }
           }
         ],
+        "tags": [
+          "UserService"
+        ]
+      }
+    },
+    "/photogallery/auth/me": {
+      "get": {
+        "operationId": "UserService_Info",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
         "tags": [
           "UserService"
         ]
@@ -335,14 +327,42 @@
           "GalleryService"
         ]
       },
-      "post": {
-        "summary": "AddMember adds a user to a gallery. Any authenticated user may join.",
-        "operationId": "GalleryService_AddMember",
+      "delete": {
+        "operationId": "GalleryService_LeaveGallery",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/protoAddMemberResponse"
+              "$ref": "#/definitions/protoLeaveGalleryResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      },
+      "post": {
+        "summary": "AddMember adds a user to a gallery. Any authenticated user may join.",
+        "operationId": "GalleryService_JoinGallery",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoJoinGalleryResponse"
             }
           },
           "default": {
@@ -364,45 +384,8 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/GalleryServiceAddMemberBody"
+              "$ref": "#/definitions/GalleryServiceJoinGalleryBody"
             }
-          }
-        ],
-        "tags": [
-          "GalleryService"
-        ]
-      }
-    },
-    "/photogallery/galleries/{galleryId}/members/{userId}": {
-      "delete": {
-        "summary": "RemoveMember removes a member. Caller must be MODERATOR or the member themselves.",
-        "operationId": "GalleryService_RemoveMember",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/protoRemoveMemberResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "galleryId",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          },
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "type": "string"
           }
         ],
         "tags": [
@@ -412,15 +395,10 @@
     }
   },
   "definitions": {
-    "GalleryServiceAddMemberBody": {
-      "type": "object",
-      "properties": {
-        "userId": {
-          "type": "string"
-        }
-      }
-    },
     "GalleryServiceCloseGalleryBody": {
+      "type": "object"
+    },
+    "GalleryServiceJoinGalleryBody": {
       "type": "object"
     },
     "GalleryServiceSendModeratorAlertBody": {
@@ -431,9 +409,6 @@
         }
       },
       "description": "SendModeratorAlertRequest is only accepted when role == MODERATOR."
-    },
-    "protoAddMemberResponse": {
-      "type": "object"
     },
     "protoCloseGalleryResponse": {
       "type": "object"
@@ -490,10 +465,16 @@
     "protoInfoResponse": {
       "type": "object",
       "properties": {
-        "userID": {
+        "userId": {
           "type": "string"
         }
       }
+    },
+    "protoJoinGalleryResponse": {
+      "type": "object"
+    },
+    "protoLeaveGalleryResponse": {
+      "type": "object"
     },
     "protoListGalleriesResponse": {
       "type": "object",
@@ -561,9 +542,6 @@
           "$ref": "#/definitions/protoRole"
         }
       }
-    },
-    "protoRemoveMemberResponse": {
-      "type": "object"
     },
     "protoRole": {
       "type": "string",

@@ -93,7 +93,7 @@ func TestRegistryUnsubscribe(t *testing.T) {
 		Message:   "hello",
 	}
 
-	// Since alice was unsubscribed, Notify should never call Send.
+	//Notify should never call Send.
 	registry.Notify(context.Background(), galleryID, n)
 }
 

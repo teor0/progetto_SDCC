@@ -29,7 +29,7 @@ COPY --from=builder --chown=app:app /gallery-service /gallery-service
 USER app
 
 # gRPC server + gRPC-Gateway HTTP proxy, per main.go
-EXPOSE 8081 8091
+EXPOSE 8082 8092
 
 # container name alias
 ENTRYPOINT ["/gallery-service"]
