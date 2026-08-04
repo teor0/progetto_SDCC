@@ -95,37 +95,34 @@ services:
     ports:
       - "8083:8083"
     environment:
-      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
+      JWT_SECRET: ${JWT_SECRET}
       UPLOAD_GRPC_PORT: 8083
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       RABBITMQ_EXCHANGE: gallery.events
-      MINIO_ENDPOINT: aistor-server:9000
-      MINIO_ACCESS_KEY: "7H0cN5tSiXmSM8wumtsO"
-      MINIO_SECRET_KEY: "xOcy6oMl72BhQJAIrx0weMmQ8ph8blBVua2KVcDa"
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: photos
       MINIO_USE_SSL: false
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
       rabbitmq:
         condition: service_healthy
+      minio:
+        condition: service_started
 
-  aistor-server:
-    #image: minio/minio:latest
-    #command: server /data --console-address ":9001"
-    image: quay.io/minio/aistor/minio:latest
-    command: [ "minio", "server", "/mnt/data", "--license", "/minio.license" ]
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      #- minio_data:/data
-      - ${HOME}/minio/data:/mnt/data
-      - ${HOME}/minio/minio.license:/minio.license
-      - ${HOME}/minio/certs:/etc/minio/certs
-    container_name: aistor-server
+      - minio-data:/data
     restart: unless-stopped
 
 
@@ -137,7 +134,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
+      JWT_SECRET: ${JWT_SECRET}
       NOTIFICATION_GRPC_PORT: 8084
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
@@ -168,5 +165,5 @@ services:
 volumes:
   user_pgdata:
   gallery_pgdata:
-  #minio_data:
+  minio-data:
 
