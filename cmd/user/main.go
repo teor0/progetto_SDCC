@@ -47,10 +47,5 @@ func main() {
 	userpb.RegisterUserServiceServer(s, srv)
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:" + grpcPort)
-	go func() {
-		log.Fatalln(s.Serve(lis))
-	}()
-	if err != nil {
-		log.Fatalln("Failed to serve server:", err)
-	}
+	log.Fatalln(s.Serve(lis)) // blocks here — keeps the process alive
 }

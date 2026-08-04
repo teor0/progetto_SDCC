@@ -28,7 +28,6 @@ func main() {
 
 	grpcPort := os.Getenv("GALLERY_GRPC_PORT")
 
-	// config del server per gallery service
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatalln("Failed to listen:", err)
@@ -39,9 +38,12 @@ func main() {
 		log.Fatalln("Failed to connect to database:", err)
 	}
 	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalln("Failed to get underlying sql.DB:", err)
+	}
 	defer sqlDB.Close()
 
-	amqpURL := os.Getenv("RABBITMQ_URL") // e.g. amqp://guest:guest@rabbitmq:5672/
+	amqpURL := os.Getenv("RABBITMQ_URL")
 	publisher, err := command.NewRabbitMQPublisher(amqpURL)
 	if err != nil {
 		log.Fatalln("Failed to connect to RabbitMQ:", err)
@@ -51,7 +53,7 @@ func main() {
 	cmdRepo := command.NewCommandRepository(db)
 	qryRepo := query.NewQueryRepository(db)
 
-	cmdSvc := command.NewCommandService(cmdRepo, publisher) // swap command.NoopPublisher{} with publisher
+	cmdSvc := command.NewCommandService(cmdRepo, publisher)
 	qrySvc := query.NewQueryService(qryRepo)
 	srv := api.NewServer(cmdSvc, qrySvc, jwtSecret)
 
@@ -64,14 +66,8 @@ func main() {
 		),
 	)
 
-	// Attach the service to the server
 	gallerypb.RegisterGalleryServiceServer(s, srv)
-	// Serve gRPC server
+
 	log.Println("Serving gRPC on 0.0.0.0:" + grpcPort)
-	go func() {
-		log.Fatalln(s.Serve(lis))
-	}()
-	if err != nil {
-		log.Fatalln("Failed to connect to database:", err)
-	}
+	log.Fatalln(s.Serve(lis)) // blocks here — keeps the process alive
 }
