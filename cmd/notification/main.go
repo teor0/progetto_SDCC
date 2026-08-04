@@ -145,7 +145,6 @@ func main() {
 	defer cancelConsume()
 	go consumer.Consume(consumeCtx, deliveries)
 
-	// --- gRPC server ---------------------------------------------------------
 	srv := notification.NewServer(registry, galleryClient)
 
 	lis, err := net.Listen("tcp", ":"+grpcPort)

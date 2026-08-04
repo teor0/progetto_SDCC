@@ -1,10 +1,8 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"photogallery/internal/gallery"
 	"photogallery/internal/gallery/api"
@@ -15,10 +13,8 @@ import (
 	"photogallery/internal/gallery/query"
 
 	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -31,7 +27,6 @@ func main() {
 	}
 
 	grpcPort := os.Getenv("GALLERY_GRPC_PORT")
-	gwPort := os.Getenv("GALLERY_GATEWAY_PORT")
 
 	// config del server per gallery service
 	lis, err := net.Listen("tcp", ":"+grpcPort)
@@ -79,27 +74,4 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to connect to database:", err)
 	}
-
-	conn, err := grpc.NewClient(
-		"0.0.0.0:"+grpcPort,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		log.Fatalln("Failed to dial server:", err)
-	}
-
-	gatewaymux := runtime.NewServeMux()
-	// Register GalleryService
-	err = gallerypb.RegisterGalleryServiceHandler(context.Background(), gatewaymux, conn)
-	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
-	}
-
-	gwServer := &http.Server{
-		Addr:    ":" + gwPort,
-		Handler: gatewaymux,
-	}
-
-	log.Println("Serving gRPC-Gateway on 0.0.0.0:" + gwPort)
-	log.Fatalln(gwServer.ListenAndServe())
 }

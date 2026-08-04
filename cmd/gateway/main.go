@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	gallerypb "photogallery/gen/gallery"
+	userpb "photogallery/gen/user"
 	"photogallery/internal/clients"
 	"photogallery/internal/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,6 +35,15 @@ func main() {
 	notificationAddr := os.Getenv("NOTIFICATION_SERVICE_ADDRESS")
 	if notificationAddr == "" {
 		log.Fatal("NOTIFICATION_SERVICE_ADDRESS environment variable is required")
+	}
+
+	userAddr := os.Getenv("USER_SERVICE_ADDRESS")
+	if userAddr == "" {
+		log.Fatal("USER_SERVICE_ADDRESS environment variable is required")
+	}
+	galleryAddr := os.Getenv("GALLERY_SERVICE_ADDRESS")
+	if galleryAddr == "" {
+		log.Fatal("GALLERY_SERVICE_ADDRESS environment variable is required")
 	}
 
 	uploadConn, err := grpc.NewClient(
@@ -60,6 +74,32 @@ func main() {
 	router.POST("/api/uploads", uploadHandler.UploadPhoto)
 	router.GET("/api/notifications/stream", notificationHandler.Stream)
 
+	userConn, err := grpc.NewClient(userAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to UserService: %v", err)
+	}
+	defer userConn.Close()
+
+	galleryConn, err := grpc.NewClient(galleryAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to GalleryService: %v", err)
+	}
+	defer galleryConn.Close()
+
+	ctx := context.Background()
+	grpcGatewayMux := runtime.NewServeMux()
+
+	if err := userpb.RegisterUserServiceHandler(ctx, grpcGatewayMux, userConn); err != nil {
+		log.Fatalf("failed to register UserService gateway: %v", err)
+	}
+	if err := gallerypb.RegisterGalleryServiceHandler(ctx, grpcGatewayMux, galleryConn); err != nil {
+		log.Fatalf("failed to register GalleryService gateway: %v", err)
+	}
+
+	root := http.NewServeMux()
+	root.Handle("/photogallery/", grpcGatewayMux) // User + Gallery REST routes
+	root.Handle("/api/", router)                  // Upload + Notification (Gin)
+
 	log.Printf("API Gateway listening on :%s", httpPort)
-	log.Fatal(router.Run(":" + httpPort))
+	log.Fatal(http.ListenAndServe(":"+httpPort, root))
 }
