@@ -9,6 +9,8 @@ RUN go mod download
 # Copy only what the gateway actually needs to build.
 COPY gen/upload         ./gen/upload
 COPY gen/notification   ./gen/notification
+COPY gen/gallery        ./gen/gallery
+COPY gen/user           ./gen/user
 COPY internal/clients   ./internal/clients
 COPY internal/handlers  ./internal/handlers
 COPY cmd/gateway        ./cmd/gateway
