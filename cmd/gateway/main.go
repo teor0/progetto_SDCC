@@ -17,6 +17,24 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+func corsMiddleware(origin string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set(
+			"Access-Control-Allow-Headers",
+			"Content-Type, Authorization",
+		)
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("no .env file found, relying on environment variables")
@@ -101,5 +119,8 @@ func main() {
 	root.Handle("/api/", router)                  // Upload + Notification (Gin)
 
 	log.Printf("API Gateway listening on :%s", httpPort)
-	log.Fatal(http.ListenAndServe(":"+httpPort, root))
+	frontendOrigin := os.Getenv("FRONTEND_ORIGIN")
+	handler := corsMiddleware(frontendOrigin, root)
+
+	log.Fatal(http.ListenAndServe(":"+httpPort, handler))
 }
