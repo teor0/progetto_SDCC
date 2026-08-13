@@ -1,19 +1,24 @@
 import { dispatcher } from "../stores/Dispatcher";
 import { galleryApi } from "../services/galleryApi";
 
-export async function loadGalleries(myGalleries = false): Promise<void> {
-    dispatcher.dispatch({
-        type: "GALLERIES_LOAD_START",
-    });
+export async function loadGalleries(): Promise<void> {
+    dispatcher.dispatch({ type: "GALLERIES_LOAD_START" });
 
     try {
-        const response = await galleryApi.listGalleries(
-            myGalleries
-        );
+        const [mine, all] = await Promise.all([
+            galleryApi.listGalleries(true),
+            galleryApi.listGalleries(false),
+        ]);
+
+        const myIds = new Set(mine.galleries.map((g) => g.id));
+        const available = all.galleries.filter((g) => !myIds.has(g.id));
 
         dispatcher.dispatch({
             type: "GALLERIES_LOAD_SUCCESS",
-            payload: response.galleries,
+            payload: {
+                myGalleries: mine.galleries,
+                availableGalleries: available,
+            },
         });
     } catch (error) {
         dispatcher.dispatch({
@@ -27,20 +32,14 @@ export async function loadGalleries(myGalleries = false): Promise<void> {
 }
 
 export async function createGallery(name: string, description: string): Promise<void> {
-    dispatcher.dispatch({
-        type: "GALLERY_CREATE_START",
-    });
+    dispatcher.dispatch({ type: "GALLERY_CREATE_START" });
 
     try {
-        const gallery = await galleryApi.createGallery({
-            name,
-            description,
-        });
-
-        dispatcher.dispatch({
-            type: "GALLERY_CREATED",
-            payload: gallery,
-        });
+        await galleryApi.createGallery({ name, description });
+        // Re-sync from the server instead of splicing the new gallery into
+        // local state by hand -- the list always reflects what the backend
+        // actually has, not what this client assumes just happened.
+        await loadGalleries();
     } catch (error) {
         dispatcher.dispatch({
             type: "GALLERY_CREATE_FAILURE",
@@ -55,11 +54,7 @@ export async function createGallery(name: string, description: string): Promise<
 export async function joinGallery(galleryId: string): Promise<void> {
     try {
         await galleryApi.joinGallery(galleryId);
-
-        dispatcher.dispatch({
-            type: "GALLERY_JOINED",
-            payload: galleryId,
-        });
+        await loadGalleries();
     } catch (error) {
         dispatcher.dispatch({
             type: "GALLERY_JOIN_FAILURE",
@@ -74,11 +69,7 @@ export async function joinGallery(galleryId: string): Promise<void> {
 export async function leaveGallery(galleryId: string): Promise<void> {
     try {
         await galleryApi.leaveGallery(galleryId);
-
-        dispatcher.dispatch({
-            type: "GALLERY_LEFT",
-            payload: galleryId,
-        });
+        await loadGalleries();
     } catch (error) {
         dispatcher.dispatch({
             type: "GALLERY_LEAVE_FAILURE",

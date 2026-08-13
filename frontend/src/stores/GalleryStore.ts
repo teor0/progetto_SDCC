@@ -2,14 +2,16 @@ import { dispatcher, type Action } from "./Dispatcher";
 import type { Gallery } from "../types/gallery";
 
 type GalleryState = {
-    galleries: Gallery[];
+    myGalleries: Gallery[];
+    availableGalleries: Gallery[];
     loading: boolean;
     error: string | null;
 };
 
 class GalleryStore {
     private state: GalleryState = {
-        galleries: [],
+        myGalleries: [],
+        availableGalleries: [],
         loading: false,
         error: null,
     };
@@ -26,11 +28,8 @@ class GalleryStore {
 
     subscribe(listener: () => void): () => void {
         this.listeners.push(listener);
-
         return () => {
-            this.listeners = this.listeners.filter(
-                (registered) => registered !== listener
-            );
+            this.listeners = this.listeners.filter((l) => l !== listener);
         };
     }
 
@@ -43,102 +42,35 @@ class GalleryStore {
     private handleAction(action: Action): void {
         switch (action.type) {
             case "GALLERIES_LOAD_START":
-                this.state = {
-                    ...this.state,
-                    loading: true,
-                    error: null,
-                };
-
+            case "GALLERY_CREATE_START":
+                this.state = { ...this.state, loading: true, error: null };
                 this.emitChange();
                 break;
 
-            case "GALLERIES_LOAD_SUCCESS":
+            case "GALLERIES_LOAD_SUCCESS": {
+                const { myGalleries, availableGalleries } = action.payload as {
+                    myGalleries: Gallery[];
+                    availableGalleries: Gallery[];
+                };
                 this.state = {
-                    galleries: action.payload as Gallery[],
+                    myGalleries,
+                    availableGalleries,
                     loading: false,
                     error: null,
                 };
-
                 this.emitChange();
                 break;
+            }
 
             case "GALLERIES_LOAD_FAILURE":
-                this.state = {
-                    ...this.state,
-                    loading: false,
-                    error: action.payload as string,
-                };
-
-                this.emitChange();
-                break;
-
-            case "GALLERY_CREATED":
-                this.state = {
-                    ...this.state,
-                    galleries: [
-                        ...this.state.galleries,
-                        action.payload as Gallery,
-                    ],
-                };
-
-                this.emitChange();
-                break;
-
-            case "GALLERY_REMOVED":
-                this.state = {
-                    ...this.state,
-                    galleries: this.state.galleries.filter(
-                        (gallery) => gallery.id !== action.payload
-                    ),
-                };
-
-                this.emitChange();
-                break;
-            case "GALLERY_CREATE_START":
-                this.state = {
-                    ...this.state,
-                    loading: true,
-                    error: null,
-                };
-
-                this.emitChange();
-                break;
-
-            case "GALLERY_CREATED":
-                this.state = {
-                    ...this.state,
-                    galleries: [
-                        ...this.state.galleries,
-                        action.payload as Gallery,
-                    ],
-                    loading: false,
-                };
-
-                this.emitChange();
-                break;
-
             case "GALLERY_CREATE_FAILURE":
+            case "GALLERY_JOIN_FAILURE":
+            case "GALLERY_LEAVE_FAILURE":
                 this.state = {
                     ...this.state,
                     loading: false,
                     error: action.payload as string,
                 };
-
-                this.emitChange();
-                break;
-
-            case "GALLERY_JOINED":
-                this.emitChange();
-                break;
-
-            case "GALLERY_LEFT":
-                this.state = {
-                    ...this.state,
-                    galleries: this.state.galleries.filter(
-                        (gallery) => gallery.id !== action.payload
-                    ),
-                };
-
                 this.emitChange();
                 break;
         }

@@ -28,8 +28,17 @@ func (s *Service) GetGallery(ctx context.Context, galleryID uuid.UUID) (*models.
 
 // ListGalleries returns a page of galleries. If myGalleries is true and a
 // callerID is provided, results are filtered to galleries the caller
-// belongs to; otherwise all (open) galleries are returned.
+// belongs to (delegated to ListGalleriesByMember, which does this via a
+// SQL join rather than loading everything and filtering in Go); otherwise
+// all (open) galleries are returned.
 func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID uuid.UUID, pageSize int, pageToken string) ([]models.Gallery, string, error) {
+	if myGalleries {
+		if callerID == uuid.Nil {
+			return nil, "", status.Error(codes.Unauthenticated, "missing caller identity")
+		}
+		return s.ListGalleriesByMember(ctx, callerID, pageSize, pageToken)
+	}
+
 	var after uuid.UUID
 	if pageToken != "" {
 		parsed, err := uuid.Parse(pageToken)
@@ -42,22 +51,6 @@ func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID 
 	galleries, err := s.repo.ListGalleries(ctx, pageSize, after)
 	if err != nil {
 		return nil, "", status.Errorf(codes.Internal, "list galleries: %v", err)
-	}
-
-	if myGalleries {
-		if callerID == uuid.Nil {
-			return nil, "", status.Error(codes.Unauthenticated, "missing caller identity")
-		}
-		filtered := make([]models.Gallery, 0, len(galleries))
-		for _, g := range galleries {
-			for _, m := range g.Members {
-				if m.UserID == callerID {
-					filtered = append(filtered, g)
-					break
-				}
-			}
-		}
-		galleries = filtered
 	}
 
 	var nextPageToken string
