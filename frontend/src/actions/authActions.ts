@@ -1,10 +1,8 @@
 import { dispatcher } from "../stores/Dispatcher";
 import { userApi } from "../services/userApi";
+import type { Role } from "../types/auth";
 
-export async function login(
-    email: string,
-    password: string
-): Promise<void> {
+export async function login(email: string, password: string): Promise<void> {
     dispatcher.dispatch({
         type: "AUTH_LOGIN_START",
     });
@@ -19,14 +17,6 @@ export async function login(
             type: "AUTH_LOGIN_SUCCESS",
             payload: response,
         });
-
-        // Ask the backend who we are.
-        const user = await userApi.getCurrentUser();
-
-        dispatcher.dispatch({
-            type: "AUTH_USER_LOADED",
-            payload: user.userId,
-        });
     } catch (error) {
         dispatcher.dispatch({
             type: "AUTH_LOGIN_FAILURE",
@@ -34,6 +24,33 @@ export async function login(
                 error instanceof Error
                     ? error.message
                     : "Login failed",
+        });
+    }
+}
+
+export async function register(email: string, password: string, role: Role): Promise<void> {
+    dispatcher.dispatch({
+        type: "AUTH_REGISTER_START",
+    });
+
+    try {
+        const response = await userApi.register({
+            email,
+            password,
+            role,
+        });
+
+        dispatcher.dispatch({
+            type: "AUTH_LOGIN_SUCCESS",
+            payload: response,
+        });
+    } catch (error) {
+        dispatcher.dispatch({
+            type: "AUTH_REGISTER_FAILURE",
+            payload:
+                error instanceof Error
+                    ? error.message
+                    : "Registration failed",
         });
     }
 }

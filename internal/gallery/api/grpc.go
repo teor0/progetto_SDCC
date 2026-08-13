@@ -41,7 +41,14 @@ var publicMethods = map[string]bool{
 // and delegates to the shared AuthFunc for everything else.
 func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if publicMethods[fullMethodName] {
-		return ctx, nil // no auth required
+		// Best-effort: attach claims if a valid token was sent, but don't
+		// require one. GetGallery never needs claims; ListGalleries only
+		// needs them when the caller passes my_galleries=true, which is
+		// enforced in the handler itself, not here.
+		if authedCtx, err := auth.AuthFunc(s.jwtSecret)(ctx); err == nil {
+			return authedCtx, nil
+		}
+		return ctx, nil
 	}
 	return auth.AuthFunc(s.jwtSecret)(ctx)
 }

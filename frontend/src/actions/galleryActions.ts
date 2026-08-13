@@ -1,9 +1,7 @@
 import { dispatcher } from "../stores/Dispatcher";
 import { galleryApi } from "../services/galleryApi";
 
-export async function loadGalleries(
-    myGalleries = false
-): Promise<void> {
+export async function loadGalleries(myGalleries = false): Promise<void> {
     dispatcher.dispatch({
         type: "GALLERIES_LOAD_START",
     });
@@ -28,10 +26,7 @@ export async function loadGalleries(
     }
 }
 
-export async function createGallery(
-    name: string,
-    description: string
-): Promise<void> {
+export async function createGallery(name: string, description: string): Promise<void> {
     dispatcher.dispatch({
         type: "GALLERY_CREATE_START",
     });
@@ -57,9 +52,7 @@ export async function createGallery(
     }
 }
 
-export async function joinGallery(
-    galleryId: string
-): Promise<void> {
+export async function joinGallery(galleryId: string): Promise<void> {
     try {
         await galleryApi.joinGallery(galleryId);
 
@@ -78,9 +71,7 @@ export async function joinGallery(
     }
 }
 
-export async function leaveGallery(
-    galleryId: string
-): Promise<void> {
+export async function leaveGallery(galleryId: string): Promise<void> {
     try {
         await galleryApi.leaveGallery(galleryId);
 

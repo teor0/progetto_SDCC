@@ -1,18 +1,17 @@
+import { jwtDecode, type JwtPayload } from "jwt-decode";
 import { dispatcher, type Action } from "./Dispatcher";
-import type { AuthState } from "../types/auth";
+import type { AuthState, Role } from "../types/auth";
 
 const TOKEN_KEY = "access_token";
 const EXPIRY_KEY = "access_token_expires_at";
 
-class AuthStore {
+type TokenClaims = JwtPayload & {
+    user_id: string;
+    role: Role;
+};
 
-    private state: AuthState = {
-        token: localStorage.getItem(TOKEN_KEY),
-        expiresAt: this.loadExpiry(),
-        userId: null,
-        loading: false,
-        error: null,
-    };
+class AuthStore {
+    private state: AuthState = this.loadInitialState();
 
     private listeners: (() => void)[] = [];
 
@@ -42,16 +41,61 @@ class AuthStore {
         };
     }
 
-    private loadExpiry(): number | null {
-        const value = localStorage.getItem(EXPIRY_KEY);
+    private loadInitialState(): AuthState {
+        const token = localStorage.getItem(TOKEN_KEY);
 
-        if (!value) {
-            return null;
+        if (!token) {
+            return this.emptyState();
         }
 
-        const expiry = Number(value);
+        try {
+            const claims = jwtDecode<TokenClaims>(token);
 
-        return Number.isFinite(expiry) ? expiry : null;
+            if (!claims.exp || !claims.user_id || !claims.role) {
+                this.clearStoredAuth();
+                return this.emptyState();
+            }
+
+            const expiresAt = claims.exp * 1000;
+
+            if (Date.now() >= expiresAt) {
+                this.clearStoredAuth();
+                return this.emptyState();
+            }
+
+            localStorage.setItem(
+                EXPIRY_KEY,
+                String(expiresAt)
+            );
+
+            return {
+                token,
+                expiresAt,
+                userId: claims.user_id,
+                role: claims.role,
+                loading: false,
+                error: null,
+            };
+        } catch {
+            this.clearStoredAuth();
+            return this.emptyState();
+        }
+    }
+
+    private emptyState(): AuthState {
+        return {
+            token: null,
+            expiresAt: null,
+            userId: null,
+            role: null,
+            loading: false,
+            error: null,
+        };
+    }
+
+    private clearStoredAuth(): void {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(EXPIRY_KEY);
     }
 
     private emitChange(): void {
@@ -62,6 +106,7 @@ class AuthStore {
 
     private handleAction(action: Action): void {
         switch (action.type) {
+            case "AUTH_REGISTER_START":
             case "AUTH_LOGIN_START":
                 this.state = {
                     ...this.state,
@@ -71,6 +116,8 @@ class AuthStore {
 
                 this.emitChange();
                 break;
+
+            case "AUTH_REGISTER_FAILURE":
             case "AUTH_LOGIN_FAILURE":
                 this.state = {
                     ...this.state,
@@ -81,57 +128,72 @@ class AuthStore {
                 this.emitChange();
                 break;
 
-
             case "AUTH_LOGIN_SUCCESS": {
                 const payload = action.payload as {
                     token: string;
                     expiresIn: number;
                 };
 
-                const expiresAt =
-                    Date.now() + payload.expiresIn * 1000;
+                try {
+                    const claims =
+                        jwtDecode<TokenClaims>(
+                            payload.token
+                        );
 
-                localStorage.setItem(
-                    TOKEN_KEY,
-                    payload.token
-                );
+                    if (
+                        !claims.exp ||
+                        !claims.user_id ||
+                        !claims.role
+                    ) {
+                        throw new Error(
+                            "Invalid authentication token"
+                        );
+                    }
 
-                localStorage.setItem(
-                    EXPIRY_KEY,
-                    String(expiresAt)
-                );
+                    const expiresAt =
+                        claims.exp * 1000;
 
-                this.state = {
-                    token: payload.token,
-                    expiresAt,
-                    userId: null,
-                    loading: false,
-                    error: null,
-                };
+                    localStorage.setItem(
+                        TOKEN_KEY,
+                        payload.token
+                    );
 
-                this.emitChange();
+                    localStorage.setItem(
+                        EXPIRY_KEY,
+                        String(expiresAt)
+                    );
+
+                    this.state = {
+                        token: payload.token,
+                        expiresAt,
+                        userId: claims.user_id,
+                        role: claims.role,
+                        loading: false,
+                        error: null,
+                    };
+
+                    this.emitChange();
+                } catch (error) {
+                    this.clearStoredAuth();
+
+                    this.state = {
+                        ...this.emptyState(),
+                        error:
+                            error instanceof Error
+                                ? error.message
+                                : "Invalid authentication token",
+                    };
+
+                    this.emitChange();
+                }
+
                 break;
             }
 
-            case "AUTH_USER_LOADED":
-                this.state = {
-                    ...this.state,
-                    userId: action.payload as string,
-                };
-
-                this.emitChange();
-                break;
-
             case "AUTH_LOGOUT":
-                localStorage.removeItem(TOKEN_KEY);
-                localStorage.removeItem(EXPIRY_KEY);
-                this.state = {
-                    token: null,
-                    expiresAt: null,
-                    userId: null,
-                    loading: false,
-                    error: null,
-                };
+                this.clearStoredAuth();
+
+                this.state = this.emptyState();
 
                 this.emitChange();
                 break;

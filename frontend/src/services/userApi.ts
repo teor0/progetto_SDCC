@@ -1,23 +1,18 @@
 import { api } from "./api";
-import type { TokenResponse } from "../types/auth";
+import type {
+    RegisterRequest,
+    TokenResponse,
+} from "../types/auth";
 
 export type LoginRequest = {
     email: string;
     password: string;
 };
 
-export type RegisterRequest = {
-    email: string;
-    password: string;
-    role: number;
-};
-
-export type InfoResponse = {
-    userId: string;
-};
-
 export const userApi = {
-    async login(request: LoginRequest): Promise<TokenResponse> {
+    async login(
+        request: LoginRequest
+    ): Promise<TokenResponse> {
         return api.post<TokenResponse>(
             "/photogallery/auth/login",
             request
@@ -33,8 +28,10 @@ export const userApi = {
         );
     },
 
-    async getCurrentUser(): Promise<InfoResponse> {
-        return api.get<InfoResponse>(
+    async getCurrentUser(): Promise<{
+        userId: string;
+    }> {
+        return api.get(
             "/photogallery/auth/me"
         );
     },

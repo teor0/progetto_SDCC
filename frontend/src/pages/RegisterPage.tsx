@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { login } from "../actions/authActions";
+import { Link, useNavigate } from "react-router-dom";
+import { register } from "../actions/authActions";
 import { authStore } from "../stores/AuthStore";
+import type { Role } from "../types/auth";
 
-export default function LoginPage() {
+export default function RegisterPage() {
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const navigate = useNavigate();
+
+    const [role, setRole] =
+        useState<Role>("ROLE_USER");
+
     const [auth, setAuth] = useState(
         authStore.getState()
     );
@@ -22,7 +28,11 @@ export default function LoginPage() {
     ) {
         event.preventDefault();
 
-        await login(email, password);
+        await register(
+            email,
+            password,
+            role
+        );
 
         if (authStore.isAuthenticated()) {
             navigate("/galleries");
@@ -33,7 +43,7 @@ export default function LoginPage() {
         <main>
             <h1>PhotoGallery</h1>
 
-            <h2>Login</h2>
+            <h2>Create account</h2>
 
             <form onSubmit={handleSubmit}>
                 <div>
@@ -68,25 +78,58 @@ export default function LoginPage() {
                     />
                 </div>
 
+                <fieldset>
+                    <legend>Account type</legend>
+
+                    <label>
+                        <input
+                            type="radio"
+                            name="role"
+                            value="ROLE_USER"
+                            checked={role === "ROLE_USER"}
+                            onChange={() =>
+                                setRole("ROLE_USER")
+                            }
+                        />
+
+                        User
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            name="role"
+                            value="ROLE_MODERATOR"
+                            checked={role === "ROLE_MODERATOR"}
+                            onChange={() =>
+                                setRole("ROLE_MODERATOR")
+                            }
+                        />
+
+                        Moderator
+                    </label>
+                </fieldset>
+
                 {auth.error && (
-                    <p>
-                        {auth.error}
-                    </p>
+                    <p>{auth.error}</p>
                 )}
 
                 <button
                     type="submit"
                     disabled={auth.loading}
                 >
-                    {auth.loading ? "Logging in..." : "Login"}
+                    {auth.loading
+                        ? "Creating account..."
+                        : "Register"}
                 </button>
-                <p>
-                    Don't have an account?{" "}
-                    <Link to="/register">
-                        Register
-                    </Link>
-                </p>
             </form>
+
+            <p>
+                Already have an account?{" "}
+                <Link to="/login">
+                    Login
+                </Link>
+            </p>
         </main>
     );
 }
