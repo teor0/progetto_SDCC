@@ -178,7 +178,7 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 			PhotoId:    p.PhotoID,
 			UploaderId: p.UploaderID.String(),
 			PhotoUrl:   p.PhotoURL,
-			Message:    "A new photo was uploaded to this gallery.",
+			Message:    "A new photo was uploaded to this gallery," + p.GalleryID.String(),
 			OccurredAt: timestamppb.New(env.Timestamp),
 		}, nil
 

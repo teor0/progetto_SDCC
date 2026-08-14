@@ -1,53 +1,36 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, Outlet } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import GalleriesPage from "./pages/GalleriesPage";
 import GalleryDetailsPage from "./pages/GalleryDetailsPage";
+import NotificationFeed from "./components/NotificationFeed";
 import { authStore } from "./stores/AuthStore";
 
-function ProtectedRoute({
-                            children,
-                        }: {
-    children: React.ReactNode;
-}) {
+function ProtectedLayout() {
     if (!authStore.isAuthenticated()) {
         return <Navigate to="/login" replace />;
     }
-
-    return children;
+    return (
+        <>
+            <NotificationFeed />
+            <Outlet />
+        </>
+    );
 }
 
 function App() {
     return (
         <Routes>
-            <Route path="/register" element={<RegisterPage />}/>
-            <Route path="/login" element={<LoginPage />}/>
-            <Route
-                path="/galleries"
-                element={
-                    <ProtectedRoute>
-                        <GalleriesPage />
-                    </ProtectedRoute>
-                }
-            />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/login" element={<LoginPage />} />
 
-            <Route
-                path="/"
-                element={<Navigate to="/galleries" replace />}
-            />
+            <Route element={<ProtectedLayout />}>
+                <Route path="/galleries" element={<GalleriesPage />} />
+                <Route path="/galleries/:galleryId" element={<GalleryDetailsPage />} />
+            </Route>
 
-            <Route
-                path="*"
-                element={<Navigate to="/galleries" replace />}
-            />
-            <Route
-                path="/galleries/:galleryId"
-                element={
-                    <ProtectedRoute>
-                        <GalleryDetailsPage />
-                    </ProtectedRoute>
-                }
-            />
+            <Route path="/" element={<Navigate to="/galleries" replace />} />
+            <Route path="*" element={<Navigate to="/galleries" replace />} />
         </Routes>
     );
 }
