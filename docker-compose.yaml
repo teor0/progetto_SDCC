@@ -155,6 +155,8 @@ services:
       USER_SERVICE_ADDRESS: user-service:8081
       FRONTEND_ORIGIN: http://localhost:5173
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
+      MINIO_PUBLIC_URL: http://localhost:9000
+      MINIO_BUCKET: photos
       UPLOAD_SERVICE_ADDRESS: upload-service:8083
       NOTIFICATION_SERVICE_ADDRESS: notification-service:8084
     depends_on:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -16,12 +17,26 @@ import (
 const chunkSize = 64 * 1024 // 64KB
 
 type UploadHandler struct {
-	client *clients.UploadClient
+	client         *clients.UploadClient
+	minioPublicURL string
+	minioBucket    string
 }
 
-func NewUploadHandler(client *clients.UploadClient) *UploadHandler {
+type uploadSummaryDTO struct {
+	PhotoID    string `json:"photoId"`
+	GalleryID  string `json:"galleryId"`
+	UploaderID string `json:"uploaderUserId"`
+	SizeBytes  int64  `json:"sizeBytes"`
+	Status     string `json:"status"`
+	UploadedAt string `json:"uploadedAt"`
+	URL        string `json:"url"`
+}
+
+func NewUploadHandler(client *clients.UploadClient, minioPublicURL, minioBucket string) *UploadHandler {
 	return &UploadHandler{
-		client: client,
+		client:         client,
+		minioPublicURL: minioPublicURL,
+		minioBucket:    minioBucket,
 	}
 }
 
@@ -123,5 +138,50 @@ func (h *UploadHandler) UploadPhoto(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"photoId": response.PhotoId,
+	})
+}
+
+// ListUploads returns a gallery's photos with browser-usable URLs,
+// reconstructed from each object's storage_key rather than trusting any
+// stored URL -- none is persisted (model.Record has no URL field), and
+// UploadPhotoResponse's own url is built from MinIO's internal Docker
+// hostname, which a browser can never resolve.
+func (h *UploadHandler) ListUploads(c *gin.Context) {
+	galleryID := c.Param("galleryId")
+	if galleryID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "galleryId is required"})
+		return
+	}
+
+	ctx := metadata.NewOutgoingContext(
+		c.Request.Context(),
+		metadata.Pairs("authorization", c.GetHeader("Authorization")),
+	)
+
+	resp, err := h.client.Upload.ListUploads(ctx, &uploadpb.ListUploadsRequest{
+		GalleryId: galleryID,
+		PageSize:  100,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		return
+	}
+
+	uploads := make([]uploadSummaryDTO, 0, len(resp.Uploads))
+	for _, u := range resp.Uploads {
+		uploads = append(uploads, uploadSummaryDTO{
+			PhotoID:    u.GetPhotoId(),
+			GalleryID:  u.GetGalleryId(),
+			UploaderID: u.GetUploaderUserId(),
+			SizeBytes:  u.GetSizeBytes(),
+			Status:     u.GetStatus().String(),
+			UploadedAt: u.GetUploadedAt().AsTime().Format(time.RFC3339),
+			URL:        fmt.Sprintf("%s/%s/%s", h.minioPublicURL, h.minioBucket, u.GetStorageKey()),
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"uploads":       uploads,
+		"nextPageToken": resp.NextPageToken,
 	})
 }

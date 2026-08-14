@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { loadGallery } from "../actions/galleryDetailsActions";
 import { galleryDetailsStore } from "../stores/GalleryDetailsStore";
+import UploadForm from "../components/UploadForm";
+import PhotoGrid from "../components/PhotoGrid";
 
 export default function GalleryDetailsPage() {
     const { galleryId } = useParams<{ galleryId: string; }>();
@@ -72,6 +74,11 @@ export default function GalleryDetailsPage() {
                 Created:{" "}
                 {new Date(gallery.createdAt).toLocaleString()}
             </p>
+            {gallery.status === "GALLERY_STATUS_OPEN" ? (
+                <><UploadForm galleryId={galleryId}/><PhotoGrid galleryId={galleryId}/></>
+            ) : (
+                <p>This gallery is closed. Uploads are disabled.</p>
+            )}
         </main>
     );
 }

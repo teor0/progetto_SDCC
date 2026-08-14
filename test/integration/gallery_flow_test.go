@@ -1,11 +1,3 @@
-//go:build integration
-
-// Package integration holds tests that run against a live, fully deployed
-// stack (docker compose up, or your EC2 instance) rather than against
-// mocked repositories/clients. They're gated behind the "integration"
-// build tag so `go test ./...` doesn't try to run them without a running
-// backend to talk to.
-//
 // Run with:
 //
 //	go test -tags=integration ./test/integration/... -v
@@ -13,6 +5,8 @@
 // Point at a non-local stack (AWS) with:
 //
 //	GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration ./test/integration/... -v
+//
+// This test doesn't uses mock so YOU NEED TO CLEANUP THE TEST RESULTS AFTER
 package integration
 
 import (
@@ -41,11 +35,6 @@ func baseURL() string {
 // names) rather than importing the internal proto packages directly --
 // keeping this test a true black-box client of the HTTP surface, the same
 // contract the frontend and any other real client depends on.
-// ExpiresIn is a string, not a number: protojson's canonical JSON mapping
-// marshals int64/uint64 fields as JSON strings (not numbers) to avoid
-// precision loss, since JSON numbers are IEEE 754 doubles and can't safely
-// represent the full int64 range. This isn't a quirk of your gateway --
-// it's the protobuf-to-JSON spec grpc-gateway follows.
 type tokenResponse struct {
 	Token     string `json:"token"`
 	ExpiresIn string `json:"expiresIn"`
@@ -130,19 +119,10 @@ func containsGalleryID(galleries []galleryResponse, id string) bool {
 // TestGalleryJoinFlow exercises the full path this app is built around: a
 // moderator creates a gallery, a separate user joins it, and membership is
 // then correctly reflected back through ListGalleries(my_galleries=true).
-//
-// This is the exact flow that was silently broken until ListGalleries was
-// fixed to delegate to ListGalleriesByMember instead of filtering on a
-// Members association that ListGalleries's own query never loaded. A
-// mocked unit test of QueryService can't catch that class of bug -- the
-// mock repository returns whatever the test tells it to, regardless of
-// whether the real GORM query behind it actually populates the field being
-// filtered on.
 func TestGalleryJoinFlow(t *testing.T) {
 	_, moderatorToken := registerUser(t, "ROLE_MODERATOR")
 	_, memberToken := registerUser(t, "ROLE_USER")
 
-	// --- moderator creates a gallery ---
 	var gallery galleryResponse
 	resp := doJSON(t, http.MethodPost, "/photogallery/galleries", moderatorToken, map[string]string{
 		"name":        "Integration Test Gallery",
@@ -152,22 +132,16 @@ func TestGalleryJoinFlow(t *testing.T) {
 	require.NotEmpty(t, gallery.ID)
 	require.Equal(t, "GALLERY_STATUS_OPEN", gallery.Status)
 
-	// --- member joins it ---
 	resp = doJSON(t, http.MethodPost, "/photogallery/galleries/"+gallery.ID+"/members", memberToken, nil, nil)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// --- member's "my galleries" should now include it ---
 	var memberGalleries listGalleriesResponse
 	resp = doJSON(t, http.MethodGet, "/photogallery/galleries?my_galleries=true", memberToken, nil, &memberGalleries)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.True(t, containsGalleryID(memberGalleries.Galleries, gallery.ID),
 		"expected joined gallery %s in member's my_galleries list, got %+v", gallery.ID, memberGalleries.Galleries)
 
-	// --- moderator never explicitly joined their own gallery. This is
-	// known current backend behavior (CreateGallery does not insert a
-	// Member row for the creator) -- asserting it here documents that
-	// behavior rather than silently relying on it elsewhere. If you later
-	// add auto-join-on-create, flip this assertion to True.
+	// moderator never explicitly joined their own gallery
 	var moderatorGalleries listGalleriesResponse
 	resp = doJSON(t, http.MethodGet, "/photogallery/galleries?my_galleries=true", moderatorToken, nil, &moderatorGalleries)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -175,19 +149,11 @@ func TestGalleryJoinFlow(t *testing.T) {
 		"moderator was auto-joined on create -- if intentional, update this test to match the new behavior")
 }
 
-// TestListGalleries_RequiresAuthForMyGalleries locks in the AuthFuncOverride
-// fix: my_galleries=true without a token must fail as an auth error (401),
-// not as an internal error caused by the handler trying to read claims
-// that a "public method" auth override never attached to the context.
 func TestListGalleries_RequiresAuthForMyGalleries(t *testing.T) {
 	resp := doJSON(t, http.MethodGet, "/photogallery/galleries?my_galleries=true", "", nil, nil)
 	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 }
 
-// TestListGalleries_PublicWithoutAuth confirms the other half of that same
-// fix: ListGalleries must still work anonymously (my_galleries omitted),
-// since GetGallery/ListGalleries are meant to support unauthenticated
-// browsing, not just authenticated "my galleries" queries.
 func TestListGalleries_PublicWithoutAuth(t *testing.T) {
 	var out listGalleriesResponse
 	resp := doJSON(t, http.MethodGet, "/photogallery/galleries", "", nil, &out)

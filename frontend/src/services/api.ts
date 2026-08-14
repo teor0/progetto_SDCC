@@ -19,7 +19,13 @@ class ApiClient {
 
         const headers = new Headers(options.headers);
 
-        headers.set("Content-Type", "application/json");
+        // FormData bodies need the browser to set Content-Type itself, with
+        // the multipart boundary it generates -- setting it manually here
+        // would strip that boundary and break parsing server-side.
+        const isFormData = options.body instanceof FormData;
+        if (!isFormData) {
+            headers.set("Content-Type", "application/json");
+        }
 
         if (token) {
             headers.set("Authorization", `Bearer ${token}`);
@@ -30,10 +36,6 @@ class ApiClient {
             headers,
         });
 
-        // A 401 on a request that carried a token means the token was
-        // rejected (expired/invalid) -- distinct from a 401 on an
-        // unauthenticated call like login/register, which just means
-        // "wrong credentials" and should surface as a normal error instead.
         if (response.status === 401 && token) {
             this.handleSessionExpired();
             throw new Error("Session expired. Please log in again.");
@@ -41,33 +43,28 @@ class ApiClient {
 
         if (!response.ok) {
             let message = `Request failed with status ${response.status}`;
-
             try {
                 const body = await response.json();
-
-                if (body.message) {
-                    message = body.message;
-                } else if (body.error) {
-                    message = body.error;
-                }
+                if (body.message) message = body.message;
+                else if (body.error) message = body.error;
             } catch {
                 // Response wasn't JSON.
             }
-
             throw new Error(message);
         }
 
-        if (response.status === 204) {
-            return undefined as T;
-        }
+        if (response.status === 204) return undefined as T;
 
         const text = await response.text();
+        return text ? (JSON.parse(text) as T) : (undefined as T);
+    }
+    
 
-        if (!text) {
-            return undefined as T;
-        }
-
-        return JSON.parse(text) as T;
+    postForm<T>(path: string, formData: FormData): Promise<T> {
+        return this.request<T>(path, {
+            method: "POST",
+            body: formData,
+        });
     }
 
     private handleSessionExpired(): void {

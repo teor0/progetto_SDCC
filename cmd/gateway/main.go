@@ -50,6 +50,16 @@ func main() {
 		log.Fatal("UPLOAD_SERVICE_ADDRESS environment variable is required")
 	}
 
+	minioPublicURL := os.Getenv("MINIO_PUBLIC_URL")
+	if minioPublicURL == "" {
+		log.Fatal("MINIO_PUBLIC_URL environment variable is required")
+	}
+
+	minioBucket := os.Getenv("MINIO_BUCKET")
+	if minioBucket == "" {
+		log.Fatal("MINIO_BUCKET environment variable is required")
+	}
+
 	notificationAddr := os.Getenv("NOTIFICATION_SERVICE_ADDRESS")
 	if notificationAddr == "" {
 		log.Fatal("NOTIFICATION_SERVICE_ADDRESS environment variable is required")
@@ -86,10 +96,11 @@ func main() {
 
 	router := gin.Default()
 
-	uploadHandler := handlers.NewUploadHandler(uploadClient)
+	uploadHandler := handlers.NewUploadHandler(uploadClient, minioPublicURL, minioBucket)
 	notificationHandler := handlers.NewNotificationHandler(notificationClient)
 
 	router.POST("/api/uploads", uploadHandler.UploadPhoto)
+	router.GET("/api/galleries/:galleryId/uploads", uploadHandler.ListUploads)
 	router.GET("/api/notifications/stream", notificationHandler.Stream)
 
 	userConn, err := grpc.NewClient(userAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
