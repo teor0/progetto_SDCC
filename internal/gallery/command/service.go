@@ -140,7 +140,8 @@ func (s *CommandService) SendModeratorAlert(ctx context.Context, galleryID, call
 	}
 
 	return s.publisher.Publish(ctx, "ModeratorAlert", map[string]string{
-		"gallery_id": galleryID.String(),
-		"message":    message,
+		"gallery_id":   galleryID.String(),
+		"gallery_name": g.Name,
+		"message":      message,
 	})
 }

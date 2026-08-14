@@ -139,7 +139,7 @@ func main() {
 	}
 
 	registry := notification.New()
-	consumer := notification.NewConsumer(registry)
+	consumer := notification.NewConsumer(registry, galleryClient)
 
 	consumeCtx, cancelConsume := context.WithCancel(context.Background())
 	defer cancelConsume()

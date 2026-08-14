@@ -42,6 +42,8 @@ type Server struct {
 	galleryBreaker *upload.CircuitBreaker
 	repo           upload.Repository
 	jwtSecret      string
+	minioPublicURL string
+	minioBucket    string
 }
 
 // NewServer constructs a Server with all required dependencies. storage,
@@ -62,6 +64,8 @@ func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClien
 		galleryBreaker: upload.NewCircuitBreaker(galleryMaxFailures, galleryResetTimeout),
 		repo:           repo,
 		jwtSecret:      os.Getenv("JWT_SECRET"),
+		minioPublicURL: os.Getenv("MINIO_PUBLIC_URL"),
+		minioBucket:    os.Getenv("MINIO_BUCKET"),
 	}
 }
 
@@ -215,6 +219,10 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 	if err != nil {
 		log.Printf("UploadPhoto: storage error: %v", err)
 		return status.Errorf(codes.Internal, "store photo: %v", err)
+	}
+
+	if s.minioPublicURL != "" {
+		photoURL = fmt.Sprintf("%s/%s/%s", s.minioPublicURL, s.minioBucket, objectKey)
 	}
 
 	log.Printf("UploadPhoto: stored photo_id=%s url=%s", photoID, photoURL)

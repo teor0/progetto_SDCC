@@ -6,11 +6,16 @@ import { authStore } from "../stores/AuthStore";
 import type { NotificationEvent } from "../types/notification";
 
 function describe(notification: NotificationEvent): string {
+    const gallery = notification.galleryName ? ` in ${notification.galleryName}` : "";
     switch (notification.type) {
         case "NOTIFICATION_TYPE_PHOTO_UPLOADED":
-            return notification.message || "A new photo was uploaded.";
+            return notification.message
+                ? `${notification.message}${gallery}`
+                : `A new photo was uploaded${gallery}.`;
         case "NOTIFICATION_TYPE_MODERATOR_ALERT":
-            return notification.message || "Moderator alert.";
+            return notification.message
+                ? `${notification.message}${gallery}`
+                : `Moderator alert${gallery}.`;
         default:
             return notification.message || "New activity.";
     }
@@ -46,12 +51,17 @@ export default function NotificationFeed() {
             <ul>
                 {state.notifications.map((n) => (
                     <li key={n.id}>
+                        {n.photoUrl && (
+                            <img
+                                src={n.photoUrl}
+                                alt="loading photo..."
+                                style={{ width: 32, height: 32, objectFit: "cover", verticalAlign: "middle" }}
+                            />
+                        )}
+                        {" "}
                         <Link to={`/galleries/${n.galleryId}`}>{describe(n)}</Link>
                         {n.occurredAt && (
-                            <time dateTime={n.occurredAt}>
-                                {" "}
-                                {new Date(n.occurredAt).toLocaleTimeString()}
-                            </time>
+                            <time dateTime={n.occurredAt}> {new Date(n.occurredAt).toLocaleTimeString()}</time>
                         )}
                     </li>
                 ))}

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	gallerypb "photogallery/gen/gallery"
 	notificationpb "photogallery/gen/notification"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,13 +16,55 @@ import (
 )
 
 type Consumer struct {
-	registry *Registry
+	registry      *Registry
+	galleryClient gallerypb.GalleryServiceClient
+
+	// galleryNames caches gallery_id -> name so a burst of uploads to the
+	// same gallery doesn't mean a GetGallery round trip per event. It's
+	// unbounded and never invalidated: gallery names change rarely (there's
+	// no rename RPC today), and a briefly-stale cached name is a far
+	// smaller problem than adding a synchronous cross-service call to the
+	// hot path of every single notification. Revisit if renaming becomes
+	// a real feature.
+	mu           sync.RWMutex
+	galleryNames map[uuid.UUID]string
 }
 
-func NewConsumer(r *Registry) *Consumer {
+func NewConsumer(r *Registry, galleryClient gallerypb.GalleryServiceClient) *Consumer {
 	return &Consumer{
-		registry: r,
+		registry:      r,
+		galleryClient: galleryClient,
+		galleryNames:  make(map[uuid.UUID]string),
 	}
+}
+
+// galleryName resolves a gallery's display name for inclusion in a
+// notification, via GetGallery -- a public (unauthenticated) RPC, so no
+// token needs to be attached to ctx here. Returns "" on failure rather
+// than erroring the whole notification: a notification with a blank
+// gallery name is still useful; dropping it entirely because a name
+// lookup failed would not be.
+func (c *Consumer) galleryName(ctx context.Context, galleryID uuid.UUID) string {
+	c.mu.RLock()
+	name, ok := c.galleryNames[galleryID]
+	c.mu.RUnlock()
+	if ok {
+		return name
+	}
+
+	resp, err := c.galleryClient.GetGallery(ctx, &gallerypb.GetGalleryRequest{
+		GalleryId: galleryID.String(),
+	})
+	if err != nil {
+		log.Printf("notification: failed to resolve gallery name for %s: %v", galleryID, err)
+		return ""
+	}
+
+	c.mu.Lock()
+	c.galleryNames[galleryID] = resp.Name
+	c.mu.Unlock()
+
+	return resp.Name
 }
 
 // envelope mirrors the wire shape both Gallery Service (command.Envelope)
@@ -36,17 +80,19 @@ type envelope struct {
 // photoUploadedPayload matches events.UploadEvent's JSON shape (Upload
 // Service, internal/upload/events/publisher.go).
 type photoUploadedPayload struct {
-	PhotoID    string    `json:"photo_id"`
-	GalleryID  uuid.UUID `json:"gallery_id"`
-	UploaderID uuid.UUID `json:"uploader_id"`
-	PhotoURL   string    `json:"photo_url"`
+	PhotoID     string    `json:"photo_id"`
+	GalleryID   uuid.UUID `json:"gallery_id"`
+	UploaderID  uuid.UUID `json:"uploader_id"`
+	GalleryName string    `json:"gallery_name"`
+	PhotoURL    string    `json:"photo_url"`
 }
 
 // moderatorAlertPayload matches the map Gallery Service's
 // CommandService.SendModeratorAlert publishes (internal/gallery/command/service.go).
 type moderatorAlertPayload struct {
-	GalleryID uuid.UUID `json:"gallery_id"`
-	Message   string    `json:"message"`
+	GalleryID   uuid.UUID `json:"gallery_id"`
+	GalleryName string    `json:"gallery_name"`
+	Message     string    `json:"message"`
 }
 
 // memberChangedPayload matches the map Gallery Service's AddMember and
@@ -105,7 +151,7 @@ func (c *Consumer) handle(ctx context.Context, msg amqp.Delivery) {
 		return
 	}
 
-	notif, err := c.buildNotification(env)
+	notif, err := c.buildNotification(ctx, env)
 	if err != nil {
 		log.Printf("notification: dropping event_type=%s (routing_key=%s): %v",
 			env.EventType, msg.RoutingKey, err)
@@ -161,7 +207,7 @@ func (c *Consumer) handleMemberRemoved(env envelope) error {
 
 // buildNotification returns (nil, nil) for event types that are valid but
 // don't produce a user-facing notification.
-func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification, error) {
+func (c *Consumer) buildNotification(ctx context.Context, env envelope) (*notificationpb.Notification, error) {
 	switch env.EventType {
 	case "PhotoUploaded":
 		var p photoUploadedPayload
@@ -172,14 +218,15 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 			return nil, fmt.Errorf("PhotoUploaded payload missing gallery_id")
 		}
 		return &notificationpb.Notification{
-			Id:         uuid.NewString(),
-			Type:       notificationpb.NotificationType_NOTIFICATION_TYPE_PHOTO_UPLOADED,
-			GalleryId:  p.GalleryID.String(),
-			PhotoId:    p.PhotoID,
-			UploaderId: p.UploaderID.String(),
-			PhotoUrl:   p.PhotoURL,
-			Message:    "A new photo was uploaded to this gallery," + p.GalleryID.String(),
-			OccurredAt: timestamppb.New(env.Timestamp),
+			Id:          uuid.NewString(),
+			Type:        notificationpb.NotificationType_NOTIFICATION_TYPE_PHOTO_UPLOADED,
+			GalleryId:   p.GalleryID.String(),
+			GalleryName: c.galleryName(ctx, p.GalleryID),
+			PhotoId:     p.PhotoID,
+			UploaderId:  p.UploaderID.String(),
+			PhotoUrl:    p.PhotoURL,
+			Message:     "A new photo was uploaded to this gallery.",
+			OccurredAt:  timestamppb.New(env.Timestamp),
 		}, nil
 
 	case "ModeratorAlert":
@@ -191,11 +238,12 @@ func (c *Consumer) buildNotification(env envelope) (*notificationpb.Notification
 			return nil, fmt.Errorf("ModeratorAlert payload missing gallery_id")
 		}
 		return &notificationpb.Notification{
-			Id:         uuid.NewString(),
-			Type:       notificationpb.NotificationType_NOTIFICATION_TYPE_MODERATOR_ALERT,
-			GalleryId:  p.GalleryID.String(),
-			Message:    p.Message,
-			OccurredAt: timestamppb.New(env.Timestamp),
+			Id:          uuid.NewString(),
+			Type:        notificationpb.NotificationType_NOTIFICATION_TYPE_MODERATOR_ALERT,
+			GalleryId:   p.GalleryID.String(),
+			GalleryName: c.galleryName(ctx, p.GalleryID),
+			Message:     p.Message,
+			OccurredAt:  timestamppb.New(env.Timestamp),
 		}, nil
 
 	case "GalleryCreated", "GalleryClosed":

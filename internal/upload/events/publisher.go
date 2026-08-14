@@ -42,6 +42,7 @@ type UploadEvent struct {
 	PhotoID     uuid.UUID `json:"photo_id"`
 	GalleryID   uuid.UUID `json:"gallery_id"`
 	UploaderID  uuid.UUID `json:"uploader_id"`
+	GalleryName string    `json:"gallery_name"`
 	StorageKey  string    `json:"storage_key"`
 	PhotoURL    string    `json:"photo_url"`
 	ContentType string    `json:"content_type"`
