@@ -57,4 +57,7 @@ export const galleryApi = {
             }
         );
     },
+    async sendModeratorAlert(galleryId: string, body: string): Promise<void> {
+        await api.post<void>(`/photogallery/galleries/${galleryId}/alert`, { body });
+    },
 };

@@ -4,6 +4,7 @@ import { loadGallery } from "../actions/galleryDetailsActions";
 import { galleryDetailsStore } from "../stores/GalleryDetailsStore";
 import UploadForm from "../components/UploadForm";
 import PhotoGrid from "../components/PhotoGrid";
+import ModeratorAlertForm from "../components/ModeratorAlertForm";
 
 export default function GalleryDetailsPage() {
     const { galleryId } = useParams<{ galleryId: string; }>();
@@ -63,7 +64,7 @@ export default function GalleryDetailsPage() {
             </Link>
 
             <h1>{gallery.name}</h1>
-
+            <ModeratorAlertForm galleryId={galleryId} galleryModeratorId={gallery.moderatorId} />
             <p>{gallery.description}</p>
 
             <p>
