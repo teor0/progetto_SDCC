@@ -34,20 +34,24 @@ func NewServer(registry *Registry, galleryClient gallerypb.GalleryServiceClient)
 // one so Consumer.Consume can fan events out to it, then blocks until the
 // client disconnects. Notification delivery itself happens out-of-band --
 // this method's only job is registration and cleanup, not sending.
-func (s *Server) Subscribe(_ *notificationpb.SubscribeRequest, stream notificationpb.NotificationService_SubscribeServer) error {
+func (s *Server) Subscribe(
+	_ *notificationpb.SubscribeRequest,
+	stream notificationpb.NotificationService_SubscribeServer,
+) error {
 	ctx := stream.Context()
 
-	// Identity comes from the validated JWT claims an upstream interceptor
-	// (auth.AuthFunc) already attached to this context -- same mechanism
-	// Upload Service uses. req.UserId is documented as caller-supplied-never;
-	// it isn't read here at all.
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
 		return err
 	}
+
 	userID := claims.UserID
+
 	if userID == uuid.Nil {
-		return status.Error(codes.Unauthenticated, "missing caller identity")
+		return status.Error(
+			codes.Unauthenticated,
+			"missing caller identity",
+		)
 	}
 
 	galleryIDs, err := s.resolveMemberships(ctx, userID)
@@ -55,19 +59,28 @@ func (s *Server) Subscribe(_ *notificationpb.SubscribeRequest, stream notificati
 		return err
 	}
 
+	// One connection ID for the entire streaming RPC.
+	connectionID := s.registry.CreateClient(userID, stream)
+
+	// Register this connection for every gallery
+	// the user currently belongs to.
 	for _, galleryID := range galleryIDs {
-		s.registry.Subscribe(galleryID, userID, stream)
+		s.registry.Subscribe(
+			connectionID,
+			galleryID,
+		)
 	}
 
-	defer s.registry.RemoveClient(userID)
+	// When THIS browser stream disconnects, remove
+	// only THIS connection.
+	defer s.registry.RemoveClient(connectionID)
 
-	// Register the stream for the caller's current memberships.
-	// Subsequent MemberAdded/MemberRemoved events keep the registry in sync
-	// until the client disconnects.
 	<-ctx.Done()
+
 	if errors.Is(ctx.Err(), context.Canceled) {
 		return nil
 	}
+
 	return ctx.Err()
 }
 

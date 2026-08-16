@@ -9,10 +9,17 @@ import (
 	"github.com/google/uuid"
 )
 
-// Client represents one connected, streaming subscriber. galleries tracks
-// which galleries this client is currently registered for, so RemoveClient
-// can clean up in O(number of this client's galleries) instead of scanning
-// every gallery in the registry.
+// Client represents one connected, streaming subscriber.
+//
+// A Client represents a CONNECTION, not a user.
+// A single user can therefore have multiple Clients, for example:
+//
+//	User A
+//	├── browser tab 1 -> Client A1
+//	└── browser tab 2 -> Client A2
+//
+// galleries tracks which galleries this particular connection
+// is currently registered for.
 type Client struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID
@@ -20,12 +27,21 @@ type Client struct {
 	galleries map[uuid.UUID]struct{}
 }
 
-// Registry indexes connected clients two ways: by gallery (for fan-out on
-// Notify) and by user (for O(1) lookup/cleanup, and for adding an
-// already-connected client to a new gallery without needing their stream
-// handed to us again).
+// Registry indexes connected clients three ways:
+//
+//   - galleries: gallery_id -> connection_id -> Client
+//     Used for notification fan-out.
+//
+//   - clients: user_id -> connection_id -> Client
+//     Used to find all active connections belonging to a user.
+//
+//   - connections: connection_id -> Client
+//     Used for O(1) connection lookup during cleanup.
+//
+// A user can have multiple simultaneous connections.
 type Registry struct {
-	mu          sync.RWMutex
+	mu sync.RWMutex
+
 	galleries   map[uuid.UUID]map[uuid.UUID]*Client
 	clients     map[uuid.UUID]map[uuid.UUID]*Client
 	connections map[uuid.UUID]*Client
@@ -39,13 +55,10 @@ func New() *Registry {
 	}
 }
 
-// Subscribe registers userID's stream for galleryID. Safe to call multiple
-// times for the same user across different galleries (that's the normal
-// case: Subscribe's handler calls this once per gallery membership at
-// connect time) -- subsequent calls for the same user reuse the existing
-// Client entry and just add another gallery to it, updating Stream in case
-// this is actually a reconnect under the same userID.
-func (r *Registry) Subscribe(galleryID uuid.UUID, userID uuid.UUID, stream notificationpb.NotificationService_SubscribeServer) uuid.UUID {
+// CreateClient creates and registers one connection.
+//
+// This must be called exactly once for each Subscribe RPC / stream.
+func (r *Registry) CreateClient(userID uuid.UUID, stream notificationpb.NotificationService_SubscribeServer) uuid.UUID {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -58,35 +71,57 @@ func (r *Registry) Subscribe(galleryID uuid.UUID, userID uuid.UUID, stream notif
 		galleries: make(map[uuid.UUID]struct{}),
 	}
 
-	// Register connection under the user.
+	r.connections[connectionID] = client
+
 	if _, ok := r.clients[userID]; !ok {
 		r.clients[userID] = make(map[uuid.UUID]*Client)
 	}
 
 	r.clients[userID][connectionID] = client
 
-	// Register connection under the gallery.
-	if _, ok := r.galleries[galleryID]; !ok {
-		r.galleries[galleryID] = make(map[uuid.UUID]*Client)
-	}
-
-	r.galleries[galleryID][connectionID] = client
-
-	client.galleries[galleryID] = struct{}{}
-
 	return connectionID
 }
 
-// AddGalleryForClient registers an already-connected client for a gallery
-// it wasn't subscribed to at connect time. It's a no-op if userID isn't
-// currently connected. This is what closes the "joined a gallery mid-
-// session" gap: a Consumer handling a MemberAdded event can call this
-// instead of requiring the user to reconnect before they start receiving
-// that gallery's notifications.
-func (r *Registry) AddGalleryForClient(
-	galleryID uuid.UUID,
-	userID uuid.UUID,
-) {
+// Subscribe registers an existing connection for a gallery.
+//
+// The connection must have been created with CreateClient.
+//
+// Calling this multiple times for different galleries adds those
+// galleries to the SAME connection.
+func (r *Registry) Subscribe(connectionID uuid.UUID, galleryID uuid.UUID) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	client, ok := r.connections[connectionID]
+	if !ok {
+		return
+	}
+
+	if _, ok := client.galleries[galleryID]; ok {
+		return
+	}
+
+	client.galleries[galleryID] = struct{}{}
+
+	if _, ok := r.galleries[galleryID]; !ok {
+		r.galleries[galleryID] =
+			make(map[uuid.UUID]*Client)
+	}
+
+	r.galleries[galleryID][connectionID] = client
+}
+
+// AddGalleryForClient registers ALL active connections belonging to a user
+// for a newly joined gallery.
+//
+// This is important when the same user has multiple browser tabs:
+//
+//	User A
+//	├── connection A1
+//	└── connection A2
+//
+// If User A joins Gallery X, both connections become subscribers.
+func (r *Registry) AddGalleryForClient(galleryID uuid.UUID, userID uuid.UUID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -96,7 +131,8 @@ func (r *Registry) AddGalleryForClient(
 	}
 
 	if _, ok := r.galleries[galleryID]; !ok {
-		r.galleries[galleryID] = make(map[uuid.UUID]*Client)
+		r.galleries[galleryID] =
+			make(map[uuid.UUID]*Client)
 	}
 
 	for connectionID, client := range connections {
@@ -106,119 +142,128 @@ func (r *Registry) AddGalleryForClient(
 	}
 }
 
-// Unsubscribe removes userID from galleryID only -- the client stays
-// connected and registered for whatever other galleries it has. Use
-// RemoveClient for a full disconnect.
-func (r *Registry) Unsubscribe(galleryID uuid.UUID, connectionID uuid.UUID) {
+// Unsubscribe removes ALL connections belonging to userID from galleryID.
+//
+// The connections themselves remain alive and remain subscribed to their
+// other galleries.
+//
+// This is used when the user leaves a gallery.
+func (r *Registry) Unsubscribe(galleryID uuid.UUID, userID uuid.UUID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.unsubscribeLocked(galleryID, connectionID)
-}
 
-func (r *Registry) unsubscribeLocked(galleryID uuid.UUID, connectionID uuid.UUID) {
-	connections, ok := r.galleries[galleryID]
+	connections, ok := r.clients[userID]
 	if !ok {
 		return
 	}
 
-	client, ok := connections[connectionID]
-	if !ok {
-		return
-	}
+	for connectionID, client := range connections {
+		if _, subscribed :=
+			client.galleries[galleryID]; !subscribed {
+			continue
+		}
 
-	delete(connections, connectionID)
+		delete(client.galleries, galleryID)
 
-	if len(connections) == 0 {
-		delete(r.galleries, galleryID)
-	}
+		if galleryConnections, ok :=
+			r.galleries[galleryID]; ok {
 
-	delete(client.galleries, galleryID)
+			delete(
+				galleryConnections,
+				connectionID,
+			)
 
-	// If this connection isn't subscribed to any other
-	// galleries, remove it from the user's connections.
-	if len(client.galleries) == 0 {
-		if userConnections, ok := r.clients[client.UserID]; ok {
-			delete(userConnections, connectionID)
-
-			if len(userConnections) == 0 {
-				delete(r.clients, client.UserID)
+			if len(galleryConnections) == 0 {
+				delete(r.galleries, galleryID)
 			}
 		}
 	}
 }
 
-// RemoveClient fully disconnects userID: removes it from every gallery
-// it was registered for and drops the client entry itself. O(number of
-// galleries this client was in), not O(every gallery in the registry).
+// RemoveClient completely removes ONE connection.
+//
+// It does NOT remove the other connections belonging to the same user.
+//
+// This is what should be called when a browser tab / streaming RPC
+// disconnects.
 func (r *Registry) RemoveClient(connectionID uuid.UUID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	var client *Client
-
-	// Find the connection.
-	//
-	// We can avoid this search if Subscribe's caller
-	// retains the Client, but for now this keeps the
-	// Registry API simple.
-	for _, connections := range r.clients {
-		if c, ok := connections[connectionID]; ok {
-			client = c
-			break
-		}
-	}
-
-	if client == nil {
+	client, ok := r.connections[connectionID]
+	if !ok {
 		return
 	}
 
 	for galleryID := range client.galleries {
-		r.unsubscribeLocked(
-			galleryID,
-			connectionID,
-		)
+		if galleryConnections, ok :=
+			r.galleries[galleryID]; ok {
+
+			delete(
+				galleryConnections,
+				connectionID,
+			)
+
+			if len(galleryConnections) == 0 {
+				delete(r.galleries, galleryID)
+			}
+		}
 	}
 
-	if userConnections, ok := r.clients[client.UserID]; ok {
-		delete(userConnections, connectionID)
+	if userConnections, ok :=
+		r.clients[client.UserID]; ok {
+
+		delete(
+			userConnections,
+			connectionID,
+		)
 
 		if len(userConnections) == 0 {
 			delete(r.clients, client.UserID)
 		}
 	}
+
+	delete(r.connections, connectionID)
 }
 
+// Notify sends a notification to every active connection registered
+// for the gallery.
+//
+// We copy the clients while holding the read lock and release the lock
+// before performing network operations.
 func (r *Registry) Notify(ctx context.Context, galleryID uuid.UUID, n *notificationpb.Notification) {
 	r.mu.RLock()
 
-	connections, ok := r.galleries[galleryID]
+	galleryConnections, ok :=
+		r.galleries[galleryID]
+
 	if !ok {
 		r.mu.RUnlock()
 		return
 	}
 
-	clients := make([]*Client, 0, len(connections))
+	clients := make(
+		[]*Client,
+		0,
+		len(galleryConnections),
+	)
 
-	for _, client := range connections {
+	for _, client := range galleryConnections {
 		clients = append(clients, client)
 	}
 
 	r.mu.RUnlock()
 
-	// Never hold the mutex while sending over gRPC.
 	for _, client := range clients {
 		if err := client.Stream.Send(n); err != nil {
 			log.Printf(
-				"failed sending notification to user %s connection %s: %v",
+				"failed sending notification to user %s on connection %s: %v",
 				client.UserID,
 				client.ID,
 				err,
 			)
 
-			r.Unsubscribe(
-				galleryID,
-				client.ID,
-			)
+			r.RemoveClient(client.ID)
 		}
 	}
 }
