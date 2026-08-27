@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { register } from "../actions/authActions";
 import { authStore } from "../stores/AuthStore";
 import type { Role } from "../types/auth";
+import "./Auth.css";
 
 export default function RegisterPage() {
     const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function RegisterPage() {
     const [auth, setAuth] = useState(
         authStore.getState()
     );
+    const { loading, error } = auth;
 
     useEffect(() => {
         return authStore.subscribe(() => {
@@ -40,96 +42,140 @@ export default function RegisterPage() {
     }
 
     return (
-        <main>
-            <h1>PhotoGallery</h1>
+        <main className="auth-page">
+            <section className="auth-card">
 
-            <h2>Create account</h2>
+                <header className="auth-header">
+                    <div className="auth-logo">
+                        P
+                    </div>
 
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <label htmlFor="email">
-                        Email
-                    </label>
+                    <h1 className="auth-title">
+                        Create your account
+                    </h1>
 
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(event) =>
-                            setEmail(event.target.value)
-                        }
-                        required
-                    />
-                </div>
+                    <p className="auth-subtitle">
+                        Join PhotoGallery and start sharing
+                    </p>
+                </header>
 
-                <div>
-                    <label htmlFor="password">
-                        Password
-                    </label>
-
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(event) =>
-                            setPassword(event.target.value)
-                        }
-                        required
-                    />
-                </div>
-
-                <fieldset>
-                    <legend>Account type</legend>
-
-                    <label>
-                        <input
-                            type="radio"
-                            name="role"
-                            value="ROLE_USER"
-                            checked={role === "ROLE_USER"}
-                            onChange={() =>
-                                setRole("ROLE_USER")
-                            }
-                        />
-
-                        User
-                    </label>
-
-                    <label>
-                        <input
-                            type="radio"
-                            name="role"
-                            value="ROLE_MODERATOR"
-                            checked={role === "ROLE_MODERATOR"}
-                            onChange={() =>
-                                setRole("ROLE_MODERATOR")
-                            }
-                        />
-
-                        Moderator
-                    </label>
-                </fieldset>
-
-                {auth.error && (
-                    <p>{auth.error}</p>
-                )}
-
-                <button
-                    type="submit"
-                    disabled={auth.loading}
+                <form
+                    className="auth-form"
+                    onSubmit={handleSubmit}
                 >
-                    {auth.loading
-                        ? "Creating account..."
-                        : "Register"}
-                </button>
-            </form>
+                    <div className="auth-field">
+                        <label htmlFor="email">
+                            Email
+                        </label>
 
-            <p>
-                Already have an account?{" "}
-                <Link to="/login">
-                    Login
-                </Link>
-            </p>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) =>
+                                setEmail(e.target.value)
+                            }
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
+
+                    <div className="auth-field">
+                        <label htmlFor="password">
+                            Password
+                        </label>
+
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) =>
+                                setPassword(e.target.value)
+                            }
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+
+                    <div className="auth-role">
+                        <label>
+                            Account type
+                        </label>
+
+                        <div className="auth-role-options">
+
+                            <button
+                                type="button"
+                                className={`auth-role-option ${
+                                    role === "ROLE_USER"
+                                        ? "selected"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    setRole("ROLE_USER")
+                                }
+                            >
+                                <strong>
+                                    User
+                                </strong>
+
+                                <span>
+                                    Join galleries and
+                                    upload photos
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`auth-role-option ${
+                                    role === "ROLE_MODERATOR"
+                                        ? "selected"
+                                        : ""
+                                }`}
+                                onClick={() =>
+                                    setRole(
+                                        "ROLE_MODERATOR"
+                                    )
+                                }
+                            >
+                                <strong>
+                                    Moderator
+                                </strong>
+
+                                <span>
+                                    Create and manage
+                                    galleries
+                                </span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="auth-error">
+                            {error}
+                        </div>
+                    )}
+
+                    <button
+                        className="auth-button"
+                        type="submit"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? "Creating account..."
+                            : "Create account"}
+                    </button>
+                </form>
+
+                <footer className="auth-footer">
+                    Already have an account?{" "}
+                    <Link to="/login">
+                        Sign in
+                    </Link>
+                </footer>
+
+            </section>
         </main>
     );
 }
