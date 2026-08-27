@@ -64,6 +64,18 @@ func (s *CommandService) CreateGallery(ctx context.Context, name, description st
 	return g, nil
 }
 
+func (s *CommandService) DeleteGallery(ctx context.Context, galleryID uuid.UUID) error {
+	g, err := s.repo.GetGallery(ctx, galleryID)
+	if err != nil {
+		return status.Errorf(codes.NotFound, "gallery: %v doesn't exists", err)
+	}
+	if err := s.repo.DeleteGallery(ctx, g.ID); err != nil {
+		return status.Errorf(codes.Internal, "delete gallery: %v", err)
+	}
+	_ = s.publisher.Publish(ctx, "GalleryDeleted", g)
+	return nil
+}
+
 // CloseGallery marks a gallery closed. Only its moderator may do this.
 func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, callerID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)

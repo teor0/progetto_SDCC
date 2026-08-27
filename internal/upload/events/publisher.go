@@ -180,8 +180,8 @@ func (p *Publisher) tryPublish(ctx context.Context, routingKey string, body []by
 	return p.channel.PublishWithContext(ctx,
 		exchange,
 		routingKey,
-		false, // mandatory
-		false, // immediate
+		false,
+		false,
 		amqp.Publishing{
 			ContentType:  "application/json",
 			DeliveryMode: amqp.Persistent,
