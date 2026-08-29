@@ -72,14 +72,13 @@ func (NotificationType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Notification struct {
-	state       protoimpl.MessageState `protogen:"open.v1"`
-	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type        NotificationType       `protobuf:"varint,2,opt,name=type,proto3,enum=proto.NotificationType" json:"type,omitempty"`
-	PhotoId     string                 `protobuf:"bytes,3,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
-	GalleryId   string                 `protobuf:"bytes,4,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	GalleryName string                 `protobuf:"bytes,5,opt,name=gallery_name,json=galleryName,proto3" json:"gallery_name,omitempty"`
-	UploaderId  string                 `protobuf:"bytes,6,opt,name=uploader_id,json=uploaderId,proto3" json:"uploader_id,omitempty"`
-	// Human-readable description of the event.
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Type          NotificationType       `protobuf:"varint,2,opt,name=type,proto3,enum=proto.NotificationType" json:"type,omitempty"`
+	PhotoId       string                 `protobuf:"bytes,3,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
+	GalleryId     string                 `protobuf:"bytes,4,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
+	GalleryName   string                 `protobuf:"bytes,5,opt,name=gallery_name,json=galleryName,proto3" json:"gallery_name,omitempty"`
+	UploaderId    string                 `protobuf:"bytes,6,opt,name=uploader_id,json=uploaderId,proto3" json:"uploader_id,omitempty"`
 	Message       string                 `protobuf:"bytes,7,opt,name=message,proto3" json:"message,omitempty"`
 	PhotoUrl      string                 `protobuf:"bytes,8,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"`
 	OccurredAt    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=occurred_at,json=occurredAt,proto3" json:"occurred_at,omitempty"`

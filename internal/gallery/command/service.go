@@ -10,10 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// EventPublisher is optional: implement it if/when you wire up RabbitMQ
-// to update a denormalized read model asynchronously. Until then, a
-// no-op implementation is enough to keep CQRS's write side decoupled
-// from the read side.
 type EventPublisher interface {
 	Publish(ctx context.Context, eventType string, payload any) error
 }
@@ -64,10 +60,14 @@ func (s *CommandService) CreateGallery(ctx context.Context, name, description st
 	return g, nil
 }
 
-func (s *CommandService) DeleteGallery(ctx context.Context, galleryID uuid.UUID) error {
+// DeleteGallery let a MODERATOR delete a gallery. Only its moderator may do this.
+func (s *CommandService) DeleteGallery(ctx context.Context, galleryID uuid.UUID, callerID uuid.UUID) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {
-		return status.Errorf(codes.NotFound, "gallery: %v doesn't exists", err)
+		return status.Error(codes.NotFound, "gallery not found")
+	}
+	if g.ModeratorID != callerID {
+		return status.Error(codes.PermissionDenied, "only the moderator can delete this gallery")
 	}
 	if err := s.repo.DeleteGallery(ctx, g.ID); err != nil {
 		return status.Errorf(codes.Internal, "delete gallery: %v", err)
@@ -114,7 +114,7 @@ func (s *CommandService) JoinGallery(ctx context.Context, galleryID uuid.UUID, u
 		return status.Errorf(codes.Internal, "add member: %v", err)
 	}
 
-	//se voglio aggiungere questo evento.
+	// again, dedicated message is implemented if need.
 	_ = s.publisher.Publish(ctx, "MemberAdded", map[string]string{
 		"gallery_id": galleryID.String(),
 		"user_id":    userID.String(),
@@ -122,7 +122,7 @@ func (s *CommandService) JoinGallery(ctx context.Context, galleryID uuid.UUID, u
 	return nil
 }
 
-// LeaveGallery allows the moderator, or the member themselves, to leave.
+// LeaveGallery allows the member themselves, to leave.
 func (s *CommandService) LeaveGallery(ctx context.Context, galleryID uuid.UUID, userID uuid.UUID) error {
 	if err := s.repo.LeaveGallery(ctx, galleryID, userID); err != nil {
 		return status.Errorf(codes.Internal, "remove member: %v", err)
@@ -136,9 +136,8 @@ func (s *CommandService) LeaveGallery(ctx context.Context, galleryID uuid.UUID, 
 }
 
 // SendModeratorAlert publishes a broadcast alert to all gallery members.
-// This writes no gallery state itself — it's a command in the CQRS sense
-// (it triggers a side effect) but persistence stays with the Notification
-// Service; here we just validate authorization and hand off the event.
+// Persistence stays with the Notification Service,
+// here we just validate authorization and hand off the event.
 func (s *CommandService) SendModeratorAlert(ctx context.Context, galleryID, callerID uuid.UUID, message string) error {
 	g, err := s.repo.GetGallery(ctx, galleryID)
 	if err != nil {

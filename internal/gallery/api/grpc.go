@@ -31,7 +31,7 @@ func NewServer(cmd CommandRunner, qry QueryRunner, jwtSecret string) *Server {
 
 // publicMethods lists the fully-qualified RPC names that do not require a JWT.
 // The grpc-gateway auth middleware calls AuthFuncOverride with the full method
-// name so we can selectively bypass authentication for Login and Register.
+// name so is possible to selectively bypass authentication.
 var publicMethods = map[string]bool{
 	"/proto.GalleryService/GetGallery":    true,
 	"/proto.GalleryService/ListGalleries": true,
@@ -41,10 +41,7 @@ var publicMethods = map[string]bool{
 // and delegates to the shared AuthFunc for everything else.
 func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if publicMethods[fullMethodName] {
-		// Best-effort: attach claims if a valid token was sent, but don't
-		// require one. GetGallery never needs claims; ListGalleries only
-		// needs them when the caller passes my_galleries=true, which is
-		// enforced in the handler itself, not here.
+		// Best-effort: attach claims if a valid token was sent, but don't require one.
 		if authedCtx, err := auth.AuthFunc(s.jwtSecret)(ctx); err == nil {
 			return authedCtx, nil
 		}
@@ -66,6 +63,21 @@ func (s *Server) CreateGallery(ctx context.Context, req *gallerypb.CreateGallery
 		return nil, err
 	}
 	return toProtoGallery(g), nil
+}
+
+func (s *Server) DeleteGallery(ctx context.Context, req *gallerypb.DeleteGalleryRequest) (*gallerypb.DeleteGalleryResponse, error) {
+	callerID, err := callerIDFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	id, err := parseUUID(req.GetGalleryId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.cmd.DeleteGallery(ctx, id, callerID); err != nil {
+		return nil, err
+	}
+	return &gallerypb.DeleteGalleryResponse{}, nil
 }
 
 func (s *Server) CloseGallery(ctx context.Context, req *gallerypb.CloseGalleryRequest) (*gallerypb.CloseGalleryResponse, error) {
@@ -268,8 +280,6 @@ func toProtoMember(m *models.Member) *gallerypb.Member {
 }
 
 // callerIDFromContext returns the authenticated caller's user ID.
-// The interceptor guarantees claims are present; FromContext already
-// returns Unauthenticated if somehow missing.
 func callerIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
@@ -278,9 +288,7 @@ func callerIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	return claims.UserID, nil
 }
 
-// moderatorIDFromContext returns the caller's user ID, but only if their
-// role is MODERATOR. Used for endpoints restricted to moderators
-// (CreateGallery, CloseGallery, SendModeratorAlert).
+// moderatorIDFromContext returns the caller's user ID, but only if their role is MODERATOR.
 func moderatorIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {

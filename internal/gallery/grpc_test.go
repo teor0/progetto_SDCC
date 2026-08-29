@@ -22,7 +22,7 @@ import (
 	userpb "photogallery/gen/user"
 )
 
-const jwtSecret = "ciaobelli"
+const jwtSecret = "test-secret"
 
 func newTestServer(t *testing.T) (*api.Server, *mocks.MockCommandRunner, *mocks.MockQueryRunner) {
 	t.Helper()

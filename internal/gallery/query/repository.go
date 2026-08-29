@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// QueryRepository keeps all the functions that the GalleryService must provide
 type QueryRepository interface {
 	GetGallery(context.Context, uuid.UUID) (*models.Gallery, error)
 	ListGalleries(context.Context, int, uuid.UUID) ([]models.Gallery, error)
@@ -51,12 +52,6 @@ func (r *GormQueryRepository) ListGalleries(ctx context.Context, limit int, afte
 	return g, err
 }
 
-// ListGalleriesByMember queries galleries a specific user belongs to
-// directly via a join, instead of the paginate-all-then-filter approach
-// ListGalleries(my_galleries=true) uses at the service layer. This is the
-// query Notification Service's Subscribe handler needs: for a user in a
-// handful of galleries out of a large total, this is one indexed query
-// instead of potentially many pages of "everything."
 func (r *GormQueryRepository) ListGalleriesByMember(ctx context.Context, userID uuid.UUID, limit int, after uuid.UUID) ([]models.Gallery, error) {
 	var g []models.Gallery
 	q := r.db.WithContext(ctx).

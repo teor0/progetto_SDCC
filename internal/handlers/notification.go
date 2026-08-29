@@ -21,10 +21,7 @@ func NewNotificationHandler(notificationClient *clients.NotificationClient) *Not
 	return &NotificationHandler{notificationClient: notificationClient}
 }
 
-// notificationDTO is the JSON shape pushed to browser clients. Kept
-// separate from notificationpb.Notification rather than reusing protobuf's
-// generated JSON tags, so the public wire format isn't coupled to whatever
-// the .proto happens to look like internally.
+// notificationDTO is the JSON shape for browser usage.
 type notificationDTO struct {
 	ID          string `json:"id"`
 	Type        string `json:"type"`
@@ -40,9 +37,7 @@ type notificationDTO struct {
 // Stream opens a Server-Sent Events connection and forwards every
 // Notification the caller is subscribed to -- one "notification" SSE event
 // per message -- until the browser disconnects or NotificationService closes
-// the underlying stream. SSE is enough here rather than a full WebSocket
-// bridge because delivery is one-directional (server -> browser); Subscribe
-// itself has no client-to-server messages to forward back.
+// the underlying stream.
 func (h *NotificationHandler) Stream(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
@@ -67,14 +62,13 @@ func (h *NotificationHandler) Stream(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
-	c.Header("X-Accel-Buffering", "no") // disable nginx response buffering, if present
+	c.Header("X-Accel-Buffering", "no")
 
 	c.Stream(func(w io.Writer) bool {
 		n, err := stream.Recv()
 		if err != nil {
 			// c.Request.Context() cancellation (browser disconnected) is the
-			// expected way this loop ends -- don't try to write an SSE event
-			// on a connection that's already gone.
+			// expected way this loop ends
 			if c.Request.Context().Err() != nil {
 				return false
 			}

@@ -5,7 +5,7 @@ import {
     loadGalleries,
     createGallery,
     joinGallery,
-    leaveGallery,
+    leaveGallery, deleteGallery,
 } from "../actions/galleryActions";
 import { authStore } from "../stores/AuthStore";
 import { logout } from "../actions/authActions.ts";
@@ -49,6 +49,12 @@ export default function GalleriesPage() {
 
         setNewGalleryName("");
         setNewGalleryDescription("");
+    }
+
+    function handleDelete(gallery: Gallery) {
+        if (window.confirm(`Delete "${gallery.name}"? This cannot be undone from the app.`)) {
+            deleteGallery(gallery.id);
+        }
     }
 
     function handleLogout() {
@@ -96,6 +102,8 @@ export default function GalleriesPage() {
                         gallery={gallery}
                         actionLabel="Leave"
                         onAction={() => leaveGallery(gallery.id)}
+                        canDelete={auth.userId === gallery.moderatorId}
+                        onDelete={() => handleDelete(gallery)}
                     />
                 ))}
             </section>
@@ -113,6 +121,8 @@ export default function GalleriesPage() {
                         gallery={gallery}
                         actionLabel="Join"
                         onAction={() => joinGallery(gallery.id)}
+                        canDelete={auth.userId === gallery.moderatorId}
+                        onDelete={() => handleDelete(gallery)}
                     />
                 ))}
             </section>
@@ -124,10 +134,15 @@ function GalleryCard({
                          gallery,
                          actionLabel,
                          onAction,
+                         canDelete,
+                         onDelete,
                      }: {
     gallery: Gallery;
     actionLabel: string;
     onAction: () => void;
+    canDelete: boolean;
+    onDelete: () => void;
+
 }) {
     return (
         <article>
@@ -136,6 +151,12 @@ function GalleryCard({
             </h3>
             <p>{gallery.description}</p>
             <button onClick={onAction}>{actionLabel}</button>
+            {canDelete && (
+                <button onClick={onDelete} style={{ marginLeft: 8 }}>
+                    Delete
+                </button>
+            )}
         </article>
+
     );
 }

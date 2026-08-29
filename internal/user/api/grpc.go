@@ -24,14 +24,13 @@ func NewServer(db repository.Repository, jwtSecret string) *Server {
 
 // publicMethods lists the fully-qualified RPC names that do not require a JWT.
 // The grpc-gateway auth middleware calls AuthFuncOverride with the full method
-// name so we can selectively bypass authentication for Login and Register.
+// name so is possible to selectively bypass authentication for Login and Register.
 var publicMethods = map[string]bool{
 	"/proto.UserService/Login":    true,
 	"/proto.UserService/Register": true,
 }
 
-// AuthFuncOverride implements grpcauth.ServiceAuthFuncOverride.
-// and delegates to the shared AuthFunc for everything else.
+// AuthFuncOverride implements grpcauth.ServiceAuthFuncOverride and delegates to the shared AuthFunc for everything else.
 func (s *Server) AuthFuncOverride(ctx context.Context, fullMethodName string) (context.Context, error) {
 	if publicMethods[fullMethodName] {
 		return ctx, nil // no auth required

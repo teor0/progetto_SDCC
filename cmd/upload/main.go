@@ -54,9 +54,6 @@ func main() {
 	}
 	defer publisher.Close()
 
-	// Dial Gallery Service. isMember() wraps this in Upload's own circuit
-	// breaker (see internal/upload/api/grpc.go), so a slow/down Gallery
-	// Service fails fast instead of stalling every upload.
 	galleryConn, err := grpc.NewClient(
 		cfg.GalleryServiceAddress,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -72,7 +69,19 @@ func main() {
 	// In-memory only: does not survive a restart and is not shared across
 	// replicas. Fine for a single-replica deployment; swap for a
 	// Postgres-backed Repository before running more than one.
-	repo := upload.NewInMemoryRepository()
+	//repo := upload.NewInMemoryRepository()
+
+	db, err := upload.NewDB()
+	if err != nil {
+		log.Fatalln("Failed to connect to database:", err)
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalln("Failed to get underlying sql.DB:", err)
+	}
+	defer sqlDB.Close()
+
+	repo := upload.NewPostgresRepository(db)
 
 	srv := api.NewServer(minioStorage, publisher, galleryClient, repo)
 

@@ -16,7 +16,6 @@ message Notification {
   string gallery_id   = 4;
   string gallery_name = 5;
   string uploader_id = 6;
-  // Human-readable description of the event.
   string message = 7;
   string photo_url = 8;
   google.protobuf.Timestamp occurred_at = 9;

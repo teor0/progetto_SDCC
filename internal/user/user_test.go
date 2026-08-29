@@ -36,8 +36,6 @@ func TestRegister_Success(t *testing.T) {
 		CreateUser(gomock.Any(), gomock.Any()).
 		DoAndReturn(func(ctx context.Context, u *models.User) (uuid.UUID, error) {
 			require.Equal(t, "test@example.com", u.Email)
-
-			// Password should already be hashed
 			require.NotEqual(t, "password123", u.Password)
 			require.Equal(t, userpb.Role_ROLE_USER.String(), u.Role)
 

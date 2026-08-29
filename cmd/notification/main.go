@@ -14,6 +14,7 @@ import (
 	grpcauth "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -30,11 +31,6 @@ const exchangeName = "gallery.events"
 // for the same queue (work-queue fan-out) instead of each getting its own
 // duplicate copy of every event.
 const queueName = "notification.events"
-
-// bindingKey uses the topic wildcard to receive every gallery domain
-// event. Consumer.handle already treats unrecognized event types as a
-// forward-compatible no-op, so there's no need to enumerate routing keys
-// individually here.
 const bindingKey = "gallery.#"
 
 func main() {
@@ -57,16 +53,25 @@ func main() {
 		log.Fatalln("GALLERY_SERVICE_ADDRESS environment variable is required")
 	}
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		log.Fatalln("REDIS_ADDR environment variable is required")
+	}
+	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
+	defer rdb.Close()
+
+	registry := notification.New()
+	broadcaster := notification.NewBroadcaster(rdb, registry)
+
+	broadcastCtx, cancelBroadcast := context.WithCancel(context.Background())
+	defer cancelBroadcast()
+	go broadcaster.Run(broadcastCtx)
+
 	amqpURL := os.Getenv("RABBITMQ_URL")
 	if amqpURL == "" {
 		log.Fatalln("RABBITMQ_URL environment variable is required")
 	}
 
-	// --- Gallery Service client ---------------------------------------------
-	// ServiceCredentials attaches a signed service token to every call --
-	// ListGalleriesByMember requires *a* valid token but doesn't check
-	// caller identity, same trust model Upload Service uses for
-	// IsMember/ListMembers.
 	galleryConn, err := grpc.NewClient(
 		galleryAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -94,23 +99,16 @@ func main() {
 	if err := ch.ExchangeDeclare(
 		exchangeName,
 		"topic",
-		true,  // durable
-		false, // auto-deleted
-		false, // internal
-		false, // no-wait
+		true,
+		false,
+		false,
+		false,
 		nil,
 	); err != nil {
 		log.Fatalln("Failed to declare exchange:", err)
 	}
 
-	q, err := ch.QueueDeclare(
-		queueName,
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,
-	)
+	q, err := ch.QueueDeclare(queueName, true, false, false, false, nil)
 	if err != nil {
 		log.Fatalln("Failed to declare queue:", err)
 	}
@@ -119,8 +117,10 @@ func main() {
 		log.Fatalln("Failed to bind queue:", err)
 	}
 
-	// Fair dispatch: don't hand this consumer more unacked deliveries than
-	// it can keep up with. Matters more once this runs with >1 replica.
+	// Fair dispatch: still meaningful per replica even though it's no longer
+	// sharing the queue with siblings -- bounds how many in-flight unacked
+	// deliveries this one replica takes on at once, protecting it from being
+	// overwhelmed by a burst.
 	if err := ch.Qos(10, 0, false); err != nil {
 		log.Fatalln("Failed to set QoS:", err)
 	}
@@ -129,7 +129,7 @@ func main() {
 		q.Name,
 		"",    // consumer tag
 		false, // auto-ack -- Consumer.handle acks/nacks explicitly
-		false, // exclusive
+		true,  // exclusive -- matches the queue itself
 		false, // no-local
 		false, // no-wait
 		nil,
@@ -138,8 +138,7 @@ func main() {
 		log.Fatalln("Failed to register RabbitMQ consumer:", err)
 	}
 
-	registry := notification.New()
-	consumer := notification.NewConsumer(registry, galleryClient)
+	consumer := notification.NewConsumer(broadcaster, galleryClient)
 
 	consumeCtx, cancelConsume := context.WithCancel(context.Background())
 	defer cancelConsume()

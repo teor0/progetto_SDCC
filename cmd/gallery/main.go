@@ -69,5 +69,5 @@ func main() {
 	gallerypb.RegisterGalleryServiceServer(s, srv)
 
 	log.Println("Serving gRPC on 0.0.0.0:" + grpcPort)
-	log.Fatalln(s.Serve(lis)) // blocks here — keeps the process alive
+	log.Fatalln(s.Serve(lis))
 }

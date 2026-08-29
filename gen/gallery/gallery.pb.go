@@ -276,6 +276,86 @@ func (x *CreateGalleryRequest) GetDescription() string {
 	return ""
 }
 
+type DeleteGalleryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGalleryRequest) Reset() {
+	*x = DeleteGalleryRequest{}
+	mi := &file_gallery_gallery_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGalleryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGalleryRequest) ProtoMessage() {}
+
+func (x *DeleteGalleryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_gallery_gallery_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGalleryRequest.ProtoReflect.Descriptor instead.
+func (*DeleteGalleryRequest) Descriptor() ([]byte, []int) {
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *DeleteGalleryRequest) GetGalleryId() string {
+	if x != nil {
+		return x.GalleryId
+	}
+	return ""
+}
+
+type DeleteGalleryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGalleryResponse) Reset() {
+	*x = DeleteGalleryResponse{}
+	mi := &file_gallery_gallery_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGalleryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGalleryResponse) ProtoMessage() {}
+
+func (x *DeleteGalleryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_gallery_gallery_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGalleryResponse.ProtoReflect.Descriptor instead.
+func (*DeleteGalleryResponse) Descriptor() ([]byte, []int) {
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{4}
+}
+
 type CloseGalleryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
@@ -285,7 +365,7 @@ type CloseGalleryRequest struct {
 
 func (x *CloseGalleryRequest) Reset() {
 	*x = CloseGalleryRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[3]
+	mi := &file_gallery_gallery_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +377,7 @@ func (x *CloseGalleryRequest) String() string {
 func (*CloseGalleryRequest) ProtoMessage() {}
 
 func (x *CloseGalleryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[3]
+	mi := &file_gallery_gallery_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +390,7 @@ func (x *CloseGalleryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloseGalleryRequest.ProtoReflect.Descriptor instead.
 func (*CloseGalleryRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{3}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CloseGalleryRequest) GetGalleryId() string {
@@ -328,7 +408,7 @@ type CloseGalleryResponse struct {
 
 func (x *CloseGalleryResponse) Reset() {
 	*x = CloseGalleryResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[4]
+	mi := &file_gallery_gallery_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -340,7 +420,7 @@ func (x *CloseGalleryResponse) String() string {
 func (*CloseGalleryResponse) ProtoMessage() {}
 
 func (x *CloseGalleryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[4]
+	mi := &file_gallery_gallery_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -353,7 +433,7 @@ func (x *CloseGalleryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CloseGalleryResponse.ProtoReflect.Descriptor instead.
 func (*CloseGalleryResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{4}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{6}
 }
 
 type JoinGalleryRequest struct {
@@ -365,7 +445,7 @@ type JoinGalleryRequest struct {
 
 func (x *JoinGalleryRequest) Reset() {
 	*x = JoinGalleryRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[5]
+	mi := &file_gallery_gallery_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -377,7 +457,7 @@ func (x *JoinGalleryRequest) String() string {
 func (*JoinGalleryRequest) ProtoMessage() {}
 
 func (x *JoinGalleryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[5]
+	mi := &file_gallery_gallery_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -390,7 +470,7 @@ func (x *JoinGalleryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinGalleryRequest.ProtoReflect.Descriptor instead.
 func (*JoinGalleryRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{5}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *JoinGalleryRequest) GetGalleryId() string {
@@ -409,7 +489,7 @@ type LeaveGalleryRequest struct {
 
 func (x *LeaveGalleryRequest) Reset() {
 	*x = LeaveGalleryRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[6]
+	mi := &file_gallery_gallery_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -421,7 +501,7 @@ func (x *LeaveGalleryRequest) String() string {
 func (*LeaveGalleryRequest) ProtoMessage() {}
 
 func (x *LeaveGalleryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[6]
+	mi := &file_gallery_gallery_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -434,7 +514,7 @@ func (x *LeaveGalleryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveGalleryRequest.ProtoReflect.Descriptor instead.
 func (*LeaveGalleryRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{6}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *LeaveGalleryRequest) GetGalleryId() string {
@@ -452,7 +532,7 @@ type JoinGalleryResponse struct {
 
 func (x *JoinGalleryResponse) Reset() {
 	*x = JoinGalleryResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[7]
+	mi := &file_gallery_gallery_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -464,7 +544,7 @@ func (x *JoinGalleryResponse) String() string {
 func (*JoinGalleryResponse) ProtoMessage() {}
 
 func (x *JoinGalleryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[7]
+	mi := &file_gallery_gallery_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -477,7 +557,7 @@ func (x *JoinGalleryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JoinGalleryResponse.ProtoReflect.Descriptor instead.
 func (*JoinGalleryResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{7}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{9}
 }
 
 type LeaveGalleryResponse struct {
@@ -488,7 +568,7 @@ type LeaveGalleryResponse struct {
 
 func (x *LeaveGalleryResponse) Reset() {
 	*x = LeaveGalleryResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[8]
+	mi := &file_gallery_gallery_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -500,7 +580,7 @@ func (x *LeaveGalleryResponse) String() string {
 func (*LeaveGalleryResponse) ProtoMessage() {}
 
 func (x *LeaveGalleryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[8]
+	mi := &file_gallery_gallery_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -513,7 +593,7 @@ func (x *LeaveGalleryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveGalleryResponse.ProtoReflect.Descriptor instead.
 func (*LeaveGalleryResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{8}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{10}
 }
 
 // SendModeratorAlertRequest is only accepted when role == MODERATOR.
@@ -527,7 +607,7 @@ type SendModeratorAlertRequest struct {
 
 func (x *SendModeratorAlertRequest) Reset() {
 	*x = SendModeratorAlertRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[9]
+	mi := &file_gallery_gallery_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -539,7 +619,7 @@ func (x *SendModeratorAlertRequest) String() string {
 func (*SendModeratorAlertRequest) ProtoMessage() {}
 
 func (x *SendModeratorAlertRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[9]
+	mi := &file_gallery_gallery_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -552,7 +632,7 @@ func (x *SendModeratorAlertRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendModeratorAlertRequest.ProtoReflect.Descriptor instead.
 func (*SendModeratorAlertRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{9}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SendModeratorAlertRequest) GetGalleryId() string {
@@ -577,7 +657,7 @@ type SendModeratorAlertResponse struct {
 
 func (x *SendModeratorAlertResponse) Reset() {
 	*x = SendModeratorAlertResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[10]
+	mi := &file_gallery_gallery_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -589,7 +669,7 @@ func (x *SendModeratorAlertResponse) String() string {
 func (*SendModeratorAlertResponse) ProtoMessage() {}
 
 func (x *SendModeratorAlertResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[10]
+	mi := &file_gallery_gallery_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -602,7 +682,7 @@ func (x *SendModeratorAlertResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendModeratorAlertResponse.ProtoReflect.Descriptor instead.
 func (*SendModeratorAlertResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{10}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{12}
 }
 
 type GetGalleryRequest struct {
@@ -614,7 +694,7 @@ type GetGalleryRequest struct {
 
 func (x *GetGalleryRequest) Reset() {
 	*x = GetGalleryRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[11]
+	mi := &file_gallery_gallery_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -626,7 +706,7 @@ func (x *GetGalleryRequest) String() string {
 func (*GetGalleryRequest) ProtoMessage() {}
 
 func (x *GetGalleryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[11]
+	mi := &file_gallery_gallery_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -639,7 +719,7 @@ func (x *GetGalleryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGalleryRequest.ProtoReflect.Descriptor instead.
 func (*GetGalleryRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{11}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetGalleryRequest) GetGalleryId() string {
@@ -661,7 +741,7 @@ type ListGalleriesRequest struct {
 
 func (x *ListGalleriesRequest) Reset() {
 	*x = ListGalleriesRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[12]
+	mi := &file_gallery_gallery_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -673,7 +753,7 @@ func (x *ListGalleriesRequest) String() string {
 func (*ListGalleriesRequest) ProtoMessage() {}
 
 func (x *ListGalleriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[12]
+	mi := &file_gallery_gallery_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -686,7 +766,7 @@ func (x *ListGalleriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGalleriesRequest.ProtoReflect.Descriptor instead.
 func (*ListGalleriesRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{12}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListGalleriesRequest) GetMyGalleries() bool {
@@ -720,7 +800,7 @@ type ListGalleriesResponse struct {
 
 func (x *ListGalleriesResponse) Reset() {
 	*x = ListGalleriesResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[13]
+	mi := &file_gallery_gallery_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -732,7 +812,7 @@ func (x *ListGalleriesResponse) String() string {
 func (*ListGalleriesResponse) ProtoMessage() {}
 
 func (x *ListGalleriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[13]
+	mi := &file_gallery_gallery_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -745,7 +825,7 @@ func (x *ListGalleriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGalleriesResponse.ProtoReflect.Descriptor instead.
 func (*ListGalleriesResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{13}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListGalleriesResponse) GetGalleries() []*Gallery {
@@ -771,7 +851,7 @@ type ListMembersRequest struct {
 
 func (x *ListMembersRequest) Reset() {
 	*x = ListMembersRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[14]
+	mi := &file_gallery_gallery_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -783,7 +863,7 @@ func (x *ListMembersRequest) String() string {
 func (*ListMembersRequest) ProtoMessage() {}
 
 func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[14]
+	mi := &file_gallery_gallery_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -796,7 +876,7 @@ func (x *ListMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersRequest.ProtoReflect.Descriptor instead.
 func (*ListMembersRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{14}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListMembersRequest) GetGalleryId() string {
@@ -825,7 +905,7 @@ type ListGalleriesByMemberRequest struct {
 
 func (x *ListGalleriesByMemberRequest) Reset() {
 	*x = ListGalleriesByMemberRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[15]
+	mi := &file_gallery_gallery_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -837,7 +917,7 @@ func (x *ListGalleriesByMemberRequest) String() string {
 func (*ListGalleriesByMemberRequest) ProtoMessage() {}
 
 func (x *ListGalleriesByMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[15]
+	mi := &file_gallery_gallery_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -850,7 +930,7 @@ func (x *ListGalleriesByMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGalleriesByMemberRequest.ProtoReflect.Descriptor instead.
 func (*ListGalleriesByMemberRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{15}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListGalleriesByMemberRequest) GetUserId() string {
@@ -883,7 +963,7 @@ type ListMembersResponse struct {
 
 func (x *ListMembersResponse) Reset() {
 	*x = ListMembersResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[16]
+	mi := &file_gallery_gallery_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -895,7 +975,7 @@ func (x *ListMembersResponse) String() string {
 func (*ListMembersResponse) ProtoMessage() {}
 
 func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[16]
+	mi := &file_gallery_gallery_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -908,7 +988,7 @@ func (x *ListMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMembersResponse.ProtoReflect.Descriptor instead.
 func (*ListMembersResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{16}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ListMembersResponse) GetMembers() []*Member {
@@ -932,7 +1012,7 @@ type IsMemberRequest struct {
 
 func (x *IsMemberRequest) Reset() {
 	*x = IsMemberRequest{}
-	mi := &file_gallery_gallery_proto_msgTypes[17]
+	mi := &file_gallery_gallery_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -944,7 +1024,7 @@ func (x *IsMemberRequest) String() string {
 func (*IsMemberRequest) ProtoMessage() {}
 
 func (x *IsMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[17]
+	mi := &file_gallery_gallery_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -957,7 +1037,7 @@ func (x *IsMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IsMemberRequest.ProtoReflect.Descriptor instead.
 func (*IsMemberRequest) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{17}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *IsMemberRequest) GetGalleryId() string {
@@ -984,7 +1064,7 @@ type IsMemberResponse struct {
 
 func (x *IsMemberResponse) Reset() {
 	*x = IsMemberResponse{}
-	mi := &file_gallery_gallery_proto_msgTypes[18]
+	mi := &file_gallery_gallery_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -996,7 +1076,7 @@ func (x *IsMemberResponse) String() string {
 func (*IsMemberResponse) ProtoMessage() {}
 
 func (x *IsMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_gallery_gallery_proto_msgTypes[18]
+	mi := &file_gallery_gallery_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1009,7 +1089,7 @@ func (x *IsMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IsMemberResponse.ProtoReflect.Descriptor instead.
 func (*IsMemberResponse) Descriptor() ([]byte, []int) {
-	return file_gallery_gallery_proto_rawDescGZIP(), []int{18}
+	return file_gallery_gallery_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *IsMemberResponse) GetIsMember() bool {
@@ -1048,7 +1128,11 @@ const file_gallery_gallery_proto_rawDesc = "" +
 	"\tjoined_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bjoinedAt\"L\n" +
 	"\x14CreateGalleryRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\"4\n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\"5\n" +
+	"\x14DeleteGalleryRequest\x12\x1d\n" +
+	"\n" +
+	"gallery_id\x18\x01 \x01(\tR\tgalleryId\"\x17\n" +
+	"\x15DeleteGalleryResponse\"4\n" +
 	"\x13CloseGalleryRequest\x12\x1d\n" +
 	"\n" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\"\x16\n" +
@@ -1097,9 +1181,10 @@ const file_gallery_gallery_proto_rawDesc = "" +
 	"\rGalleryStatus\x12\x1e\n" +
 	"\x1aGALLERY_STATUS_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13GALLERY_STATUS_OPEN\x10\x01\x12\x19\n" +
-	"\x15GALLERY_STATUS_CLOSED\x10\x022\xeb\b\n" +
+	"\x15GALLERY_STATUS_CLOSED\x10\x022\xe5\t\n" +
 	"\x0eGalleryService\x12`\n" +
-	"\rCreateGallery\x12\x1b.proto.CreateGalleryRequest\x1a\x0e.proto.Gallery\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/photogallery/galleries\x12~\n" +
+	"\rCreateGallery\x12\x1b.proto.CreateGalleryRequest\x1a\x0e.proto.Gallery\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/photogallery/galleries\x12x\n" +
+	"\rDeleteGallery\x12\x1b.proto.DeleteGalleryRequest\x1a\x1c.proto.DeleteGalleryResponse\",\x82\xd3\xe4\x93\x02&*$/photogallery/galleries/{gallery_id}\x12~\n" +
 	"\fCloseGallery\x12\x1a.proto.CloseGalleryRequest\x1a\x1b.proto.CloseGalleryResponse\"5\x82\xd3\xe4\x93\x02/:\x01*\"*/photogallery/galleries/{gallery_id}/close\x12}\n" +
 	"\vJoinGallery\x12\x19.proto.JoinGalleryRequest\x1a\x1a.proto.JoinGalleryResponse\"7\x82\xd3\xe4\x93\x021:\x01*\",/photogallery/galleries/{gallery_id}/members\x12}\n" +
 	"\fLeaveGallery\x12\x1a.proto.LeaveGalleryRequest\x1a\x1b.proto.LeaveGalleryResponse\"4\x82\xd3\xe4\x93\x02.*,/photogallery/galleries/{gallery_id}/members\x12\x90\x01\n" +
@@ -1125,60 +1210,64 @@ func file_gallery_gallery_proto_rawDescGZIP() []byte {
 }
 
 var file_gallery_gallery_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_gallery_gallery_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
+var file_gallery_gallery_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_gallery_gallery_proto_goTypes = []any{
 	(GalleryStatus)(0),                   // 0: proto.GalleryStatus
 	(*Gallery)(nil),                      // 1: proto.Gallery
 	(*Member)(nil),                       // 2: proto.Member
 	(*CreateGalleryRequest)(nil),         // 3: proto.CreateGalleryRequest
-	(*CloseGalleryRequest)(nil),          // 4: proto.CloseGalleryRequest
-	(*CloseGalleryResponse)(nil),         // 5: proto.CloseGalleryResponse
-	(*JoinGalleryRequest)(nil),           // 6: proto.JoinGalleryRequest
-	(*LeaveGalleryRequest)(nil),          // 7: proto.LeaveGalleryRequest
-	(*JoinGalleryResponse)(nil),          // 8: proto.JoinGalleryResponse
-	(*LeaveGalleryResponse)(nil),         // 9: proto.LeaveGalleryResponse
-	(*SendModeratorAlertRequest)(nil),    // 10: proto.SendModeratorAlertRequest
-	(*SendModeratorAlertResponse)(nil),   // 11: proto.SendModeratorAlertResponse
-	(*GetGalleryRequest)(nil),            // 12: proto.GetGalleryRequest
-	(*ListGalleriesRequest)(nil),         // 13: proto.ListGalleriesRequest
-	(*ListGalleriesResponse)(nil),        // 14: proto.ListGalleriesResponse
-	(*ListMembersRequest)(nil),           // 15: proto.ListMembersRequest
-	(*ListGalleriesByMemberRequest)(nil), // 16: proto.ListGalleriesByMemberRequest
-	(*ListMembersResponse)(nil),          // 17: proto.ListMembersResponse
-	(*IsMemberRequest)(nil),              // 18: proto.IsMemberRequest
-	(*IsMemberResponse)(nil),             // 19: proto.IsMemberResponse
-	(*timestamppb.Timestamp)(nil),        // 20: google.protobuf.Timestamp
+	(*DeleteGalleryRequest)(nil),         // 4: proto.DeleteGalleryRequest
+	(*DeleteGalleryResponse)(nil),        // 5: proto.DeleteGalleryResponse
+	(*CloseGalleryRequest)(nil),          // 6: proto.CloseGalleryRequest
+	(*CloseGalleryResponse)(nil),         // 7: proto.CloseGalleryResponse
+	(*JoinGalleryRequest)(nil),           // 8: proto.JoinGalleryRequest
+	(*LeaveGalleryRequest)(nil),          // 9: proto.LeaveGalleryRequest
+	(*JoinGalleryResponse)(nil),          // 10: proto.JoinGalleryResponse
+	(*LeaveGalleryResponse)(nil),         // 11: proto.LeaveGalleryResponse
+	(*SendModeratorAlertRequest)(nil),    // 12: proto.SendModeratorAlertRequest
+	(*SendModeratorAlertResponse)(nil),   // 13: proto.SendModeratorAlertResponse
+	(*GetGalleryRequest)(nil),            // 14: proto.GetGalleryRequest
+	(*ListGalleriesRequest)(nil),         // 15: proto.ListGalleriesRequest
+	(*ListGalleriesResponse)(nil),        // 16: proto.ListGalleriesResponse
+	(*ListMembersRequest)(nil),           // 17: proto.ListMembersRequest
+	(*ListGalleriesByMemberRequest)(nil), // 18: proto.ListGalleriesByMemberRequest
+	(*ListMembersResponse)(nil),          // 19: proto.ListMembersResponse
+	(*IsMemberRequest)(nil),              // 20: proto.IsMemberRequest
+	(*IsMemberResponse)(nil),             // 21: proto.IsMemberResponse
+	(*timestamppb.Timestamp)(nil),        // 22: google.protobuf.Timestamp
 }
 var file_gallery_gallery_proto_depIdxs = []int32{
 	0,  // 0: proto.Gallery.status:type_name -> proto.GalleryStatus
-	20, // 1: proto.Gallery.created_at:type_name -> google.protobuf.Timestamp
-	20, // 2: proto.Gallery.updated_at:type_name -> google.protobuf.Timestamp
-	20, // 3: proto.Member.joined_at:type_name -> google.protobuf.Timestamp
+	22, // 1: proto.Gallery.created_at:type_name -> google.protobuf.Timestamp
+	22, // 2: proto.Gallery.updated_at:type_name -> google.protobuf.Timestamp
+	22, // 3: proto.Member.joined_at:type_name -> google.protobuf.Timestamp
 	1,  // 4: proto.ListGalleriesResponse.galleries:type_name -> proto.Gallery
 	2,  // 5: proto.ListMembersResponse.members:type_name -> proto.Member
 	0,  // 6: proto.IsMemberResponse.gallery_status:type_name -> proto.GalleryStatus
 	3,  // 7: proto.GalleryService.CreateGallery:input_type -> proto.CreateGalleryRequest
-	4,  // 8: proto.GalleryService.CloseGallery:input_type -> proto.CloseGalleryRequest
-	6,  // 9: proto.GalleryService.JoinGallery:input_type -> proto.JoinGalleryRequest
-	7,  // 10: proto.GalleryService.LeaveGallery:input_type -> proto.LeaveGalleryRequest
-	10, // 11: proto.GalleryService.SendModeratorAlert:input_type -> proto.SendModeratorAlertRequest
-	12, // 12: proto.GalleryService.GetGallery:input_type -> proto.GetGalleryRequest
-	13, // 13: proto.GalleryService.ListGalleries:input_type -> proto.ListGalleriesRequest
-	15, // 14: proto.GalleryService.ListMembers:input_type -> proto.ListMembersRequest
-	18, // 15: proto.GalleryService.IsMember:input_type -> proto.IsMemberRequest
-	16, // 16: proto.GalleryService.ListGalleriesByMember:input_type -> proto.ListGalleriesByMemberRequest
-	1,  // 17: proto.GalleryService.CreateGallery:output_type -> proto.Gallery
-	5,  // 18: proto.GalleryService.CloseGallery:output_type -> proto.CloseGalleryResponse
-	8,  // 19: proto.GalleryService.JoinGallery:output_type -> proto.JoinGalleryResponse
-	9,  // 20: proto.GalleryService.LeaveGallery:output_type -> proto.LeaveGalleryResponse
-	11, // 21: proto.GalleryService.SendModeratorAlert:output_type -> proto.SendModeratorAlertResponse
-	1,  // 22: proto.GalleryService.GetGallery:output_type -> proto.Gallery
-	14, // 23: proto.GalleryService.ListGalleries:output_type -> proto.ListGalleriesResponse
-	17, // 24: proto.GalleryService.ListMembers:output_type -> proto.ListMembersResponse
-	19, // 25: proto.GalleryService.IsMember:output_type -> proto.IsMemberResponse
-	14, // 26: proto.GalleryService.ListGalleriesByMember:output_type -> proto.ListGalleriesResponse
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
+	4,  // 8: proto.GalleryService.DeleteGallery:input_type -> proto.DeleteGalleryRequest
+	6,  // 9: proto.GalleryService.CloseGallery:input_type -> proto.CloseGalleryRequest
+	8,  // 10: proto.GalleryService.JoinGallery:input_type -> proto.JoinGalleryRequest
+	9,  // 11: proto.GalleryService.LeaveGallery:input_type -> proto.LeaveGalleryRequest
+	12, // 12: proto.GalleryService.SendModeratorAlert:input_type -> proto.SendModeratorAlertRequest
+	14, // 13: proto.GalleryService.GetGallery:input_type -> proto.GetGalleryRequest
+	15, // 14: proto.GalleryService.ListGalleries:input_type -> proto.ListGalleriesRequest
+	17, // 15: proto.GalleryService.ListMembers:input_type -> proto.ListMembersRequest
+	20, // 16: proto.GalleryService.IsMember:input_type -> proto.IsMemberRequest
+	18, // 17: proto.GalleryService.ListGalleriesByMember:input_type -> proto.ListGalleriesByMemberRequest
+	1,  // 18: proto.GalleryService.CreateGallery:output_type -> proto.Gallery
+	5,  // 19: proto.GalleryService.DeleteGallery:output_type -> proto.DeleteGalleryResponse
+	7,  // 20: proto.GalleryService.CloseGallery:output_type -> proto.CloseGalleryResponse
+	10, // 21: proto.GalleryService.JoinGallery:output_type -> proto.JoinGalleryResponse
+	11, // 22: proto.GalleryService.LeaveGallery:output_type -> proto.LeaveGalleryResponse
+	13, // 23: proto.GalleryService.SendModeratorAlert:output_type -> proto.SendModeratorAlertResponse
+	1,  // 24: proto.GalleryService.GetGallery:output_type -> proto.Gallery
+	16, // 25: proto.GalleryService.ListGalleries:output_type -> proto.ListGalleriesResponse
+	19, // 26: proto.GalleryService.ListMembers:output_type -> proto.ListMembersResponse
+	21, // 27: proto.GalleryService.IsMember:output_type -> proto.IsMemberResponse
+	16, // 28: proto.GalleryService.ListGalleriesByMember:output_type -> proto.ListGalleriesResponse
+	18, // [18:29] is the sub-list for method output_type
+	7,  // [7:18] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -1195,7 +1284,7 @@ func file_gallery_gallery_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_gallery_gallery_proto_rawDesc), len(file_gallery_gallery_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   19,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

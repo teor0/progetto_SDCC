@@ -34,6 +34,13 @@ message CreateGalleryRequest {
   // moderator_id is taken from the validated JWT claims in the gateway;
 }
 
+message DeleteGalleryRequest {
+  string gallery_id = 1;
+}
+
+message DeleteGalleryResponse {
+}
+
 message CloseGalleryRequest {
   string gallery_id = 1;
 }
@@ -131,6 +138,13 @@ service GalleryService {
     option (google.api.http) = {
       post: "/photogallery/galleries"
       body: "*"
+    };
+  }
+
+  // DeleteGallery deletes a gallery. Caller must be MODERATOR.
+  rpc DeleteGallery(DeleteGalleryRequest) returns (DeleteGalleryResponse) {
+    option (google.api.http) = {
+      delete: "/photogallery/galleries/{gallery_id}"
     };
   }
 

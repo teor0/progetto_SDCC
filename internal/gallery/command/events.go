@@ -12,7 +12,7 @@ import (
 
 // ExchangeName is the topic exchange all gallery domain events are published to.
 // The Notification Service binds queues to this exchange with routing keys
-// matching the event types it cares about (e.g. "gallery.member_added").
+// matching the event types it cares about (e.g. "gallery.moderator_alert").
 const ExchangeName = "gallery.events"
 
 // Envelope wraps every published event with a consistent shape so consumers
@@ -24,9 +24,7 @@ type Envelope struct {
 }
 
 // RabbitMQPublisher implements EventPublisher by publishing JSON-encoded
-// events to a topic exchange. Routing key = eventType, lowercased with
-// dots (e.g. "GalleryCreated" -> "gallery.created") so consumers can bind
-// with wildcards like "gallery.#" or "gallery.member_*".
+// events to a topic exchange.
 type RabbitMQPublisher struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
@@ -51,8 +49,8 @@ func NewRabbitMQPublisher(amqpURL string) (*RabbitMQPublisher, error) {
 		"topic",
 		true,  // durable — survives broker restart
 		false, // auto-deleted
-		false, // internal
-		false, // no-wait
+		false,
+		false,
 		nil,
 	)
 	if err != nil {
@@ -94,8 +92,8 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, eventType string, paylo
 	err = p.channel.PublishWithContext(publishCtx,
 		ExchangeName,
 		routingKey,
-		false, // mandatory
-		false, // immediate
+		false,
+		false,
 		amqp.Publishing{
 			ContentType:  "application/json",
 			DeliveryMode: amqp.Persistent,
@@ -110,7 +108,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, eventType string, paylo
 	return nil
 }
 
-// Close releases the channel and connection. Call this on service shutdown.
+// Close releases the channel and connection.
 func (p *RabbitMQPublisher) Close() error {
 	if err := p.channel.Close(); err != nil {
 		return err
@@ -118,11 +116,7 @@ func (p *RabbitMQPublisher) Close() error {
 	return p.conn.Close()
 }
 
-// routingKeyFor maps Go-style event type names to dot-separated routing
-// keys. Kept as an explicit switch rather than a reflection-based
-// camelCase-to-dot converter, since the event type set is small and fixed
-// — explicit is easier to audit against what the Notification Service
-// actually binds to.
+// routingKeyFor maps Go-style event type names to dot-separated routing keys.
 func routingKeyFor(eventType string) string {
 	switch eventType {
 	case "GalleryCreated":
@@ -131,6 +125,8 @@ func routingKeyFor(eventType string) string {
 		return "gallery.closed"
 	case "MemberAdded":
 		return "gallery.member_added"
+	case "GalleryDeleted":
+		return "gallery.deleted"
 	case "MemberRemoved":
 		return "gallery.member_removed"
 	case "ModeratorAlert":

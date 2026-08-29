@@ -12,7 +12,8 @@
       "name": "NotificationService"
     },
     {
-      "name": "UploadService"
+      "name": "UploadService",
+      "description": "UploadService receives photos from clients (via the API Gateway),\npersists them to object storage (MinIO), and emits an upload event\nto RabbitMQ once storage succeeds. It calls out to GalleryService to\nverify the gallery exists and the user is a member; that call is\nwrapped in a circuit breaker on the server implementation side."
     },
     {
       "name": "UserService"
@@ -197,6 +198,35 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/protoGallery"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "galleryId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GalleryService"
+        ]
+      },
+      "delete": {
+        "summary": "DeleteGallery deletes a gallery. Caller must be MODERATOR.",
+        "operationId": "GalleryService_DeleteGallery",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoDeleteGalleryResponse"
             }
           },
           "default": {
@@ -424,6 +454,9 @@
           "title": "moderator_id is taken from the validated JWT claims in the gateway;"
         }
       }
+    },
+    "protoDeleteGalleryResponse": {
+      "type": "object"
     },
     "protoGallery": {
       "type": "object",

@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+// corsMiddleware is the function that embeds CORS authorization
 func corsMiddleware(origin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -77,6 +78,7 @@ func main() {
 	uploadConn, err := grpc.NewClient(
 		uploadAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to UploadService: %v", err)
@@ -87,6 +89,7 @@ func main() {
 	notificationConn, err := grpc.NewClient(
 		notificationAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to NotificationService: %v", err)
@@ -99,6 +102,7 @@ func main() {
 	uploadHandler := handlers.NewUploadHandler(uploadClient, minioPublicURL, minioBucket)
 	notificationHandler := handlers.NewNotificationHandler(notificationClient)
 
+	// add to router the paths a specific handler is in charge
 	router.POST("/api/uploads", uploadHandler.UploadPhoto)
 	router.GET("/api/galleries/:galleryId/uploads", uploadHandler.ListUploads)
 	router.GET("/api/notifications/stream", notificationHandler.Stream)

@@ -66,6 +66,18 @@ export async function joinGallery(galleryId: string): Promise<void> {
     }
 }
 
+export async function deleteGallery(galleryId: string): Promise<void> {
+    try {
+        await galleryApi.deleteGallery(galleryId);
+        await loadGalleries();
+    } catch (error) {
+        dispatcher.dispatch({
+            type: "GALLERY_DELETE_FAILURE",
+            payload: error instanceof Error ? error.message : "Failed to delete gallery",
+        });
+    }
+}
+
 export async function leaveGallery(galleryId: string): Promise<void> {
     try {
         await galleryApi.leaveGallery(galleryId);

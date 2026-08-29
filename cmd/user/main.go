@@ -23,7 +23,7 @@ func main() {
 		log.Fatalln("JWT_SECRET environment variable is required")
 	}
 	grpcPort := os.Getenv("USER_GRPC_PORT")
-	//config del server per user service
+	//config of the server of User service
 	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatalln("Failed to listen:", err)

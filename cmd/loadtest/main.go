@@ -1,15 +1,6 @@
-// Command loadtest drives concurrent load against a running deployment of
-// this project's API Gateway and reports per-operation latency
+// Use this main to test against a running deployment of
+// API Gateway and create reports with per-operation latency
 // distribution and error rate.
-//
-// It deliberately does NOT use mocks or an in-process server -- like the
-// files in test/integration, this talks to a real, fully deployed stack
-// (docker compose locally, or your EC2 instance). Run it from a different
-// machine than the one running the services under test (e.g. your laptop
-// against the EC2 public IP), so the load generator's own CPU/network
-// usage doesn't compete with -- and skew measurements of -- the app
-// you're actually testing.
-//
 // Usage:
 //
 //	go run ./cmd/loadtest -gateway http://<PUBLIC_IPV4>:8080 -users 50 -duration 30s
@@ -19,22 +10,17 @@
 //	read-heavy (default):
 //	  go run ./cmd/loadtest -gateway http://<IP>:8080 -users 100 -duration 60s
 //
-//	write-heavy (stress the upload path / circuit breaker harder):
-//	  go run ./cmd/loadtest -gateway http://<IP>:8080 -users 50 -duration 60s -upload-pct 50 -list-my-pct 25
-//
 // Chaos injection (automatically trip and recover the circuit breaker):
+//
+// use -upload-pct to specify the percent of requests that are photo uploads
+// use -list-my-pct to specify the percent of requests that are ListGalleries(my_galleries=true)
 //
 //	go run ./cmd/loadtest -gateway http://<IP>:8080 -users 30 -duration 90s \
 //	  -upload-pct 60 -list-my-pct 20 \
 //	  -chaos-after 20s -chaos-duration 20s \
 //	  -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
 //
-//	-users 5 -duration 15s -chaos-after 5s -chaos-duration 5s
-//
-// Chaos prerequisites: `ssh` on PATH locally, and the key usable
-// non-interactively -- if it's passphrase-protected, `ssh-add` it first,
-// since BatchMode=yes makes the tool fail fast rather than hang waiting
-// for a prompt that will never come.
+//	use go run ./cmd/loadtest -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
 package main
 
 import (
@@ -48,6 +34,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os/exec"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -55,17 +42,13 @@ import (
 	"time"
 )
 
-// gatewayURL is set once from flags in main and read by every helper below.
-// This is a small standalone CLI tool, not part of the application itself,
-// so a package-level var here is a reasonable trade-off against threading
-// it through every function signature.
+// gatewayURL is set once from flags in main
 var gatewayURL string
 
 // httpClient is shared across every request the load generator makes.
 // The explicit transport matters: net/http's zero-value transport (what
 // http.DefaultClient uses) caps idle connections per host at 2, which
-// would make TCP connection churn -- not your services -- the actual
-// bottleneck once dozens of goroutines are hitting one host concurrently.
+// would cause a bottleneck
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
 	Transport: &http.Transport{
@@ -75,12 +58,6 @@ var httpClient = &http.Client{
 	},
 }
 
-// fakePhotoBytes is a small, fixed-size payload for load-test uploads.
-// This tool measures request/connection-handling overhead and
-// cross-service coordination cost (Upload Service -> Gallery Service's
-// IsMember, through the circuit breaker) under concurrency -- not network
-// bandwidth for large files. If you specifically want to test storage
-// throughput with realistic file sizes, swap this out.
 var fakePhotoBytes = bytes.Repeat([]byte("x"), 2048)
 
 type config struct {
@@ -91,18 +68,14 @@ type config struct {
 	listMyPct  int
 }
 
-// chaosConfig controls an optional automatic fault injection: stop a
-// docker compose service partway through the load phase, leave it down
-// for a while, then bring it back -- reproducing the circuit breaker's
-// full open -> fast-fail -> half-open probe -> closed cycle on a fixed
-// schedule instead of manually timing two terminals.
+// chaosConfig controls the automatic fault injection
 type chaosConfig struct {
 	enabled    bool
 	after      time.Duration
 	duration   time.Duration
 	service    string
-	sshHost    string // e.g. ec2-user@<PUBLIC_IPV4>
-	sshKey     string // path to the private key, e.g. labsuser.pem
+	sshHost    string
+	sshKey     string
 	composeDir string // remote directory containing docker-compose.yml
 }
 
@@ -139,12 +112,7 @@ func main() {
 		}
 	}
 
-	// --- setup phase: not measured, deliberately parallelized (bounded)
-	// so registering many accounts doesn't itself take minutes before the
-	// timed load phase even starts. Note bcrypt (auth.HashPassword) is
-	// intentionally CPU-expensive -- if setup is slow, that's User
-	// Service's registration cost showing up, not a bug in this tool. ---
-	log.Println("--- setup phase (not measured) ---")
+	log.Println("--- setup phase ---")
 
 	moderatorToken := mustRegister("ROLE_MODERATOR")
 	gallery := mustCreateGallery(moderatorToken, "Scalability Test Gallery")
@@ -153,16 +121,10 @@ func main() {
 	tokens := setupUsers(cfg, gallery.ID)
 	log.Printf("registered and joined %d users", len(tokens))
 
-	// JWT tokens are minted with a 1h TTL (auth.TokenTTL). Keep -duration
-	// comfortably under that, or virtual users will start failing near
-	// the end from token expiry, not from anything the system under test
-	// is actually doing -- an easy way to misread results if you don't
-	// know to look for it.
 	if cfg.duration > 50*time.Minute {
-		log.Println("WARNING: -duration is close to the 1h JWT TTL -- late failures may be token expiry, not real load-related errors")
+		log.Println("WARNING: -duration is close to the JWT TTL")
 	}
 
-	// --- load phase: measured ---
 	log.Println("--- load phase ---")
 
 	var wg sync.WaitGroup
@@ -208,10 +170,7 @@ func main() {
 	close(resultsCh)
 	actualDuration := time.Since(start)
 
-	// Wait for any in-progress chaos restart to finish too, even if it
-	// runs slightly past the load phase -- leaving the target service
-	// stopped after the tool exits would be a bad surprise for whatever
-	// you run next.
+	// Wait for any in-progress chaos restart
 	chaosWG.Wait()
 
 	var all []opResult
@@ -224,8 +183,7 @@ func main() {
 	if chaos.enabled {
 		fmt.Printf("chaos injection: stopped %s at t+%s, restarted at t+%s\n",
 			chaos.service, chaosStopOffset.Round(time.Millisecond), chaosRestartOffset.Round(time.Millisecond))
-		fmt.Println("cross-reference these offsets against `docker compose logs upload-service | grep CircuitBreaker` " +
-			"on the remote host to confirm the breaker's OPEN/HALF-OPEN/CLOSED transitions lined up as expected.")
+		fmt.Println("cross-reference these offsets against `docker compose logs upload-service | grep CircuitBreaker` ")
 	}
 }
 
@@ -234,13 +192,13 @@ func parseFlags() (config, chaosConfig) {
 	users := flag.Int("users", 50, "number of concurrent virtual users")
 	duration := flag.Duration("duration", 30*time.Second, "how long to run the measured load phase")
 	uploadPct := flag.Int("upload-pct", 10, "percent of requests that are photo uploads")
-	listMyPct := flag.Int("list-my-pct", 60, "percent of requests that are ListGalleries(my_galleries=true); remainder is ListGalleries(all)")
+	listMyPct := flag.Int("list-my-pct", 60, "percent of requests that are ListGalleries(my_galleries=true)")
 
-	chaosAfter := flag.Duration("chaos-after", 0, "if > 0, stop -chaos-service this long after the load phase starts (requires -chaos-ssh-host)")
+	chaosAfter := flag.Duration("chaos-after", 0, "if > 0, stop -chaos-service this long after the load phase starts")
 	chaosDuration := flag.Duration("chaos-duration", 20*time.Second, "how long to keep -chaos-service stopped before restarting it")
 	chaosService := flag.String("chaos-service", "gallery-service", "docker compose service name to stop/start for the chaos injection")
-	chaosSSHHost := flag.String("chaos-ssh-host", "", "user@host for SSH'ing into the deployment to run docker compose, e.g. ec2-user@1.2.3.4")
-	chaosSSHKey := flag.String("chaos-ssh-key", "", "path to the SSH private key for -chaos-ssh-host (e.g. labsuser.pem)")
+	chaosSSHHost := flag.String("chaos-ssh-host", "", "user@host for SSH'ing into the deployment to run docker compose")
+	chaosSSHKey := flag.String("chaos-ssh-key", "", "path to the SSH private key for -chaos-ssh-host")
 	chaosComposeDir := flag.String("chaos-compose-dir", "~/photogallery", "remote directory containing docker-compose.yml")
 
 	flag.Parse()
@@ -248,8 +206,8 @@ func parseFlags() (config, chaosConfig) {
 	if *uploadPct < 0 || *listMyPct < 0 || *uploadPct+*listMyPct > 100 {
 		log.Fatal("upload-pct and list-my-pct must each be >= 0 and sum to <= 100")
 	}
-	if *users < 1 {
-		log.Fatal("-users must be at least 1")
+	if *users < 2 {
+		log.Fatal("-users must be at least 2")
 	}
 
 	gatewayURL = *gateway
@@ -276,12 +234,6 @@ func parseFlags() (config, chaosConfig) {
 	}, chaos
 }
 
-// runChaos sleeps until cfg.after has elapsed since loadPhaseStart, stops
-// cfg.service via a remote docker compose command over SSH, sleeps
-// cfg.duration, then restarts it. Offsets (time since loadPhaseStart) are
-// written back through the pointers so the caller can report exactly when
-// each action happened relative to the load phase, for lining up against
-// the load tool's own latency/error timeline and the remote service logs.
 func runChaos(cfg chaosConfig, loadPhaseStart time.Time, stopOffset, restartOffset *time.Duration) {
 	time.Sleep(cfg.after)
 	*stopOffset = time.Since(loadPhaseStart)
@@ -299,10 +251,6 @@ func runChaos(cfg chaosConfig, loadPhaseStart time.Time, stopOffset, restartOffs
 	}
 }
 
-// runRemoteCompose runs `docker compose <action> <service>` on the remote
-// host over SSH. BatchMode=yes makes SSH fail immediately with an error
-// instead of hanging on an interactive password/passphrase prompt that
-// has nowhere to be answered from inside this tool.
 func runRemoteCompose(cfg chaosConfig, action, service string) error {
 	remoteCmd := fmt.Sprintf("cd %s && docker compose %s %s", cfg.composeDir, action, service)
 
@@ -321,9 +269,7 @@ func runRemoteCompose(cfg chaosConfig, action, service string) error {
 	return nil
 }
 
-// setupUsers registers cfg.users accounts and joins each to galleryID, with
-// bounded concurrency so setup itself doesn't serialize completely but also
-// doesn't hammer the server harder than the actual load phase will.
+// setupUsers registers cfg.users accounts
 func setupUsers(cfg config, galleryID string) []string {
 	tokens := make([]string, cfg.users)
 	sem := make(chan struct{}, 20)
@@ -344,9 +290,7 @@ func setupUsers(cfg config, galleryID string) []string {
 	return tokens
 }
 
-// runWorker repeatedly performs a randomly weighted operation until stop,
-// recording every attempt locally (no shared-state locking in the hot
-// loop -- results are merged centrally only after the worker finishes).
+// runWorker repeatedly performs a random operation
 func runWorker(cfg config, token, galleryID string, stop time.Time) []opResult {
 	var results []opResult
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -392,7 +336,7 @@ func timedListGalleries(token string, mine bool) opResult {
 		return opResult{op: op, latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	return opResult{op: op, latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
@@ -515,14 +459,12 @@ func mustJoinGallery(token, galleryID string) {
 		log.Fatalf("join gallery: %v", err)
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		log.Fatalf("join gallery: status=%d", resp.StatusCode)
 	}
 }
-
-// --- reporting ---
 
 type opStats struct {
 	op                            string
@@ -563,7 +505,7 @@ func computeStats(op string, results []opResult) opStats {
 			errors++
 		}
 	}
-	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+	slices.Sort(latencies)
 
 	pct := func(p float64) time.Duration {
 		if len(latencies) == 0 {

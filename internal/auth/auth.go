@@ -21,16 +21,14 @@ const TokenTTL = 1 * time.Hour
 // successful authentication. Use FromContext to retrieve it.
 type claimsKey struct{}
 
-// claims is the JWT payload structure, matching what UserService signs.
+// Claims is the JWT payload structure, matching what UserService signs.
 type Claims struct {
 	UserID uuid.UUID `json:"user_id"`
 	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// ServiceRole labels the token minted by ServiceCredentials. It isn't a
-// value from userpb.Role (that enum only covers human accounts) -- just an
-// informational string services can log if they ever need to.
+// ServiceRole useful for error handling during authentication
 const ServiceRole = "ROLE_SERVICE"
 
 // SignToken creates and signs a JWT for the given user.
@@ -92,12 +90,12 @@ func FromContext(ctx context.Context) (*Claims, error) {
 }
 
 // NewContext returns a copy of ctx with claims attached under the same key
-// AuthFunc uses. Exported so interceptor code and tests outside this
-// package can construct an authenticated context directly.
+// AuthFunc uses. Needed by interceptor and test code.
 func NewContext(ctx context.Context, claims *Claims) context.Context {
 	return context.WithValue(ctx, claimsKey{}, claims)
 }
 
+// HashPassword simple function to hash password
 func HashPassword(password string) (string, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hashed), err
@@ -108,9 +106,7 @@ func CheckPassword(hashed, password string) error {
 }
 
 // serviceAuthInterceptor signs a fresh JWT with jwtSecret and attaches it
-// as a bearer token to every outgoing unary call. Split out from
-// ServiceCredentials so it can be unit tested directly without dialing a
-// real connection.
+// as a bearer token to every outgoing unary call.
 func serviceAuthInterceptor(jwtSecret string) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
@@ -130,12 +126,7 @@ func serviceAuthInterceptor(jwtSecret string) grpc.UnaryClientInterceptor {
 }
 
 // ServiceCredentials returns a grpc.DialOption for service-to-service
-// calls that hit RPCs which require *a* valid token but don't check
-// identity or role -- e.g. GalleryService.IsMember, ListMembers, and
-// ListGalleriesByMember, none of which read claims out of the context.
-// A fresh token is signed on every call rather than cached and refreshed;
-// that's cheap (HMAC signing, no I/O) at this project's scale, and avoids
-// having to track TokenTTL expiry across a long-lived connection.
+// calls which require a valid token but don't check identity or role
 func ServiceCredentials(jwtSecret string) grpc.DialOption {
 	return grpc.WithUnaryInterceptor(serviceAuthInterceptor(jwtSecret))
 }

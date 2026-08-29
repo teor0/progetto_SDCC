@@ -100,6 +100,7 @@ func (h *UploadHandler) UploadPhoto(c *gin.Context) {
 		})
 		return
 	}
+	// Photo chunks
 	buffer := make([]byte, chunkSize)
 	for {
 		n, err := file.Read(buffer)
@@ -141,11 +142,7 @@ func (h *UploadHandler) UploadPhoto(c *gin.Context) {
 	})
 }
 
-// ListUploads returns a gallery's photos with browser-usable URLs,
-// reconstructed from each object's storage_key rather than trusting any
-// stored URL -- none is persisted (model.Record has no URL field), and
-// UploadPhotoResponse's own url is built from MinIO's internal Docker
-// hostname, which a browser can never resolve.
+// ListUploads returns a gallery's photos
 func (h *UploadHandler) ListUploads(c *gin.Context) {
 	galleryID := c.Param("galleryId")
 	if galleryID == "" {

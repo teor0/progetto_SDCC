@@ -82,6 +82,26 @@ func (mr *MockGalleryServiceClientMockRecorder) CreateGallery(ctx, in any, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGallery", reflect.TypeOf((*MockGalleryServiceClient)(nil).CreateGallery), varargs...)
 }
 
+// DeleteGallery mocks base method.
+func (m *MockGalleryServiceClient) DeleteGallery(ctx context.Context, in *gallery.DeleteGalleryRequest, opts ...grpc.CallOption) (*gallery.DeleteGalleryResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteGallery", varargs...)
+	ret0, _ := ret[0].(*gallery.DeleteGalleryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteGallery indicates an expected call of DeleteGallery.
+func (mr *MockGalleryServiceClientMockRecorder) DeleteGallery(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGallery", reflect.TypeOf((*MockGalleryServiceClient)(nil).DeleteGallery), varargs...)
+}
+
 // GetGallery mocks base method.
 func (m *MockGalleryServiceClient) GetGallery(ctx context.Context, in *gallery.GetGalleryRequest, opts ...grpc.CallOption) (*gallery.Gallery, error) {
 	m.ctrl.T.Helper()

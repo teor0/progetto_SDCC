@@ -86,6 +86,21 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  upload_postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: matteo
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: upload_db
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matteo -d upload_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - upload_pgdata:/var/lib/postgresql/data
 
   upload-service:
     build:
@@ -96,6 +111,11 @@ services:
       - "8083:8083"
     environment:
       JWT_SECRET: ${JWT_SECRET}
+      DB_HOST: upload_postgres
+      DB_USER: matteo
+      DB_PASSWORD: password
+      DB_NAME_UPLOAD: upload_db
+      DB_PORT_UPLOAD: 5432
       UPLOAD_GRPC_PORT: 8083
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       RABBITMQ_EXCHANGE: gallery.events
@@ -111,6 +131,17 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      upload_postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 2s
+      timeout: 3s
+      retries: 10
 
 
   minio:
@@ -137,10 +168,13 @@ services:
     environment:
       JWT_SECRET: ${JWT_SECRET}
       NOTIFICATION_GRPC_PORT: 8084
+      REDIS_ADDR: redis:6379
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 
@@ -169,5 +203,5 @@ services:
 volumes:
   user_pgdata:
   gallery_pgdata:
+  upload_pgdata:
   minio-data:
-

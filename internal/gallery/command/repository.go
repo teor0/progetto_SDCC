@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// CommandRepository keeps all the functions that the GalleryService must provide
 type CommandRepository interface {
 	CreateGallery(ctx context.Context, g *models.Gallery) error
 	GetGallery(ctx context.Context, id uuid.UUID) (*models.Gallery, error)
@@ -47,7 +48,7 @@ func (r *GormCommandRepository) UpdateGallery(ctx context.Context, g *models.Gal
 	return r.db.WithContext(ctx).Save(g).Error
 }
 func (r *GormCommandRepository) DeleteGallery(ctx context.Context, id uuid.UUID) error {
-	return r.db.WithContext(ctx).Delete(&models.Gallery{}, "id=?", id).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&models.Gallery{}, "id=?", id).Error //without unscoped the gallery is recoverable
 }
 func (r *GormCommandRepository) JoinGallery(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&models.Member{GalleryID: id, UserID: userID}).Error

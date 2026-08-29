@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	GalleryService_CreateGallery_FullMethodName         = "/proto.GalleryService/CreateGallery"
+	GalleryService_DeleteGallery_FullMethodName         = "/proto.GalleryService/DeleteGallery"
 	GalleryService_CloseGallery_FullMethodName          = "/proto.GalleryService/CloseGallery"
 	GalleryService_JoinGallery_FullMethodName           = "/proto.GalleryService/JoinGallery"
 	GalleryService_LeaveGallery_FullMethodName          = "/proto.GalleryService/LeaveGallery"
@@ -37,6 +38,8 @@ const (
 type GalleryServiceClient interface {
 	// CreateGallery creates a new gallery. Caller must be MODERATOR.
 	CreateGallery(ctx context.Context, in *CreateGalleryRequest, opts ...grpc.CallOption) (*Gallery, error)
+	// DeleteGallery deletes a gallery. Caller must be MODERATOR.
+	DeleteGallery(ctx context.Context, in *DeleteGalleryRequest, opts ...grpc.CallOption) (*DeleteGalleryResponse, error)
 	// CloseGallery marks a gallery as closed. Caller must be MODERATOR.
 	CloseGallery(ctx context.Context, in *CloseGalleryRequest, opts ...grpc.CallOption) (*CloseGalleryResponse, error)
 	// AddMember adds a user to a gallery. Any authenticated user may join.
@@ -75,6 +78,16 @@ func (c *galleryServiceClient) CreateGallery(ctx context.Context, in *CreateGall
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Gallery)
 	err := c.cc.Invoke(ctx, GalleryService_CreateGallery_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *galleryServiceClient) DeleteGallery(ctx context.Context, in *DeleteGalleryRequest, opts ...grpc.CallOption) (*DeleteGalleryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGalleryResponse)
+	err := c.cc.Invoke(ctx, GalleryService_DeleteGallery_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -177,6 +190,8 @@ func (c *galleryServiceClient) ListGalleriesByMember(ctx context.Context, in *Li
 type GalleryServiceServer interface {
 	// CreateGallery creates a new gallery. Caller must be MODERATOR.
 	CreateGallery(context.Context, *CreateGalleryRequest) (*Gallery, error)
+	// DeleteGallery deletes a gallery. Caller must be MODERATOR.
+	DeleteGallery(context.Context, *DeleteGalleryRequest) (*DeleteGalleryResponse, error)
 	// CloseGallery marks a gallery as closed. Caller must be MODERATOR.
 	CloseGallery(context.Context, *CloseGalleryRequest) (*CloseGalleryResponse, error)
 	// AddMember adds a user to a gallery. Any authenticated user may join.
@@ -212,6 +227,9 @@ type UnimplementedGalleryServiceServer struct{}
 
 func (UnimplementedGalleryServiceServer) CreateGallery(context.Context, *CreateGalleryRequest) (*Gallery, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateGallery not implemented")
+}
+func (UnimplementedGalleryServiceServer) DeleteGallery(context.Context, *DeleteGalleryRequest) (*DeleteGalleryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteGallery not implemented")
 }
 func (UnimplementedGalleryServiceServer) CloseGallery(context.Context, *CloseGalleryRequest) (*CloseGalleryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CloseGallery not implemented")
@@ -274,6 +292,24 @@ func _GalleryService_CreateGallery_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GalleryServiceServer).CreateGallery(ctx, req.(*CreateGalleryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GalleryService_DeleteGallery_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGalleryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GalleryServiceServer).DeleteGallery(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GalleryService_DeleteGallery_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GalleryServiceServer).DeleteGallery(ctx, req.(*DeleteGalleryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -450,6 +486,10 @@ var GalleryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateGallery",
 			Handler:    _GalleryService_CreateGallery_Handler,
+		},
+		{
+			MethodName: "DeleteGallery",
+			Handler:    _GalleryService_DeleteGallery_Handler,
 		},
 		{
 			MethodName: "CloseGallery",

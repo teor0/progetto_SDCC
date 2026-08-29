@@ -15,8 +15,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// notifier is the subset of Broadcaster's behavior Consumer depends on.
+type notifier interface {
+	PublishNotification(ctx context.Context, n *notificationpb.Notification) error
+	PublishMemberAdded(ctx context.Context, galleryID, userID uuid.UUID) error
+	PublishMemberRemoved(ctx context.Context, galleryID, userID uuid.UUID) error
+}
+
 type Consumer struct {
-	registry      *Registry
+	broadcaster   notifier
 	galleryClient gallerypb.GalleryServiceClient
 
 	// galleryNames caches gallery_id -> name so a burst of uploads to the
@@ -30,9 +37,9 @@ type Consumer struct {
 	galleryNames map[uuid.UUID]string
 }
 
-func NewConsumer(r *Registry, galleryClient gallerypb.GalleryServiceClient) *Consumer {
+func NewConsumer(b notifier, galleryClient gallerypb.GalleryServiceClient) *Consumer {
 	return &Consumer{
-		registry:      r,
+		broadcaster:   b,
 		galleryClient: galleryClient,
 		galleryNames:  make(map[uuid.UUID]string),
 	}
@@ -133,7 +140,7 @@ func (c *Consumer) handle(ctx context.Context, msg amqp.Delivery) {
 
 	switch env.EventType {
 	case "MemberAdded":
-		if err := c.handleMemberAdded(env); err != nil {
+		if err := c.handleMemberAdded(ctx, env); err != nil {
 			log.Printf("notification: dropping MemberAdded (routing_key=%s): %v", msg.RoutingKey, err)
 			msg.Nack(false, false)
 			return
@@ -142,7 +149,7 @@ func (c *Consumer) handle(ctx context.Context, msg amqp.Delivery) {
 		return
 
 	case "MemberRemoved":
-		if err := c.handleMemberRemoved(env); err != nil {
+		if err := c.handleMemberRemoved(ctx, env); err != nil {
 			log.Printf("notification: dropping MemberRemoved (routing_key=%s): %v", msg.RoutingKey, err)
 			msg.Nack(false, false)
 			return
@@ -153,32 +160,27 @@ func (c *Consumer) handle(ctx context.Context, msg amqp.Delivery) {
 
 	notif, err := c.buildNotification(ctx, env)
 	if err != nil {
-		log.Printf("notification: dropping event_type=%s (routing_key=%s): %v",
-			env.EventType, msg.RoutingKey, err)
+		log.Printf("notification: dropping event_type=%s (routing_key=%s): %v", env.EventType, msg.RoutingKey, err)
 		msg.Nack(false, false)
 		return
 	}
 	if notif == nil {
-		// Recognized as "not our concern" (or explicitly ignored) -- not an
-		// error, just nothing to deliver.
 		msg.Ack(false)
 		return
 	}
 
-	galleryID, err := uuid.Parse(notif.GalleryId)
-	if err != nil {
+	if err := c.broadcaster.PublishNotification(ctx, notif); err != nil {
+		log.Printf("notification: failed to publish notification for fan-out: %v", err)
 		msg.Nack(false, false)
 		return
 	}
-
-	c.registry.Notify(ctx, galleryID, notif)
 	msg.Ack(false)
 }
 
 // handleMemberAdded registers an already-connected client for a gallery it
 // just joined, without requiring a reconnect. A no-op if that user isn't
 // currently connected (Registry.AddGalleryForClient handles that).
-func (c *Consumer) handleMemberAdded(env envelope) error {
+func (c *Consumer) handleMemberAdded(ctx context.Context, env envelope) error {
 	var p memberChangedPayload
 	if err := json.Unmarshal(env.Payload, &p); err != nil {
 		return fmt.Errorf("unmarshal MemberAdded payload: %w", err)
@@ -186,14 +188,13 @@ func (c *Consumer) handleMemberAdded(env envelope) error {
 	if p.GalleryID == uuid.Nil || p.UserID == uuid.Nil {
 		return fmt.Errorf("MemberAdded payload missing gallery_id or user_id")
 	}
-	c.registry.AddGalleryForClient(p.GalleryID, p.UserID)
-	return nil
+	return c.broadcaster.PublishMemberAdded(ctx, p.GalleryID, p.UserID)
 }
 
 // handleMemberRemoved stops fanning out that gallery's events to the given
 // user immediately, rather than waiting for their next failed Send to lazily
 // prune them. A no-op if that user isn't currently subscribed to it.
-func (c *Consumer) handleMemberRemoved(env envelope) error {
+func (c *Consumer) handleMemberRemoved(ctx context.Context, env envelope) error {
 	var p memberChangedPayload
 	if err := json.Unmarshal(env.Payload, &p); err != nil {
 		return fmt.Errorf("unmarshal MemberRemoved payload: %w", err)
@@ -201,8 +202,7 @@ func (c *Consumer) handleMemberRemoved(env envelope) error {
 	if p.GalleryID == uuid.Nil || p.UserID == uuid.Nil {
 		return fmt.Errorf("MemberRemoved payload missing gallery_id or user_id")
 	}
-	c.registry.Unsubscribe(p.GalleryID, p.UserID)
-	return nil
+	return c.broadcaster.PublishMemberRemoved(ctx, p.GalleryID, p.UserID)
 }
 
 // buildNotification returns (nil, nil) for event types that are valid but

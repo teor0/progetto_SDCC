@@ -57,6 +57,11 @@ export const galleryApi = {
             }
         );
     },
+
+    async deleteGallery(galleryId: string): Promise<void> {
+        await api.delete<void>(`/photogallery/galleries/${galleryId}`);
+    },
+
     async sendModeratorAlert(galleryId: string, body: string): Promise<void> {
         await api.post<void>(`/photogallery/galleries/${galleryId}/alert`, { body });
     },
