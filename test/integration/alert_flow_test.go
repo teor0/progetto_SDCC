@@ -6,11 +6,19 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// to run test:
+// GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration \
+//  ./test/integration/... -run TestModeratorAlert_DeliveredToAllSubscribers -v
+// remember to scale the service:
+// docker compose up -d --build --scale notification-service=3
 
 // notificationEventDTO mirrors internal/handlers/notification.go's
 // notificationDTO -- the JSON shape pushed over SSE, not the internal
@@ -104,25 +112,24 @@ func openNotificationStream(t *testing.T, token string) (<-chan sseEvent, func()
 	return events, cancel
 }
 
-// waitForNotification reads from events until match returns true or
-// timeout elapses, ignoring non-"notification" SSE events and malformed
-// payloads along the way (SSE keep-alive comments, if the handler ever
-// adds them, would otherwise fail json.Unmarshal and shouldn't fail the
-// test).
-func waitForNotification(
-	t *testing.T,
+// waitForNotificationNonFatal is the goroutine-safe counterpart to
+// waitForNotification below: t.Fatal/t.FailNow must only ever be called
+// from the goroutine actually running the test function, so this returns
+// nil on timeout or a closed stream instead of failing directly -- letting
+// a caller that's waiting on several subscribers concurrently (from
+// multiple goroutines) aggregate results and report failures from the
+// main test goroutine itself.
+func waitForNotificationNonFatal(
 	events <-chan sseEvent,
 	timeout time.Duration,
 	match func(notificationEventDTO) bool,
 ) *notificationEventDTO {
-	t.Helper()
-
 	deadline := time.After(timeout)
 	for {
 		select {
 		case e, ok := <-events:
 			if !ok {
-				t.Fatal("notification stream closed before a matching event arrived")
+				return nil
 			}
 			if e.name != "notification" {
 				continue
@@ -135,9 +142,30 @@ func waitForNotification(
 				return &n
 			}
 		case <-deadline:
-			t.Fatal("timed out waiting for expected notification")
+			return nil
 		}
 	}
+}
+
+// waitForNotification reads from events until match returns true or
+// timeout elapses, ignoring non-"notification" SSE events and malformed
+// payloads along the way (SSE keep-alive comments, if the handler ever
+// adds them, would otherwise fail json.Unmarshal and shouldn't fail the
+// test). Only safe to call from the test's own goroutine -- see
+// waitForNotificationNonFatal for the concurrent case.
+func waitForNotification(
+	t *testing.T,
+	events <-chan sseEvent,
+	timeout time.Duration,
+	match func(notificationEventDTO) bool,
+) *notificationEventDTO {
+	t.Helper()
+
+	n := waitForNotificationNonFatal(events, timeout, match)
+	if n == nil {
+		t.Fatal("timed out waiting for a matching notification")
+	}
+	return n
 }
 
 func sendModeratorAlert(t *testing.T, moderatorToken, galleryID, body string) *http.Response {
@@ -180,6 +208,97 @@ func TestModeratorAlert_DeliveredToMembers(t *testing.T) {
 	require.Equal(t, alertBody, notif.Message)
 	require.Equal(t, gallery.Name, notif.GalleryName,
 		"galleryName should be populated by Consumer.galleryName -- if this is empty, that lookup regressed")
+}
+
+// TestModeratorAlert_DeliveredToAllSubscribers opens several independent
+// SSE subscriptions (different members, all joined to the same gallery)
+// and confirms every single one receives the alert.
+//
+// Run this against a scaled deployment to actually exercise the thing it
+// is meant to catch:
+//
+//	docker compose up -d --build --scale notification-service=3
+//	GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration \
+//	  ./test/integration/... -run TestModeratorAlert_DeliveredToAllSubscribers -v
+//
+// With multiple replicas and the gateway's round-robin dial in place,
+// each Subscribe call is likely spread across different replicas. This is
+// the test that would have caught the original bug: a shared durable
+// RabbitMQ queue made replicas competing consumers, so only whichever
+// replica happened to drain a given delivery could act on it -- every
+// subscriber pinned to a different replica silently never got notified,
+// with no error anywhere. It now exercises the Redis Pub/Sub fan-out that
+// replaced that design (Consumer -> Broadcaster.PublishNotification ->
+// every replica's own Registry).
+//
+// Run against a single replica, this still passes -- for the same reason
+// it always did before any of this existed. The point of scaling replicas
+// for this specific run is to actually stress the cross-replica path
+// instead of trivially succeeding because everything happened to be on
+// one process. This test cannot directly confirm subscribers landed on
+// different replicas -- nothing in the API surface exposes that -- it
+// only proves the externally observable contract: every member who is
+// subscribed receives the alert, regardless of which replica happened to
+// handle their stream or the RabbitMQ delivery. Cross-reference `docker
+// compose logs notification-service` during a scaled run if you want to
+// eyeball the actual distribution.
+func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
+	const numSubscribers = 5
+
+	_, moderatorToken := registerUser(t, "ROLE_MODERATOR")
+	gallery := createTestGallery(t, moderatorToken, "Multi-Subscriber Alert Test Gallery")
+
+	type subscriber struct {
+		events <-chan sseEvent
+		cancel func()
+	}
+
+	subscribers := make([]subscriber, numSubscribers)
+	for i := 0; i < numSubscribers; i++ {
+		_, token := registerUser(t, "ROLE_USER")
+		joinTestGallery(t, token, gallery.ID)
+
+		events, cancel := openNotificationStream(t, token)
+		subscribers[i] = subscriber{events: events, cancel: cancel}
+	}
+	defer func() {
+		for _, s := range subscribers {
+			s.cancel()
+		}
+	}()
+
+	// Same race-mitigation as TestModeratorAlert_DeliveredToMembers, just
+	// covering every subscription registering, not only one.
+	time.Sleep(500 * time.Millisecond)
+
+	const alertBody = "Multi-subscriber delivery check."
+	resp := sendModeratorAlert(t, moderatorToken, gallery.ID, alertBody)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// Wait for all subscribers concurrently, not sequentially -- delivery
+	// to each is independent, so a sequential per-subscriber timeout would
+	// make this test's worst-case duration scale with numSubscribers for
+	// no real reason.
+	var wg sync.WaitGroup
+	results := make([]*notificationEventDTO, numSubscribers)
+	for i, s := range subscribers {
+		wg.Add(1)
+		go func(i int, events <-chan sseEvent) {
+			defer wg.Done()
+			results[i] = waitForNotificationNonFatal(events, 10*time.Second, func(n notificationEventDTO) bool {
+				return n.Type == "NOTIFICATION_TYPE_MODERATOR_ALERT" && n.GalleryID == gallery.ID
+			})
+		}(i, s.events)
+	}
+	wg.Wait()
+
+	for i, notif := range results {
+		if !assert.NotNilf(t, notif, "subscriber %d never received the alert -- likely a cross-replica delivery gap", i) {
+			continue
+		}
+		assert.Equal(t, alertBody, notif.Message, "subscriber %d got the wrong message", i)
+		assert.Equal(t, gallery.Name, notif.GalleryName, "subscriber %d got the wrong galleryName", i)
+	}
 }
 
 // TestModeratorAlert_NotDeliveredToNonMemberModerator documents, with an
