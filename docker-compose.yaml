@@ -163,8 +163,6 @@ services:
       context: .
       dockerfile: internal/notification/Dockerfile.notification
     image: notification-service:latest
-    ports:
-      - "8084:8084"
     environment:
       JWT_SECRET: ${JWT_SECRET}
       NOTIFICATION_GRPC_PORT: 8084

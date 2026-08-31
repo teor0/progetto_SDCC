@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"log"
 	"photogallery/internal/gallery/models"
 	"time"
 
@@ -56,7 +57,15 @@ func (s *CommandService) CreateGallery(ctx context.Context, name, description st
 		return nil, status.Errorf(codes.Internal, "create gallery: %v", err)
 	}
 
-	_ = s.publisher.Publish(ctx, "GalleryCreated", g) // if doing async read projection with RabbitMQ
+	// Detached from the request: Publish now retries with confirms and can
+	// take several seconds under broker degradation.
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "GalleryCreated", g); err != nil {
+			log.Printf("command: failed to publish GalleryCreated for gallery=%s after retries: %v", g.ID, err)
+		}
+	}()
 	return g, nil
 }
 
@@ -72,7 +81,13 @@ func (s *CommandService) DeleteGallery(ctx context.Context, galleryID uuid.UUID,
 	if err := s.repo.DeleteGallery(ctx, g.ID); err != nil {
 		return status.Errorf(codes.Internal, "delete gallery: %v", err)
 	}
-	_ = s.publisher.Publish(ctx, "GalleryDeleted", g)
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "GalleryDeleted", g); err != nil {
+			log.Printf("command: failed to publish GalleryDeleted for gallery=%s after retries: %v", g.ID, err)
+		}
+	}()
 	return nil
 }
 
@@ -96,7 +111,13 @@ func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, 
 		return status.Errorf(codes.Internal, "close gallery: %v", err)
 	}
 
-	_ = s.publisher.Publish(ctx, "GalleryClosed", g)
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "GalleryClosed", g); err != nil {
+			log.Printf("command: failed to publish GalleryClosed for gallery=%s after retries: %v", g.ID, err)
+		}
+	}()
 	return nil
 }
 
@@ -114,11 +135,15 @@ func (s *CommandService) JoinGallery(ctx context.Context, galleryID uuid.UUID, u
 		return status.Errorf(codes.Internal, "add member: %v", err)
 	}
 
-	// again, dedicated message is implemented if need.
-	_ = s.publisher.Publish(ctx, "MemberAdded", map[string]string{
-		"gallery_id": galleryID.String(),
-		"user_id":    userID.String(),
-	})
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "MemberAdded", map[string]string{
+			"gallery_id": galleryID.String(),
+			"user_id":    userID.String()}); err != nil {
+			log.Printf("command: failed to publish MemberAdded for gallery=%s after retries: %v", galleryID, err)
+		}
+	}()
 	return nil
 }
 
@@ -128,10 +153,15 @@ func (s *CommandService) LeaveGallery(ctx context.Context, galleryID uuid.UUID, 
 		return status.Errorf(codes.Internal, "remove member: %v", err)
 	}
 
-	_ = s.publisher.Publish(ctx, "MemberRemoved", map[string]string{
-		"gallery_id": galleryID.String(),
-		"user_id":    userID.String(),
-	})
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "MemberRemoved", map[string]string{
+			"gallery_id": galleryID.String(),
+			"user_id":    userID.String()}); err != nil {
+			log.Printf("command: failed to publish MemberRemoved for gallery=%s after retries: %v", galleryID, err)
+		}
+	}()
 	return nil
 }
 
@@ -150,9 +180,17 @@ func (s *CommandService) SendModeratorAlert(ctx context.Context, galleryID, call
 		return status.Error(codes.InvalidArgument, "alert message is required")
 	}
 
-	return s.publisher.Publish(ctx, "ModeratorAlert", map[string]string{
-		"gallery_id":   galleryID.String(),
-		"gallery_name": g.Name,
-		"message":      message,
-	})
+	go func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := s.publisher.Publish(bgCtx, "ModeratorAlert", map[string]string{
+			"gallery_id":   galleryID.String(),
+			"gallery_name": g.Name,
+			"message":      message,
+		}); err != nil {
+			log.Printf("command: failed to publish GalleryCreated for gallery=%s after retries: %v", g.ID, err)
+		}
+	}()
+
+	return nil
 }
