@@ -6,6 +6,7 @@ import (
 	"io"
 	userpb "photogallery/gen/user"
 	"photogallery/internal/auth"
+	"photogallery/internal/upload"
 	"testing"
 
 	gallerypb "photogallery/gen/gallery"
@@ -60,7 +61,7 @@ func TestUploadPhoto_Success(t *testing.T) {
 
 	meta := &uploadpb.UploadMetadata{
 		GalleryId:   galleryID.String(),
-		Filename:    "sunset.jpg",
+		Filename:    "photo.jpg",
 		ContentType: "image/jpeg",
 	}
 	expectRecvSequence(stream, meta, []byte("fake-image-bytes"))
@@ -106,7 +107,7 @@ func TestUploadPhoto_Success(t *testing.T) {
 			return nil
 		})
 
-	srv := NewServer(uploader, notifier, galleryClient, nil)
+	srv := NewServer(uploader, notifier, galleryClient, upload.NewInMemoryRepository())
 
 	if err := srv.uploadPhoto(stream); err != nil {
 		t.Fatalf("UploadPhoto returned unexpected error: %v", err)
@@ -139,7 +140,7 @@ func TestUploadPhoto_RejectsNonMember(t *testing.T) {
 	// Deliberately no EXPECT() on uploader/notifier/stream.SendAndClose --
 	// if UploadPhoto calls any of them, the test fails on an unexpected call.
 
-	srv := NewServer(uploader, notifier, galleryClient, nil)
+	srv := NewServer(uploader, notifier, galleryClient, upload.NewInMemoryRepository())
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.InvalidArgument {
@@ -170,7 +171,7 @@ func TestUploadPhoto_RejectsClosedGallery(t *testing.T) {
 			GalleryStatus: gallerypb.GalleryStatus_GALLERY_STATUS_CLOSED,
 		}, nil)
 
-	srv := NewServer(uploader, notifier, galleryClient, nil)
+	srv := NewServer(uploader, notifier, galleryClient, upload.NewInMemoryRepository())
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.InvalidArgument {
@@ -205,7 +206,7 @@ func TestUploadPhoto_StorageFailure(t *testing.T) {
 		Upload(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return("", errors.New("minio: connection refused"))
 
-	srv := NewServer(uploader, notifier, galleryClient, nil)
+	srv := NewServer(uploader, notifier, galleryClient, upload.NewInMemoryRepository())
 
 	err := srv.uploadPhoto(stream)
 	if status.Code(err) != codes.Internal {

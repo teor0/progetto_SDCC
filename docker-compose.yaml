@@ -69,8 +69,6 @@ services:
       context: .
       dockerfile: internal/gallery/Dockerfile.gallery
     image: gallery-service:latest
-    ports:
-      - "8082:8082"
     environment:
       DB_HOST: gallery_postgres
       DB_USER: matteo
@@ -79,7 +77,7 @@ services:
       DB_PORT_GALLERY: 5432
       GALLERY_GRPC_PORT: 8082
       RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       gallery_postgres:
         condition: service_healthy

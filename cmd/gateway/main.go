@@ -113,7 +113,10 @@ func main() {
 	}
 	defer userConn.Close()
 
-	galleryConn, err := grpc.NewClient(galleryAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	galleryConn, err := grpc.NewClient(
+		galleryAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`))
 	if err != nil {
 		log.Fatalf("failed to connect to GalleryService: %v", err)
 	}

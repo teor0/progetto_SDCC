@@ -48,15 +48,18 @@ type Server struct {
 
 // NewServer constructs a Server with all required dependencies. storage,
 // publisher, and repo are accepted as interfaces so tests can pass GoMock
-// mocks; the real *storage.Storage, *events.Publisher, and
-// *upload.InMemoryRepository types satisfy them unchanged. repo may be
-// nil, in which case an InMemoryRepository is used -- convenient for tests
-// and for the current single-replica deployment; swap it for a
-// Postgres-backed implementation before running more than one replica.
+// mocks or a plain in-memory implementation; the real *storage.Storage,
+// *events.Publisher, and *upload.PostgresRepository types satisfy them
+// unchanged. repo must be provided explicitly -- callers that don't need
+// persistence (most unit tests) should pass upload.NewInMemoryRepository()
+// directly. There used to be an implicit "if repo == nil, use in-memory"
+// fallback here; removed because it was production-constructor logic that
+// existed purely to serve test convenience, and silently masked the same
+// class of bug the Postgres migration was meant to close: a real code
+// path that forgot to wire up real persistence would fail loudly now
+// (nil pointer on first Save/Get/ListByGallery call) instead of quietly
+// losing data on every restart.
 func NewServer(storage storage.Uploader, publisher events.Notifier, galleryClient gallerypb.GalleryServiceClient, repo upload.Repository) *Server {
-	if repo == nil {
-		repo = upload.NewInMemoryRepository()
-	}
 	return &Server{
 		storage:        storage,
 		publisher:      publisher,
@@ -109,16 +112,13 @@ func (s *Server) UploadPhoto(stream uploadpb.UploadService_UploadPhotoServer) er
 }
 
 func (s *Server) uploadPhoto(stream uploadStream) error {
-	// Extract caller identity forwarded by the gateway.
 	uploaderID, err := uploaderFromMeta(stream.Context())
 	if err != nil {
 		return err
 	}
-	// ── 1. Receive all chunks ────────────────────────────────────────────────
 	var (
 		meta *uploadpb.UploadMetadata
 		buf  bytes.Buffer
-		//hasher = sha256.New()
 	)
 
 	for {
@@ -152,7 +152,6 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 					"upload exceeds max size of %d bytes", maxPhotoBytes)
 			}
 			buf.Write(p.ChunkData)
-			//hasher.Write(p.ChunkData)
 		default:
 			return status.Error(codes.InvalidArgument, "unknown chunk payload type")
 		}
@@ -168,21 +167,10 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 		return status.Error(codes.InvalidArgument, "no image data received")
 	}
 
-	// Declared vs. actual size: catch truncated/partial streams and clients
-	// lying about total_size_bytes.
 	if meta.TotalSizeBytes > 0 && int64(buf.Len()) != meta.TotalSizeBytes {
 		return status.Errorf(codes.InvalidArgument,
 			"declared size %d does not match received size %d", meta.TotalSizeBytes, buf.Len())
 	}
-
-	// Checksum is optional — only verify if the client actually sent one.
-	/*if meta.ChecksumSha256 != "" {
-		sum := hex.EncodeToString(hasher.Sum(nil))
-		if !strings.EqualFold(sum, meta.ChecksumSha256) {
-			return status.Errorf(codes.DataLoss,
-				"checksum mismatch: expected %s, got %s", meta.ChecksumSha256, sum)
-		}
-	}*/
 
 	galleryID, _ := uuid.Parse(meta.GalleryId)
 	if err != nil {
