@@ -44,6 +44,23 @@ class GalleryStore {
 
     private handleAction(action: Action): void {
         switch (action.type) {
+            case "GALLERY_CREATE_START":
+                this.state = { ...this.state,
+                    loading: true,
+                    error: null
+                };
+                this.emitChange();
+                break;
+
+            case "GALLERY_CREATE_FAILURE":
+                this.state = {
+                    ...this.state,
+                    loading: false,
+                    error: action.payload as string
+                };
+                this.emitChange();
+                break;
+
             case "GALLERIES_LOAD_START":
                 this.state = {
                     ...this.state,
