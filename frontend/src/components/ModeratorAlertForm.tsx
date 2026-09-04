@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { galleryApi } from "../services/galleryApi";
 import { authStore } from "../stores/AuthStore";
+import "./ModeratorAlertForm.css";
 
 type ModeratorAlertFormProps = {
     galleryId: string;
@@ -48,7 +49,7 @@ export default function ModeratorAlertForm({
     }
 
     return (
-        <section>
+        <section className="moderator-alert">
             <h3>Send Moderator Alert</h3>
 
             <textarea
@@ -62,8 +63,8 @@ export default function ModeratorAlertForm({
                 {sending ? "Sending..." : "Send Alert"}
             </button>
 
-            {error && <p>Error: {error}</p>}
-            {sent && <p>Alert sent.</p>}
+            {error && <p className="alert-error">Error: {error}</p>}
+            {sent && <p className="alert-success">Alert sent.</p>}
         </section>
     );
 }

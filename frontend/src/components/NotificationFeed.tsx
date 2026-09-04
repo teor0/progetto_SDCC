@@ -4,6 +4,7 @@ import { notificationStore } from "../stores/NotificationStore";
 import { startNotificationStream, stopNotificationStream } from "../actions/notificationActions";
 import { authStore } from "../stores/AuthStore";
 import type { NotificationEvent } from "../types/notification";
+import "./NotificationFeed.css";
 
 function describe(notification: NotificationEvent): string {
     const gallery = notification.galleryName ? ` in ${notification.galleryName}` : "";
@@ -14,7 +15,7 @@ function describe(notification: NotificationEvent): string {
                 : `A new photo was uploaded${gallery}.`;
         case "NOTIFICATION_TYPE_MODERATOR_ALERT":
             return notification.message
-                ? `${notification.message}${gallery}`
+                ? `New message by moderator ${gallery}:${notification.message}`
                 : `Moderator alert${gallery}.`;
         default:
             return notification.message || "New activity.";
@@ -43,10 +44,16 @@ export default function NotificationFeed() {
     return (
         <aside className="notification-feed">
             <h4>
-                Notifications <span className={`status-dot status-${state.status}`} title={state.status} />
+                Notifications{" "}
+                <span
+                    className={`status-dot status-${state.status}`}
+                    title={state.status}
+                />
             </h4>
 
-            {state.notifications.length === 0 && <p>No notifications yet.</p>}
+            {state.notifications.length === 0 && (
+                <p>No notifications yet.</p>
+            )}
 
             <ul>
                 {state.notifications.map((n) => (
@@ -54,14 +61,18 @@ export default function NotificationFeed() {
                         {n.photoUrl && (
                             <img
                                 src={n.photoUrl}
-                                alt="loading photo..."
-                                style={{ width: 32, height: 32, objectFit: "cover", verticalAlign: "middle" }}
+                                alt="Notification photo"
                             />
                         )}
-                        {" "}
-                        <Link to={`/galleries/${n.galleryId}`}>{describe(n)}</Link>
+
+                        <Link to={`/galleries/${n.galleryId}`}>
+                            {describe(n)}
+                        </Link>
+
                         {n.occurredAt && (
-                            <time dateTime={n.occurredAt}> {new Date(n.occurredAt).toLocaleTimeString()}</time>
+                            <time dateTime={n.occurredAt}>
+                                {new Date(n.occurredAt).toLocaleTimeString()}
+                            </time>
                         )}
                     </li>
                 ))}

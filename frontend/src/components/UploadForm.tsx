@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { uploadStore } from "../stores/UploadStore";
 import { uploadPhoto } from "../actions/uploadActions";
+import "./UploadForm.css";
 
 type UploadFormProps = {
     galleryId: string;
@@ -41,7 +42,7 @@ export default function UploadForm({ galleryId, disabled }: UploadFormProps) {
     }
 
     return (
-        <section>
+        <section className="upload-form">
             <h3>Upload a photo</h3>
 
             <input
@@ -59,10 +60,14 @@ export default function UploadForm({ galleryId, disabled }: UploadFormProps) {
                 {state.uploading ? "Uploading..." : "Upload"}
             </button>
 
-            {state.error && <p>Error: {state.error}</p>}
+            {state.error && (
+                <p className="upload-error">Error: {state.error}</p>
+            )}
 
             {state.lastPhotoId && !state.uploading && (
-                <p>Uploaded successfully (photo id: {state.lastPhotoId})</p>
+                <p className="upload-success">
+                    Uploaded successfully (photo id: {state.lastPhotoId})
+                </p>
             )}
         </section>
     );

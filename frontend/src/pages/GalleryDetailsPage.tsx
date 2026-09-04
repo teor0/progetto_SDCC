@@ -5,10 +5,10 @@ import { galleryDetailsStore } from "../stores/GalleryDetailsStore";
 import UploadForm from "../components/UploadForm";
 import PhotoGrid from "../components/PhotoGrid";
 import ModeratorAlertForm from "../components/ModeratorAlertForm";
+import "./GalleryDetails.css";
 
 export default function GalleryDetailsPage() {
-    const { galleryId } = useParams<{ galleryId: string; }>();
-
+    const { galleryId } = useParams<{ galleryId: string }>();
     const [state, setState] = useState(galleryDetailsStore.getState());
 
     useEffect(() => {
@@ -24,62 +24,90 @@ export default function GalleryDetailsPage() {
     }, [galleryId]);
 
     if (!galleryId) {
-        return <p>Invalid gallery ID.</p>;
+        return <p className="details-message">Invalid gallery ID.</p>;
     }
 
     if (state.loading) {
-        return <p>Loading gallery...</p>;
+        return <p className="details-message">Loading gallery...</p>;
     }
 
     if (state.error) {
         return (
-            <main>
-                <Link to="/galleries">
-                    ← Back to galleries
-                </Link>
-
-                <p>Error: {state.error}</p>
+            <main className="gallery-details-page">
+                <div className="gallery-details-shell">
+                    <Link className="back-link" to="/galleries">← Back to galleries</Link>
+                    <p className="details-message details-error">Error: {state.error}</p>
+                </div>
             </main>
         );
     }
 
     if (!state.gallery) {
         return (
-            <main>
-                <Link to="/galleries">
-                    ← Back to galleries
-                </Link>
-
-                <p>Gallery not found.</p>
+            <main className="gallery-details-page">
+                <div className="gallery-details-shell">
+                    <Link className="back-link" to="/galleries">← Back to galleries</Link>
+                    <p className="details-message">Gallery not found.</p>
+                </div>
             </main>
         );
     }
 
     const { gallery } = state;
+    const isOpen = gallery.status === "GALLERY_STATUS_OPEN";
 
     return (
-        <main>
-            <Link to="/galleries">
-                ← Back to galleries
-            </Link>
+        <main className="gallery-details-page">
+            <div className="gallery-details-shell">
+                <Link className="back-link" to="/galleries">← Back to galleries</Link>
 
-            <h1>{gallery.name}</h1>
-            <ModeratorAlertForm galleryId={galleryId} galleryModeratorId={gallery.moderatorId} />
-            <p>{gallery.description}</p>
+                <section className="gallery-hero">
+                    <div className="gallery-hero-topline">
+                        <span className={`gallery-status ${isOpen ? "open" : "closed"}`}>
+                            {isOpen ? "Open" : "Closed"}
+                        </span>
+                        <span className="gallery-created">
+                            Created {new Date(gallery.createdAt).toLocaleString()}
+                        </span>
+                    </div>
 
-            <p>
-                Status: {gallery.status}
-            </p>
+                    <h1>{gallery.name}</h1>
+                    <p className="gallery-description">
+                        {gallery.description || "No description provided."}
+                    </p>
+                </section>
 
-            <p>
-                Created:{" "}
-                {new Date(gallery.createdAt).toLocaleString()}
-            </p>
-            {gallery.status === "GALLERY_STATUS_OPEN" ? (
-                <><UploadForm galleryId={galleryId}/><PhotoGrid galleryId={galleryId}/></>
-            ) : (
-                <p>This gallery is closed. Uploads are disabled.</p>
-            )}
+                <div className="gallery-details-content">
+                    <ModeratorAlertForm
+                        galleryId={galleryId}
+                        galleryModeratorId={gallery.moderatorId}
+                    />
+
+                    {isOpen ? (
+                        <>
+                            <section className="details-panel">
+                                <div className="details-section-heading">
+                                    <h2>Upload a photo</h2>
+                                    <p>Add a new photo to this gallery.</p>
+                                </div>
+                                <UploadForm galleryId={galleryId} />
+                            </section>
+
+                            <section className="details-panel photo-section">
+                                <div className="details-section-heading">
+                                    <h2>Photos</h2>
+                                    <p>Photos shared by gallery members.</p>
+                                </div>
+                                <PhotoGrid galleryId={galleryId} />
+                            </section>
+                        </>
+                    ) : (
+                        <div className="details-message">
+                            This gallery is closed. Uploads are disabled.
+                        </div>
+                    )}
+                </div>
+            </div>
         </main>
     );
 }

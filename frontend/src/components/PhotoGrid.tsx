@@ -35,12 +35,19 @@ export default function PhotoGrid({ galleryId }: PhotoGridProps) {
     return (
         <div className="photo-grid">
             {state.photos.map((photo) => (
-                <img
+                <a
                     key={photo.photoId}
-                    src={photo.url}
-                    alt="loading photo..."
-                    loading="lazy"
-                />
+                    href={photo.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="photo-link"
+                >
+                    <img
+                        src={photo.url}
+                        alt="Gallery photo"
+                        loading="lazy"
+                    />
+                </a>
             ))}
         </div>
     );

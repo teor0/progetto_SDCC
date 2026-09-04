@@ -1,0 +1,141 @@
+.notification-feed {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 20px;
+
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.notification-feed h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin: 0 0 16px;
+
+    color: #111827;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.notification-feed .status-dot {
+    width: 8px;
+    height: 8px;
+
+    display: inline-block;
+    flex-shrink: 0;
+
+    border-radius: 50%;
+}
+
+/* Connection states */
+
+.notification-feed .status-connected {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.notification-feed .status-connecting {
+    background: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.notification-feed .status-disconnected,
+.notification-feed .status-error {
+    background: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.notification-feed > p {
+    margin: 0;
+
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.notification-feed ul {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+}
+
+.notification-feed li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    min-width: 0;
+    padding: 10px;
+
+    border: 1px solid #f3f4f6;
+    border-radius: 10px;
+
+    background: #f9fafb;
+
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.notification-feed li:hover {
+    background: #f3f4f6;
+}
+
+.notification-feed li img {
+    width: 32px;
+    height: 32px;
+
+    flex-shrink: 0;
+
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.notification-feed li a {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    color: #374151;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.notification-feed li a:hover {
+    color: #111827;
+    text-decoration: underline;
+}
+
+.notification-feed li time {
+    margin-left: auto;
+
+    flex-shrink: 0;
+
+    color: #9ca3af;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .notification-feed {
+        padding: 16px;
+    }
+
+    .notification-feed li {
+        align-items: flex-start;
+    }
+
+    .notification-feed li time {
+        display: none;
+    }
+}

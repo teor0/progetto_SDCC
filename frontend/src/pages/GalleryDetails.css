@@ -1,0 +1,158 @@
+.gallery-details-page {
+    min-height: 100vh;
+    padding: 42px 24px 56px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+    box-sizing: border-box;
+    color: #111827;
+}
+
+.gallery-details-shell {
+    width: 100%;
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 22px;
+    color: #374151;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: #111827;
+    text-decoration: underline;
+}
+
+.gallery-hero,
+.details-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+}
+
+.gallery-hero {
+    padding: 34px;
+    margin-bottom: 24px;
+}
+
+.gallery-hero-topline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+
+.gallery-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.gallery-status.open {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.gallery-status.closed {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.gallery-created {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.gallery-hero h1 {
+    margin: 0;
+    font-size: 36px;
+    line-height: 1.15;
+}
+
+.gallery-description {
+    max-width: 760px;
+    margin: 14px 0 0;
+    color: #6b7280;
+    line-height: 1.7;
+}
+
+.gallery-details-content {
+    display: grid;
+    gap: 24px;
+}
+
+.details-panel {
+    padding: 28px;
+}
+
+.details-section-heading {
+    margin-bottom: 20px;
+}
+
+.details-section-heading h2 {
+    margin: 0 0 5px;
+    font-size: 21px;
+}
+
+.details-section-heading p {
+    margin: 0;
+    color: #6b7280;
+}
+
+.details-message {
+    max-width: 1120px;
+    margin: 24px auto;
+    padding: 16px 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    color: #6b7280;
+    box-sizing: border-box;
+}
+
+.details-error {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.photo-section {
+    overflow: hidden;
+}
+
+.gallery-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 768px) {
+    .gallery-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+@media (max-width: 760px) {
+    .gallery-details-page {
+        padding: 28px 16px 40px;
+    }
+
+    .gallery-hero,
+    .details-panel {
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    .gallery-hero h1 {
+        font-size: 30px;
+    }
+}

@@ -5,11 +5,13 @@ import {
     loadGalleries,
     createGallery,
     joinGallery,
-    leaveGallery, deleteGallery,
+    leaveGallery,
+    deleteGallery,
 } from "../actions/galleryActions";
 import { authStore } from "../stores/AuthStore";
 import { logout } from "../actions/authActions.ts";
 import type { Gallery } from "../types/gallery";
+import "./Galleries.css";
 
 export default function GalleriesPage() {
     const [state, setState] = useState(galleryStore.getState());
@@ -24,11 +26,6 @@ export default function GalleriesPage() {
         });
 
         loadGalleries();
-
-        // Refresh periodically to catch membership changes made by other
-        // users/tabs -- there's no push channel for gallery membership today
-        // (the notification stream only carries photo-upload/moderator-alert
-        // events, not join/leave), so polling is the pragmatic fallback.
         const intervalId = setInterval(loadGalleries, 15000);
 
         return () => {
@@ -46,7 +43,6 @@ export default function GalleriesPage() {
         }
 
         createGallery(name, description);
-
         setNewGalleryName("");
         setNewGalleryDescription("");
     }
@@ -63,69 +59,109 @@ export default function GalleriesPage() {
     }
 
     return (
-        <main>
-            <h1>Galleries</h1>
-            <button onClick={handleLogout}>Logout</button>
+        <main className="galleries-page">
+            <div className="galleries-shell">
+                <header className="galleries-header">
+                    <div>
+                        <p className="galleries-eyebrow">Photo Gallery</p>
+                        <h1>Galleries</h1>
+                        <p className="galleries-subtitle">
+                            Browse your galleries, join new ones, and share photos with other members.
+                        </p>
+                    </div>
 
-            {auth.role === "ROLE_MODERATOR" && (
-                <section>
-                    <input
-                        type="text"
-                        placeholder="Gallery name"
-                        value={newGalleryName}
-                        onChange={(event) => setNewGalleryName(event.target.value)}
-                    />
-                    <textarea
-                        placeholder="Gallery description"
-                        value={newGalleryDescription}
-                        onChange={(event) =>
-                            setNewGalleryDescription(event.target.value)
-                        }
-                    />
-                    <button onClick={handleCreateGallery}>Create Gallery</button>
+                    <button className="gallery-button gallery-button-secondary" onClick={handleLogout}>
+                        Logout
+                    </button>
+                </header>
+
+                {auth.role === "ROLE_MODERATOR" && (
+                    <section className="gallery-panel create-gallery-panel">
+                        <div className="section-heading">
+                            <div>
+                                <h2>Create a gallery</h2>
+                                <p>Start a new space for members to join and share photos.</p>
+                            </div>
+                        </div>
+
+                        <div className="create-gallery-form">
+                            <input
+                                type="text"
+                                placeholder="Gallery name"
+                                value={newGalleryName}
+                                onChange={(event) => setNewGalleryName(event.target.value)}
+                            />
+                            <textarea
+                                placeholder="Gallery description"
+                                value={newGalleryDescription}
+                                onChange={(event) => setNewGalleryDescription(event.target.value)}
+                            />
+                            <button className="gallery-button" onClick={handleCreateGallery}>
+                                Create Gallery
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {state.error && <p className="gallery-message gallery-error">Error: {state.error}</p>}
+                {state.loading && <p className="gallery-message">Loading galleries...</p>}
+
+                <section className="gallery-section">
+                    <div className="section-heading">
+                        <div>
+                            <h2>My Galleries</h2>
+                            <p>Galleries you are currently a member of.</p>
+                        </div>
+                    </div>
+
+                    {!state.loading && state.myGalleries.length === 0 && (
+                        <div className="gallery-empty-state">
+                            You haven't joined any galleries yet.
+                        </div>
+                    )}
+
+                    <div className="gallery-grid">
+                        {state.myGalleries.map((gallery) => (
+                            <GalleryCard
+                                key={gallery.id}
+                                gallery={gallery}
+                                actionLabel="Leave"
+                                onAction={() => leaveGallery(gallery.id)}
+                                canDelete={auth.userId === gallery.moderatorId}
+                                onDelete={() => handleDelete(gallery)}
+                            />
+                        ))}
+                    </div>
                 </section>
-            )}
 
-            {state.error && <p>Error: {state.error}</p>}
-            {state.loading && <p>Loading galleries...</p>}
+                <section className="gallery-section">
+                    <div className="section-heading">
+                        <div>
+                            <h2>Available Galleries</h2>
+                            <p>Open galleries you can join.</p>
+                        </div>
+                    </div>
 
-            <section>
-                <h2>My Galleries</h2>
+                    {!state.loading && state.availableGalleries.length === 0 && (
+                        <div className="gallery-empty-state">
+                            No other open galleries right now.
+                        </div>
+                    )}
 
-                {!state.loading && state.myGalleries.length === 0 && (
-                    <p>You haven't joined any galleries yet.</p>
-                )}
-
-                {state.myGalleries.map((gallery) => (
-                    <GalleryCard
-                        key={gallery.id}
-                        gallery={gallery}
-                        actionLabel="Leave"
-                        onAction={() => leaveGallery(gallery.id)}
-                        canDelete={auth.userId === gallery.moderatorId}
-                        onDelete={() => handleDelete(gallery)}
-                    />
-                ))}
-            </section>
-
-            <section>
-                <h2>Available Galleries</h2>
-
-                {!state.loading && state.availableGalleries.length === 0 && (
-                    <p>No other open galleries right now.</p>
-                )}
-
-                {state.availableGalleries.map((gallery) => (
-                    <GalleryCard
-                        key={gallery.id}
-                        gallery={gallery}
-                        actionLabel="Join"
-                        onAction={() => joinGallery(gallery.id)}
-                        canDelete={auth.userId === gallery.moderatorId}
-                        onDelete={() => handleDelete(gallery)}
-                    />
-                ))}
-            </section>
+                    <div className="gallery-grid">
+                        {state.availableGalleries.map((gallery) => (
+                            <GalleryCard
+                                key={gallery.id}
+                                gallery={gallery}
+                                actionLabel="Join"
+                                onAction={() => joinGallery(gallery.id)}
+                                canDelete={auth.userId === gallery.moderatorId}
+                                onDelete={() => handleDelete(gallery)}
+                            />
+                        ))}
+                    </div>
+                </section>
+            </div>
         </main>
     );
 }
@@ -142,21 +178,26 @@ function GalleryCard({
     onAction: () => void;
     canDelete: boolean;
     onDelete: () => void;
-
 }) {
     return (
-        <article>
-            <h3>
-                <Link to={`/galleries/${gallery.id}`}>{gallery.name}</Link>
-            </h3>
-            <p>{gallery.description}</p>
-            <button onClick={onAction}>{actionLabel}</button>
-            {canDelete && (
-                <button onClick={onDelete} style={{ marginLeft: 8 }}>
-                    Delete
-                </button>
-            )}
-        </article>
+        <article className="gallery-card">
+            <div className="gallery-card-content">
+                <h3>
+                    <Link to={`/galleries/${gallery.id}`}>{gallery.name}</Link>
+                </h3>
+                <p>{gallery.description || "No description provided."}</p>
+            </div>
 
+            <div className="gallery-card-actions">
+                <button className="gallery-button gallery-button-secondary" onClick={onAction}>
+                    {actionLabel}
+                </button>
+                {canDelete && (
+                    <button className="gallery-button gallery-button-danger" onClick={onDelete}>
+                        Delete
+                    </button>
+                )}
+            </div>
+        </article>
     );
 }

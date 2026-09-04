@@ -1,0 +1,138 @@
+.moderator-alert {
+    margin-top: 28px;
+    padding: 24px;
+
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.moderator-alert h3 {
+    margin: 0 0 6px;
+
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.moderator-alert::before {
+    content: "Moderator communication";
+
+    display: block;
+    margin-bottom: 14px;
+
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.moderator-alert textarea {
+    width: 100%;
+    min-height: 110px;
+    padding: 12px 14px;
+
+    box-sizing: border-box;
+    resize: vertical;
+
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+
+    background: #fff;
+    color: #111827;
+
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+
+    outline: none;
+
+    transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+}
+
+.moderator-alert textarea::placeholder {
+    color: #9ca3af;
+}
+
+.moderator-alert textarea:focus {
+    border-color: #111827;
+
+    box-shadow:
+            0 0 0 3px rgba(17, 24, 39, 0.10);
+}
+
+.moderator-alert textarea:disabled {
+    background: #f9fafb;
+    cursor: not-allowed;
+}
+
+.moderator-alert button {
+    margin-top: 14px;
+    padding: 11px 16px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #111827;
+    color: white;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+            background 0.2s ease,
+            transform 0.1s ease;
+}
+
+.moderator-alert button:hover {
+    background: #1f2937;
+}
+
+.moderator-alert button:active {
+    transform: translateY(1px);
+}
+
+.moderator-alert button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Feedback messages */
+
+.moderator-alert .alert-error {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+
+    background: #fef2f2;
+    color: #b91c1c;
+
+    font-size: 13px;
+}
+
+.moderator-alert .alert-success {
+    margin: 14px 0 0;
+
+    color: #15803d;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+@media (max-width: 480px) {
+    .moderator-alert {
+        padding: 20px;
+    }
+
+    .moderator-alert button {
+        width: 100%;
+    }
+}

@@ -1,16 +1,47 @@
 .photo-grid {
     display: grid;
-    grid-template-columns: repeat(
-        auto-fill,
-        minmax(180px, 1fr)
-    );
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+
+    margin-top: 24px;
 }
-.photo-grid img {
+
+.photo-link {
+    display: block;
+    overflow: hidden;
+
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+
+    background: #f3f4f6;
+
+    transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+}
+
+.photo-link:hover {
+    transform: translateY(-3px);
+
+    box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.10);
+}
+
+.photo-link img {
+    display: block;
     width: 100%;
     aspect-ratio: 1 / 1;
+
     object-fit: cover;
-    display: block;
-    border-radius: 8px;
-    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .photo-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .photo-link {
+        border-radius: 10px;
+    }
 }

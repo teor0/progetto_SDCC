@@ -1,0 +1,113 @@
+.upload-form {
+    padding: 24px;
+
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.upload-form h3 {
+    margin: 0 0 18px;
+
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.upload-form input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+
+    box-sizing: border-box;
+
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+
+    background: #f9fafb;
+    color: #374151;
+
+    font-family: inherit;
+    font-size: 14px;
+
+    cursor: pointer;
+}
+
+.upload-form input[type="file"]:hover {
+    border-color: #9ca3af;
+}
+
+.upload-form input[type="file"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.upload-form button {
+    margin-top: 14px;
+    padding: 11px 18px;
+
+    border: none;
+    border-radius: 10px;
+
+    background: #111827;
+    color: white;
+
+    font-size: 14px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+            background 0.2s ease,
+            transform 0.1s ease;
+}
+
+.upload-form button:hover {
+    background: #1f2937;
+}
+
+.upload-form button:active {
+    transform: translateY(1px);
+}
+
+.upload-form button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Feedback */
+
+.upload-form .upload-error {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+
+    background: #fef2f2;
+    color: #b91c1c;
+
+    font-size: 13px;
+}
+
+.upload-form .upload-success {
+    margin: 14px 0 0;
+
+    color: #15803d;
+    font-size: 13px;
+    font-weight: 500;
+
+    word-break: break-word;
+}
+
+@media (max-width: 480px) {
+    .upload-form {
+        padding: 20px;
+    }
+
+    .upload-form button {
+        width: 100%;
+    }
+}
