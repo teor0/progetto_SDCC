@@ -3,24 +3,24 @@
 // distribution and error rate.
 // Usage:
 //
-//	go run ./cmd/loadtest -gateway http://<PUBLIC_IPV4>:8080 -users 50 -duration 30s
+//	go run ./cmd/testupload -gateway http://<PUBLIC_IPV4>:8080 -users 50 -duration 30s
 //
 // Example profiles:
 //
 //	read-heavy (default):
-//	  go run ./cmd/loadtest -gateway http://<IP>:8080 -users 100 -duration 60s
+//	  go run ./cmd/testupload -gateway http://<IP>:8080 -users 100 -duration 60s
 //
 // Chaos injection (automatically trip and recover the circuit breaker):
 //
 // use -upload-pct to specify the percent of requests that are photo uploads
 // use -list-my-pct to specify the percent of requests that are ListGalleries(my_galleries=true)
 //
-//	go run ./cmd/loadtest -gateway http://<IP>:8080 -users 30 -duration 90s \
+//	go run ./cmd/testupload -gateway http://<IP>:8080 -users 30 -duration 90s \
 //	  -upload-pct 60 -list-my-pct 20 \
 //	  -chaos-after 20s -chaos-duration 20s \
 //	  -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
 //
-//	use go run ./cmd/loadtest -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
+//	use go run ./cmd/testupload -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
 package main
 
 import (

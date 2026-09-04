@@ -182,9 +182,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      HTTP_PORT: 8080
+      HTTP_PORT: ${HTTP_PORT}
       USER_SERVICE_ADDRESS: user-service:8081
-      FRONTEND_ORIGIN: http://localhost:5173
+      # Same-origin now that nginx proxies the frontend's /photogallery
+      # and /api requests to this service internally (see
+      # frontend/nginx.conf), so this is mostly a safety net for direct
+      # calls against :8080 during development/testing.
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-*}
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
       MINIO_BUCKET: photos
@@ -194,6 +198,21 @@ services:
       # to fix
       rabbitmq:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.frontend
+      args:
+        # Left empty: nginx reverse-proxies to the gateway on the same origin.
+        # Only override this to call a gateway hosted elsewhere (e.g. a different EC2 instance).
+        VITE_API_BASE_URL: ""
+    image: frontend:latest
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    restart: unless-stopped
 
 
 volumes:

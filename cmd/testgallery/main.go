@@ -1,4 +1,4 @@
-// Command loadtestgallery drives concurrent load specifically against
+// Command testgallery drives concurrent load specifically against
 // Gallery Service's command and query paths (through the API Gateway),
 // independent of Upload/Notification Service. Unlike cmd/loadtest, which
 // hammers ONE shared gallery to stress concurrency on a single hotspot,
@@ -9,14 +9,10 @@
 //
 // Usage:
 //
-//	go run ./cmd/loadtestgallery -gateway http://<PUBLIC_IPV4>:8080 \
+//	go run ./cmd/testgallery -gateway http://<PUBLIC_IPV4>:8080 \
 //	  -moderators 5 -members 50 -duration 60s
 //
-// Prerequisites for testing this against a scaled Gallery Service:
-//  2. gallery-service must not have a static host port mapping while
-//     scaled -- same "only one container can bind a host port" issue
-//     that hit notification-service earlier. Check docker-compose.yml
-//     before running --scale gallery-service=N.
+// docker compose up -d --build --scale gallery-service=3
 package main
 
 import (
