@@ -114,7 +114,17 @@ func (s *CommandService) CloseGallery(ctx context.Context, galleryID uuid.UUID, 
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
-		if err := s.publisher.Publish(bgCtx, "GalleryClosed", g); err != nil {
+		// Published as an explicit snake_case map -- matching how
+		// MemberAdded/MemberRemoved/ModeratorAlert are published -- rather
+		// than marshaling *models.Gallery directly. models.Gallery has no
+		// json tags, so a direct marshal would produce Go-cased keys
+		// ("ID", "Name", ...), which Notification Service's consumer
+		// (galleryClosedPayload, internal/notification/consumer.go) can't
+		// parse.
+		if err := s.publisher.Publish(bgCtx, "GalleryClosed", map[string]string{
+			"gallery_id":   g.ID.String(),
+			"gallery_name": g.Name,
+		}); err != nil {
 			log.Printf("command: failed to publish GalleryClosed for gallery=%s after retries: %v", g.ID, err)
 		}
 	}()

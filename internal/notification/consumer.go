@@ -102,6 +102,13 @@ type moderatorAlertPayload struct {
 	Message     string    `json:"message"`
 }
 
+// galleryClosedPayload matches the map Gallery Service's
+// CommandService.CloseGallery publishes (internal/gallery/command/service.go).
+type galleryClosedPayload struct {
+	GalleryID   uuid.UUID `json:"gallery_id"`
+	GalleryName string    `json:"gallery_name"`
+}
+
 // memberChangedPayload matches the map Gallery Service's AddMember and
 // RemoveMember publish (internal/gallery/command/service.go: "MemberAdded"
 // / "MemberRemoved" events).
@@ -246,9 +253,35 @@ func (c *Consumer) buildNotification(ctx context.Context, env envelope) (*notifi
 			OccurredAt:  timestamppb.New(env.Timestamp),
 		}, nil
 
-	case "GalleryCreated", "GalleryClosed":
-		// Valid Gallery Service domain events, but no user-facing
-		// notification is defined for them yet. (MemberAdded/MemberRemoved
+	case "GalleryClosed":
+		var p galleryClosedPayload
+		if err := json.Unmarshal(env.Payload, &p); err != nil {
+			return nil, fmt.Errorf("unmarshal GalleryClosed payload: %w", err)
+		}
+		if p.GalleryID == uuid.Nil {
+			return nil, fmt.Errorf("GalleryClosed payload missing gallery_id")
+		}
+		// Prefer the name carried on the event itself over the
+		// GetGallery-backed cache: unlike PhotoUploaded/ModeratorAlert,
+		// the gallery is now closed, so there's no reason to pay for (or
+		// rely on) a round trip when the publisher already told us the
+		// name.
+		name := p.GalleryName
+		if name == "" {
+			name = c.galleryName(ctx, p.GalleryID)
+		}
+		return &notificationpb.Notification{
+			Id:          uuid.NewString(),
+			Type:        notificationpb.NotificationType_NOTIFICATION_TYPE_GALLERY_CLOSED,
+			GalleryId:   p.GalleryID.String(),
+			GalleryName: name,
+			Message:     "This gallery has been closed by its moderator.",
+			OccurredAt:  timestamppb.New(env.Timestamp),
+		}, nil
+
+	case "GalleryCreated":
+		// Valid Gallery Service domain event, but no user-facing
+		// notification is defined for it yet. (MemberAdded/MemberRemoved
 		// are intercepted in handle() before reaching here -- they update
 		// the registry directly rather than producing a notification.)
 		return nil, nil

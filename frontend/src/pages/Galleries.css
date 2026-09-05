@@ -12,6 +12,12 @@
     margin: 0 auto;
 }
 
+.gallery-load-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+
 .galleries-header {
     display: flex;
     align-items: flex-start;
@@ -195,6 +201,17 @@
 .gallery-button-danger:hover {
     background: #fef2f2;
     border-color: #fca5a5;
+}
+
+.gallery-card-status-badge {
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 11px;
+    font-weight: 700;
+    vertical-align: middle;
 }
 
 .gallery-message,

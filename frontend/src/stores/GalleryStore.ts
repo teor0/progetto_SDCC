@@ -4,6 +4,11 @@ import type { Gallery } from "../types/gallery";
 export type GalleryState = {
     myGalleries: Gallery[];
     availableGalleries: Gallery[];
+    // null means "no more pages". Set from each response's nextPageToken.
+    myGalleriesNextPageToken: string | null;
+    availableGalleriesNextPageToken: string | null;
+    loadingMoreMy: boolean;
+    loadingMoreAvailable: boolean;
     loading: boolean;
     error: string | null;
 };
@@ -12,6 +17,10 @@ class GalleryStore {
     private state: GalleryState = {
         myGalleries: [],
         availableGalleries: [],
+        myGalleriesNextPageToken: null,
+        availableGalleriesNextPageToken: null,
+        loadingMoreMy: false,
+        loadingMoreAvailable: false,
         loading: false,
         error: null,
     };
@@ -45,9 +54,10 @@ class GalleryStore {
     private handleAction(action: Action): void {
         switch (action.type) {
             case "GALLERY_CREATE_START":
-                this.state = { ...this.state,
+                this.state = {
+                    ...this.state,
                     loading: true,
-                    error: null
+                    error: null,
                 };
                 this.emitChange();
                 break;
@@ -56,8 +66,13 @@ class GalleryStore {
                 this.state = {
                     ...this.state,
                     loading: false,
-                    error: action.payload as string
+                    error: action.payload as string,
                 };
+                this.emitChange();
+                break;
+
+            case "GALLERY_CLOSE_FAILURE":
+                this.state = { ...this.state, error: action.payload as string };
                 this.emitChange();
                 break;
 
@@ -75,12 +90,17 @@ class GalleryStore {
                 const payload = action.payload as {
                     myGalleries: Gallery[];
                     availableGalleries: Gallery[];
+                    myGalleriesNextPageToken: string | null;
+                    availableGalleriesNextPageToken: string | null;
                 };
 
                 this.state = {
                     myGalleries: payload.myGalleries,
-                    availableGalleries:
-                    payload.availableGalleries,
+                    availableGalleries: payload.availableGalleries,
+                    myGalleriesNextPageToken: payload.myGalleriesNextPageToken,
+                    availableGalleriesNextPageToken: payload.availableGalleriesNextPageToken,
+                    loadingMoreMy: false,
+                    loadingMoreAvailable: false,
                     loading: false,
                     error: null,
                 };
@@ -96,6 +116,71 @@ class GalleryStore {
                     error: action.payload as string,
                 };
 
+                this.emitChange();
+                break;
+
+            case "GALLERIES_LOAD_MORE_MY_START":
+                this.state = { ...this.state, loadingMoreMy: true, error: null };
+                this.emitChange();
+                break;
+
+            case "GALLERIES_LOAD_MORE_MY_SUCCESS": {
+                const payload = action.payload as {
+                    galleries: Gallery[];
+                    nextPageToken: string | null;
+                };
+                const newMyIds = new Set(payload.galleries.map((g) => g.id));
+
+                this.state = {
+                    ...this.state,
+                    myGalleries: [...this.state.myGalleries, ...payload.galleries],
+                    // Safety net: if a gallery just paged into "my galleries"
+                    // is still sitting in "available" from an earlier page,
+                    // drop it from there too.
+                    availableGalleries: this.state.availableGalleries.filter(
+                        (g) => !newMyIds.has(g.id)
+                    ),
+                    myGalleriesNextPageToken: payload.nextPageToken,
+                    loadingMoreMy: false,
+                };
+                this.emitChange();
+                break;
+            }
+
+            case "GALLERIES_LOAD_MORE_MY_FAILURE":
+                this.state = { ...this.state, loadingMoreMy: false, error: action.payload as string };
+                this.emitChange();
+                break;
+
+            case "GALLERIES_LOAD_MORE_AVAILABLE_START":
+                this.state = { ...this.state, loadingMoreAvailable: true, error: null };
+                this.emitChange();
+                break;
+
+            case "GALLERIES_LOAD_MORE_AVAILABLE_SUCCESS": {
+                const payload = action.payload as {
+                    galleries: Gallery[];
+                    nextPageToken: string | null;
+                };
+                // Filter against the memberships we currently know about --
+                // this list is fetched independently of "my galleries", so a
+                // gallery the user already belongs to can still show up in a
+                // raw "all galleries" page.
+                const myIds = new Set(this.state.myGalleries.map((g) => g.id));
+                const newAvailable = payload.galleries.filter((g) => !myIds.has(g.id));
+
+                this.state = {
+                    ...this.state,
+                    availableGalleries: [...this.state.availableGalleries, ...newAvailable],
+                    availableGalleriesNextPageToken: payload.nextPageToken,
+                    loadingMoreAvailable: false,
+                };
+                this.emitChange();
+                break;
+            }
+
+            case "GALLERIES_LOAD_MORE_AVAILABLE_FAILURE":
+                this.state = { ...this.state, loadingMoreAvailable: false, error: action.payload as string };
                 this.emitChange();
                 break;
 

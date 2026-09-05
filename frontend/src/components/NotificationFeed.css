@@ -116,6 +116,11 @@
     text-decoration: underline;
 }
 
+.notification-feed li.notification-closed {
+    background: #fef3c7;
+    border-color: #fde68a;
+}
+
 .notification-feed li time {
     margin-left: auto;
 

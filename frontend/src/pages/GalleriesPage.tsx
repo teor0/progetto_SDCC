@@ -3,10 +3,13 @@ import { useNavigate, Link } from "react-router-dom";
 import { galleryStore } from "../stores/GalleryStore";
 import {
     loadGalleries,
+    loadMoreMyGalleries,
+    loadMoreAvailableGalleries,
     createGallery,
     joinGallery,
     leaveGallery,
     deleteGallery,
+    closeGallery,
 } from "../actions/galleryActions";
 import { authStore } from "../stores/AuthStore";
 import { logout } from "../actions/authActions.ts";
@@ -26,12 +29,8 @@ export default function GalleriesPage() {
         });
 
         loadGalleries();
-        const intervalId = setInterval(loadGalleries, 15000);
 
-        return () => {
-            unsubscribe();
-            clearInterval(intervalId);
-        };
+        return unsubscribe;
     }, []);
 
     function handleCreateGallery() {
@@ -50,6 +49,12 @@ export default function GalleriesPage() {
     function handleDelete(gallery: Gallery) {
         if (window.confirm(`Delete "${gallery.name}"? This cannot be undone from the app.`)) {
             deleteGallery(gallery.id);
+        }
+    }
+
+    function handleClose(gallery: Gallery) {
+        if (window.confirm(`Close "${gallery.name}"? Members won't be able to upload while it's closed.`)) {
+            closeGallery(gallery.id);
         }
     }
 
@@ -127,11 +132,24 @@ export default function GalleriesPage() {
                                 gallery={gallery}
                                 actionLabel="Leave"
                                 onAction={() => leaveGallery(gallery.id)}
-                                canDelete={auth.userId === gallery.moderatorId}
+                                canManage={auth.userId === gallery.moderatorId}
                                 onDelete={() => handleDelete(gallery)}
+                                onClose={() => handleClose(gallery)}
                             />
                         ))}
                     </div>
+
+                    {state.myGalleriesNextPageToken && (
+                        <div className="gallery-load-more">
+                            <button
+                                className="gallery-button gallery-button-secondary"
+                                disabled={state.loadingMoreMy}
+                                onClick={() => loadMoreMyGalleries(state.myGalleriesNextPageToken!)}
+                            >
+                                {state.loadingMoreMy ? "Loading..." : "Load more"}
+                            </button>
+                        </div>
+                    )}
                 </section>
 
                 <section className="gallery-section">
@@ -155,11 +173,26 @@ export default function GalleriesPage() {
                                 gallery={gallery}
                                 actionLabel="Join"
                                 onAction={() => joinGallery(gallery.id)}
-                                canDelete={auth.userId === gallery.moderatorId}
+                                canManage={auth.userId === gallery.moderatorId}
                                 onDelete={() => handleDelete(gallery)}
+                                onClose={() => handleClose(gallery)}
                             />
                         ))}
                     </div>
+
+                    {state.availableGalleriesNextPageToken && (
+                        <div className="gallery-load-more">
+                            <button
+                                className="gallery-button gallery-button-secondary"
+                                disabled={state.loadingMoreAvailable}
+                                onClick={() =>
+                                    loadMoreAvailableGalleries(state.availableGalleriesNextPageToken!)
+                                }
+                            >
+                                {state.loadingMoreAvailable ? "Loading..." : "Load more"}
+                            </button>
+                        </div>
+                    )}
                 </section>
             </div>
         </main>
@@ -170,20 +203,25 @@ function GalleryCard({
                          gallery,
                          actionLabel,
                          onAction,
-                         canDelete,
+                         canManage,
                          onDelete,
+                         onClose,
                      }: {
     gallery: Gallery;
     actionLabel: string;
     onAction: () => void;
-    canDelete: boolean;
+    canManage: boolean;
     onDelete: () => void;
+    onClose: () => void;
 }) {
+    const isOpen = gallery.status === "GALLERY_STATUS_OPEN";
+
     return (
         <article className="gallery-card">
             <div className="gallery-card-content">
                 <h3>
                     <Link to={`/galleries/${gallery.id}`}>{gallery.name}</Link>
+                    {!isOpen && <span className="gallery-card-status-badge">Closed</span>}
                 </h3>
                 <p>{gallery.description || "No description provided."}</p>
             </div>
@@ -192,7 +230,12 @@ function GalleryCard({
                 <button className="gallery-button gallery-button-secondary" onClick={onAction}>
                     {actionLabel}
                 </button>
-                {canDelete && (
+                {canManage && isOpen && (
+                    <button className="gallery-button gallery-button-secondary" onClick={onClose}>
+                        Close
+                    </button>
+                )}
+                {canManage && (
                     <button className="gallery-button gallery-button-danger" onClick={onDelete}>
                         Delete
                     </button>

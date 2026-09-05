@@ -84,28 +84,26 @@ export default function GalleryDetailsPage() {
                     />
 
                     {isOpen ? (
-                        <>
-                            <section className="details-panel">
-                                <div className="details-section-heading">
-                                    <h2>Upload a photo</h2>
-                                    <p>Add a new photo to this gallery.</p>
-                                </div>
-                                <UploadForm galleryId={galleryId} />
-                            </section>
-
-                            <section className="details-panel photo-section">
-                                <div className="details-section-heading">
-                                    <h2>Photos</h2>
-                                    <p>Photos shared by gallery members.</p>
-                                </div>
-                                <PhotoGrid galleryId={galleryId} />
-                            </section>
-                        </>
+                        <section className="details-panel">
+                            <div className="details-section-heading">
+                                <h2>Upload a photo</h2>
+                                <p>Add a new photo to this gallery.</p>
+                            </div>
+                            <UploadForm galleryId={galleryId} />
+                        </section>
                     ) : (
                         <div className="details-message">
-                            This gallery is closed. Uploads are disabled.
+                            This gallery is closed. Uploads are disabled, but existing photos are still visible below.
                         </div>
                     )}
+
+                    <section className="details-panel photo-section">
+                        <div className="details-section-heading">
+                            <h2>Photos</h2>
+                            <p>Photos shared by gallery members.</p>
+                        </div>
+                        <PhotoGrid galleryId={galleryId} />
+                    </section>
                 </div>
             </div>
         </main>

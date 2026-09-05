@@ -17,6 +17,10 @@ function describe(notification: NotificationEvent): string {
             return notification.message
                 ? `New message by moderator ${gallery}:${notification.message}`
                 : `Moderator alert${gallery}.`;
+        case "NOTIFICATION_TYPE_GALLERY_CLOSED":
+            return notification.galleryName
+                ? `"${notification.galleryName}" was closed by its moderator.`
+                : notification.message || "A gallery was closed.";
         default:
             return notification.message || "New activity.";
     }
@@ -57,7 +61,7 @@ export default function NotificationFeed() {
 
             <ul>
                 {state.notifications.map((n) => (
-                    <li key={n.id}>
+                    <li key={n.id} className={n.type === "NOTIFICATION_TYPE_GALLERY_CLOSED" ? "notification-closed" : undefined}>
                         {n.photoUrl && (
                             <img
                                 src={n.photoUrl}

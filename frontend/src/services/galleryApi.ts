@@ -7,12 +7,20 @@ import type {
 
 export const galleryApi = {
     async listGalleries(
-        myGalleries = false
+        myGalleries = false,
+        pageSize?: number,
+        pageToken?: string
     ): Promise<ListGalleriesResponse> {
         const params = new URLSearchParams();
 
         if (myGalleries) {
             params.set("my_galleries", "true");
+        }
+        if (pageSize) {
+            params.set("page_size", String(pageSize));
+        }
+        if (pageToken) {
+            params.set("page_token", pageToken);
         }
 
         const query = params.toString();
