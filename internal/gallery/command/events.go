@@ -5,15 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"photogallery/internal/configuration"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
-
-// ExchangeName is the topic exchange all gallery domain events are published to.
-// The Notification Service binds queues to this exchange with routing keys
-// matching the event types it cares about (e.g. "gallery.moderator_alert").
-const ExchangeName = "gallery.events"
 
 // Envelope wraps every published event with a consistent shape so consumers
 // can deserialize the type first, then the payload, without guessing.
@@ -45,7 +41,7 @@ func NewRabbitMQPublisher(amqpURL string) (*RabbitMQPublisher, error) {
 	}
 
 	err = ch.ExchangeDeclare(
-		ExchangeName, //name
+		configuration.ExchangeName, //name
 		"topic",
 		true,  // durable — survives broker restart
 		false, // auto-deleted
@@ -90,7 +86,7 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, eventType string, paylo
 	defer cancel()
 
 	err = p.channel.PublishWithContext(publishCtx,
-		ExchangeName,
+		configuration.ExchangeName,
 		routingKey,
 		false,
 		false,

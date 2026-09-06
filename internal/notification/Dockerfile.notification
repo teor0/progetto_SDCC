@@ -12,6 +12,7 @@ COPY gen/gallery      ./gen/gallery
 COPY internal/auth  ./internal/auth
 COPY internal/notification  ./internal/notification
 COPY cmd/notification       ./cmd/notification
+COPY internal/configuration ./internal/configuration
 
 # build user-service
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /notification-service ./cmd/notification

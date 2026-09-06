@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"photogallery/internal/configuration"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -14,8 +15,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
-
-const TokenTTL = 1 * time.Hour
 
 // ClaimsKey is the context key under which *UserClaims is stored after
 // successful authentication. Use FromContext to retrieve it.
@@ -37,7 +36,7 @@ func SignToken(secret string, userID uuid.UUID, role string) (string, error) {
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(configuration.TokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}

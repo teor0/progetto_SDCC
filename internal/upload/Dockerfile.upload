@@ -14,6 +14,7 @@ COPY gen/gallery   ./gen/gallery
 COPY internal/gallery  ./internal/gallery
 COPY internal/upload  ./internal/upload
 COPY cmd/upload       ./cmd/upload
+COPY internal/configuration ./internal/configuration
 
 # build user-service
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /upload-service ./cmd/upload

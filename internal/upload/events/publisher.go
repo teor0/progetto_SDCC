@@ -8,19 +8,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"photogallery/internal/configuration"
 	"photogallery/internal/upload"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
-)
-
-const (
-	exchange       = "gallery.events"
-	routingPhoto   = "gallery.photo_uploaded" // matches Gallery Service's dot-separated convention
-	maxFailures    = 3
-	publishTimeout = 30 * time.Second
 )
 
 // envelope mirrors the wire shape Gallery Service's command.Envelope uses
@@ -65,7 +59,7 @@ type Publisher struct {
 
 func NewPublisher() (*Publisher, error) {
 	p := &Publisher{
-		breaker: upload.NewCircuitBreaker(maxFailures, publishTimeout),
+		breaker: upload.NewCircuitBreaker(configuration.MaxFailures, configuration.PublishTimeout),
 	}
 	if err := p.connect(); err != nil {
 		// Non-fatal: we can still serve uploads, just without notifications.
@@ -89,7 +83,7 @@ func (p *Publisher) connect() error {
 	}
 
 	if err := ch.ExchangeDeclare(
-		exchange, "topic",
+		configuration.ExchangeName, "topic",
 		true, false, false, false, nil,
 	); err != nil {
 		ch.Close()
@@ -140,7 +134,7 @@ func (p *Publisher) PublishPhoto(ctx context.Context, event *UploadEvent) {
 	}
 
 	err = p.breaker.Call(func() error {
-		return p.publish(ctx, routingPhoto, body)
+		return p.publish(ctx, configuration.RoutingPhoto, body)
 	})
 
 	switch err {
@@ -178,7 +172,7 @@ func (p *Publisher) tryPublish(ctx context.Context, routingKey string, body []by
 		return fmt.Errorf("channel is nil")
 	}
 	return p.channel.PublishWithContext(ctx,
-		exchange,
+		configuration.ExchangeName,
 		routingKey,
 		false,
 		false,

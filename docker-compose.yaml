@@ -15,9 +15,9 @@ services:
   user_postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: matteo
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: user_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME_USER}
     ports:
       - "5432:5432"
     healthcheck:
@@ -36,13 +36,13 @@ services:
     ports:
       - "8081:8081"
     environment:
-      DB_HOST: user_postgres
-      DB_USER: matteo
-      DB_PASSWORD: password
-      DB_NAME_USER: user_db
-      DB_PORT_USER: 5432
-      USER_GRPC_PORT: 8081
-      JWT_SECRET: "?&%:(Hzp@g98••••••••E/O.9.cyW#;m"
+      DB_HOST: ${HOST_USER}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME_USER: ${DB_NAME_USER}
+      DB_PORT_USER: ${DB_PORT_USER}
+      USER_GRPC_PORT: ${USER_GRPC_PORT}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       user_postgres:
         condition: service_healthy # necessary to make the container work
@@ -51,9 +51,9 @@ services:
   gallery_postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: matteo
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: gallery_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME_GALLERY}
     ports:
       - "5433:5432"
     healthcheck:
@@ -70,13 +70,13 @@ services:
       dockerfile: internal/gallery/Dockerfile.gallery
     image: gallery-service:latest
     environment:
-      DB_HOST: gallery_postgres
-      DB_USER: matteo
-      DB_PASSWORD: password
-      DB_NAME_GALLERY: gallery_db
-      DB_PORT_GALLERY: 5432
-      GALLERY_GRPC_PORT: 8082
-      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      DB_HOST: ${HOST_GALLERY}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME_GALLERY: ${DB_NAME_GALLERY}
+      DB_PORT_GALLERY: ${DB_PORT_GALLERY}
+      GALLERY_GRPC_PORT: ${GALLERY_GRPC_PORT}
+      RABBITMQ_URL: ${RABBITMQ_URL}
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
       gallery_postgres:
@@ -87,9 +87,9 @@ services:
   upload_postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: matteo
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: upload_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME_UPLOAD}
     ports:
       - "5434:5432"
     healthcheck:
@@ -109,20 +109,20 @@ services:
       - "8083:8083"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      DB_HOST: upload_postgres
-      DB_USER: matteo
-      DB_PASSWORD: password
-      DB_NAME_UPLOAD: upload_db
-      DB_PORT_UPLOAD: 5432
-      UPLOAD_GRPC_PORT: 8083
-      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      RABBITMQ_EXCHANGE: gallery.events
-      MINIO_ENDPOINT: minio:9000
+      DB_HOST: ${HOST_UPLOAD}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME_UPLOAD: ${DB_NAME_UPLOAD}
+      DB_PORT_UPLOAD: ${DB_PORT_UPLOAD}
+      UPLOAD_GRPC_PORT: ${UPLOAD_GRPC_PORT}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      RABBITMQ_EXCHANGE: ${RABBITMQ_EXCHANGE}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
-      MINIO_BUCKET: photos
-      MINIO_USE_SSL: false
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
       rabbitmq:
@@ -163,9 +163,9 @@ services:
     image: notification-service:latest
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      NOTIFICATION_GRPC_PORT: 8084
-      REDIS_ADDR: redis:6379
-      RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      NOTIFICATION_GRPC_PORT: ${NOTIFICATION_GRPC_PORT}
+      REDIS_ADDR: ${REDIS_ADDR}
+      RABBITMQ_URL: ${RABBITMQ_URL}
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
     depends_on:
       rabbitmq:
@@ -191,7 +191,7 @@ services:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-*}
       GALLERY_SERVICE_ADDRESS: gallery-service:8082
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL}
-      MINIO_BUCKET: photos
+      MINIO_BUCKET: ${MINIO_BUCKET}
       UPLOAD_SERVICE_ADDRESS: upload-service:8083
       NOTIFICATION_SERVICE_ADDRESS: notification-service:8084
     depends_on:

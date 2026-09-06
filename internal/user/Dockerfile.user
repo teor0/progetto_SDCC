@@ -11,6 +11,7 @@ COPY gen/user   ./gen/user
 COPY internal/auth  ./internal/auth
 COPY internal/user  ./internal/user
 COPY cmd/user       ./cmd/user
+COPY internal/configuration ./internal/configuration
 
 # build user-service
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /user-service ./cmd/user

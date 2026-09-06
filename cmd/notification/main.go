@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"photogallery/internal/configuration"
 
 	gallerypb "photogallery/gen/gallery"
 	notificationpb "photogallery/gen/notification"
@@ -18,20 +19,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
-
-// exchangeName must match the topic exchange every producer (Gallery
-// Service's command.RabbitMQPublisher, Upload Service's events.Publisher)
-// declares and publishes domain events to.
-const exchangeName = "gallery.events"
-
-// queueName is durable and explicitly named rather than an auto-generated
-// exclusive queue, so that: (a) events published while this service is
-// down are still delivered on restart instead of being dropped, and
-// (b) if this is ever scaled to more than one replica, instances compete
-// for the same queue (work-queue fan-out) instead of each getting its own
-// duplicate copy of every event.
-const queueName = "notification.events"
-const bindingKey = "gallery.#"
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -97,7 +84,7 @@ func main() {
 	defer ch.Close()
 
 	if err := ch.ExchangeDeclare(
-		exchangeName,
+		configuration.ExchangeName,
 		"topic",
 		true,
 		false,
@@ -108,12 +95,12 @@ func main() {
 		log.Fatalln("Failed to declare exchange:", err)
 	}
 
-	q, err := ch.QueueDeclare(queueName, true, false, false, false, nil)
+	q, err := ch.QueueDeclare(configuration.QueueName, true, false, false, false, nil)
 	if err != nil {
 		log.Fatalln("Failed to declare queue:", err)
 	}
 
-	if err := ch.QueueBind(q.Name, bindingKey, exchangeName, false, nil); err != nil {
+	if err := ch.QueueBind(q.Name, configuration.BindingKey, configuration.ExchangeName, false, nil); err != nil {
 		log.Fatalln("Failed to bind queue:", err)
 	}
 
@@ -127,11 +114,11 @@ func main() {
 
 	deliveries, err := ch.Consume(
 		q.Name,
-		"",    // consumer tag
-		false, // auto-ack -- Consumer.handle acks/nacks explicitly
-		true,  // exclusive -- matches the queue itself
-		false, // no-local
-		false, // no-wait
+		"",
+		false,
+		true,
+		false,
+		false,
 		nil,
 	)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	userpb "photogallery/gen/user"
 	"photogallery/internal/auth"
+	"photogallery/internal/configuration"
 	"photogallery/internal/user/models"
 	"photogallery/internal/user/repository"
 
@@ -60,7 +61,7 @@ func (s *Server) Register(ctx context.Context, req *userpb.RegisterRequest) (*us
 	}
 	return &userpb.TokenResponse{
 		Token:     token,
-		ExpiresIn: int64(auth.TokenTTL.Seconds()),
+		ExpiresIn: int64(configuration.TokenTTL.Seconds()),
 	}, nil
 }
 
@@ -81,7 +82,7 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 	}
 	return &userpb.TokenResponse{
 		Token:     token,
-		ExpiresIn: int64(auth.TokenTTL.Seconds()),
+		ExpiresIn: int64(configuration.TokenTTL.Seconds()),
 	}, nil
 }
 
