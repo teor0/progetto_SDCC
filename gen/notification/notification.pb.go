@@ -28,6 +28,7 @@ const (
 	NotificationType_NOTIFICATION_TYPE_UNSPECIFIED     NotificationType = 0
 	NotificationType_NOTIFICATION_TYPE_PHOTO_UPLOADED  NotificationType = 1
 	NotificationType_NOTIFICATION_TYPE_MODERATOR_ALERT NotificationType = 2
+	NotificationType_NOTIFICATION_TYPE_GALLERY_CLOSED  NotificationType = 3
 )
 
 // Enum value maps for NotificationType.
@@ -36,11 +37,13 @@ var (
 		0: "NOTIFICATION_TYPE_UNSPECIFIED",
 		1: "NOTIFICATION_TYPE_PHOTO_UPLOADED",
 		2: "NOTIFICATION_TYPE_MODERATOR_ALERT",
+		3: "NOTIFICATION_TYPE_GALLERY_CLOSED",
 	}
 	NotificationType_value = map[string]int32{
 		"NOTIFICATION_TYPE_UNSPECIFIED":     0,
 		"NOTIFICATION_TYPE_PHOTO_UPLOADED":  1,
 		"NOTIFICATION_TYPE_MODERATOR_ALERT": 2,
+		"NOTIFICATION_TYPE_GALLERY_CLOSED":  3,
 	}
 )
 
@@ -235,11 +238,12 @@ const file_notification_notification_proto_rawDesc = "" +
 	"\tphoto_url\x18\b \x01(\tR\bphotoUrl\x12;\n" +
 	"\voccurred_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"occurredAt\"\x12\n" +
-	"\x10SubscribeRequest*\x82\x01\n" +
+	"\x10SubscribeRequest*\xa8\x01\n" +
 	"\x10NotificationType\x12!\n" +
 	"\x1dNOTIFICATION_TYPE_UNSPECIFIED\x10\x00\x12$\n" +
 	" NOTIFICATION_TYPE_PHOTO_UPLOADED\x10\x01\x12%\n" +
-	"!NOTIFICATION_TYPE_MODERATOR_ALERT\x10\x022R\n" +
+	"!NOTIFICATION_TYPE_MODERATOR_ALERT\x10\x02\x12$\n" +
+	" NOTIFICATION_TYPE_GALLERY_CLOSED\x10\x032R\n" +
 	"\x13NotificationService\x12;\n" +
 	"\tSubscribe\x12\x17.proto.SubscribeRequest\x1a\x13.proto.Notification0\x01Bq\n" +
 	"\tcom.protoB\x11NotificationProtoP\x01Z\x1dphotogallery/gen/notification\xa2\x02\x03PXX\xaa\x02\x05Proto\xca\x02\x05Proto\xe2\x02\x11Proto\\GPBMetadata\xea\x02\x05Protob\x06proto3"

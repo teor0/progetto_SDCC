@@ -3,6 +3,12 @@ import { dispatcher } from "../stores/Dispatcher";
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
+// Must match AuthStore's TOKEN_KEY -- kept as a literal there too rather
+// than a shared constant, but both need to agree on sessionStorage (not
+// localStorage) so a token AuthStore just wrote is actually the one this
+// client reads back for the Authorization header.
+const TOKEN_KEY = "access_token";
+
 class ApiClient {
     private readonly baseUrl: string;
     private loggingOut = false; // guards against duplicate dispatch/redirect on concurrent 401s
@@ -15,7 +21,7 @@ class ApiClient {
         path: string,
         options: RequestInit = {}
     ): Promise<T> {
-        const token = localStorage.getItem("access_token");
+        const token = sessionStorage.getItem(TOKEN_KEY);
 
         const headers = new Headers(options.headers);
 
@@ -58,7 +64,7 @@ class ApiClient {
         const text = await response.text();
         return text ? (JSON.parse(text) as T) : (undefined as T);
     }
-    
+
 
     postForm<T>(path: string, formData: FormData): Promise<T> {
         return this.request<T>(path, {

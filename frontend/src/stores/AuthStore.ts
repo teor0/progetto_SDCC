@@ -42,7 +42,7 @@ class AuthStore {
     }
 
     private loadInitialState(): AuthState {
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = sessionStorage.getItem(TOKEN_KEY);
 
         if (!token) {
             return this.emptyState();
@@ -63,7 +63,7 @@ class AuthStore {
                 return this.emptyState();
             }
 
-            localStorage.setItem(
+            sessionStorage.setItem(
                 EXPIRY_KEY,
                 String(expiresAt)
             );
@@ -94,8 +94,8 @@ class AuthStore {
     }
 
     private clearStoredAuth(): void {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(EXPIRY_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(EXPIRY_KEY);
     }
 
     private emitChange(): void {
@@ -153,12 +153,12 @@ class AuthStore {
                     const expiresAt =
                         claims.exp * 1000;
 
-                    localStorage.setItem(
+                    sessionStorage.setItem(
                         TOKEN_KEY,
                         payload.token
                     );
 
-                    localStorage.setItem(
+                    sessionStorage.setItem(
                         EXPIRY_KEY,
                         String(expiresAt)
                     );

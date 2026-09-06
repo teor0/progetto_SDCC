@@ -2,14 +2,17 @@ package testing
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	mock "photogallery/internal/notification/mocks"
 	"testing"
+	"time"
 
 	notificationpb "photogallery/gen/notification"
 	"photogallery/internal/notification"
 
 	"github.com/google/uuid"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/mock/gomock"
 )
 
@@ -179,4 +182,149 @@ func TestAddGalleryForClient_RegistersEveryConnectionOfUser(t *testing.T) {
 	streamTab2.EXPECT().Send(n).Return(nil)
 
 	registry.Notify(context.Background(), galleryID, n)
+}
+
+// --- Consumer / GalleryClosed ---
+
+// wireEnvelope mirrors the private "envelope" shape Consumer parses
+// (internal/notification/consumer.go) -- duplicated here deliberately so
+// this test exercises the actual wire contract (JSON field names) rather
+// than reaching into an unexported type from another package.
+type wireEnvelope struct {
+	EventType string          `json:"event_type"`
+	Timestamp time.Time       `json:"timestamp"`
+	Payload   json.RawMessage `json:"payload"`
+}
+
+// fakeAcknowledger stands in for the real AMQP channel so
+// amqp.Delivery.Ack/Nack (called internally by Consumer.handle) have
+// something non-nil to call, and so the test can assert which one fired.
+type fakeAcknowledger struct {
+	acked  bool
+	nacked bool
+}
+
+func (f *fakeAcknowledger) Ack(tag uint64, multiple bool) error {
+	f.acked = true
+	return nil
+}
+
+func (f *fakeAcknowledger) Nack(tag uint64, multiple, requeue bool) error {
+	f.nacked = true
+	return nil
+}
+
+func (f *fakeAcknowledger) Reject(tag uint64, requeue bool) error {
+	return nil
+}
+
+// galleryClosedDelivery builds a single amqp.Delivery carrying a
+// "GalleryClosed" event, with payload built from the given key/value
+// pairs (so the missing-gallery_id test can omit it).
+func galleryClosedDelivery(t *testing.T, ack *fakeAcknowledger, payload map[string]string) amqp.Delivery {
+	t.Helper()
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload: %v", err)
+	}
+
+	body, err := json.Marshal(wireEnvelope{
+		EventType: "GalleryClosed",
+		Timestamp: time.Now().UTC(),
+		Payload:   payloadBytes,
+	})
+	if err != nil {
+		t.Fatalf("marshal envelope: %v", err)
+	}
+
+	return amqp.Delivery{Acknowledger: ack, Body: body}
+}
+
+// TestConsumer_GalleryClosed_PublishesNotification exercises the full
+// path a real "gallery.closed" RabbitMQ delivery takes: Consumer.Consume
+// decodes the envelope, builds a NOTIFICATION_TYPE_GALLERY_CLOSED
+// Notification, and hands it to the broadcaster for fan-out -- then acks
+// the delivery.
+func TestConsumer_GalleryClosed_PublishesNotification(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	broadcaster := mock.NewMocknotifier(ctrl)
+	galleryClient := mock.NewMockGalleryServiceClient(ctrl)
+
+	galleryID := uuid.New()
+
+	var captured *notificationpb.Notification
+	broadcaster.EXPECT().
+		PublishNotification(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, n *notificationpb.Notification) error {
+			captured = n
+			return nil
+		})
+
+	consumer := notification.NewConsumer(broadcaster, galleryClient)
+
+	ack := &fakeAcknowledger{}
+	deliveries := make(chan amqp.Delivery, 1)
+	deliveries <- galleryClosedDelivery(t, ack, map[string]string{
+		"gallery_id":   galleryID.String(),
+		"gallery_name": "Summer Trip",
+	})
+	close(deliveries)
+
+	consumer.Consume(context.Background(), deliveries)
+
+	if captured == nil {
+		t.Fatal("expected a notification to be published, got none")
+	}
+	if captured.Type != notificationpb.NotificationType_NOTIFICATION_TYPE_GALLERY_CLOSED {
+		t.Fatalf("expected type GALLERY_CLOSED, got %s", captured.Type)
+	}
+	if captured.GalleryId != galleryID.String() {
+		t.Fatalf("expected gallery_id %s, got %s", galleryID, captured.GalleryId)
+	}
+	if captured.GalleryName != "Summer Trip" {
+		t.Fatalf("expected gallery_name %q, got %q", "Summer Trip", captured.GalleryName)
+	}
+	if captured.Message == "" {
+		t.Fatal("expected a non-empty message")
+	}
+	if !ack.acked {
+		t.Fatal("expected the delivery to be Acked")
+	}
+	if ack.nacked {
+		t.Fatal("an Acked delivery should not also be Nacked")
+	}
+}
+
+// TestConsumer_GalleryClosed_MissingGalleryID_NacksAndDrops confirms a
+// malformed event (missing gallery_id) never reaches the broadcaster and
+// is Nacked rather than Acked.
+func TestConsumer_GalleryClosed_MissingGalleryID_NacksAndDrops(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	broadcaster := mock.NewMocknotifier(ctrl)
+	galleryClient := mock.NewMockGalleryServiceClient(ctrl)
+
+	broadcaster.EXPECT().PublishNotification(gomock.Any(), gomock.Any()).Times(0)
+
+	consumer := notification.NewConsumer(broadcaster, galleryClient)
+
+	ack := &fakeAcknowledger{}
+	deliveries := make(chan amqp.Delivery, 1)
+	deliveries <- galleryClosedDelivery(t, ack, map[string]string{
+		"gallery_name": "Summer Trip", // gallery_id deliberately omitted
+	})
+	close(deliveries)
+
+	consumer.Consume(context.Background(), deliveries)
+
+	if !ack.nacked {
+		t.Fatal("expected the malformed delivery to be Nacked")
+	}
+	if ack.acked {
+		t.Fatal("a Nacked delivery should not also be Acked")
+	}
 }
