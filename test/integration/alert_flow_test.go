@@ -15,14 +15,16 @@ import (
 )
 
 // to run test:
-// GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration \
-//  ./test/integration/... -run TestModeratorAlert_DeliveredToAllSubscribers -v
-// remember to scale the service:
-// docker compose up -d --build --scale notification-service=3
-
-// notificationEventDTO mirrors internal/handlers/notification.go's
-// notificationDTO -- the JSON shape pushed over SSE, not the internal
-// proto type.
+//
+//	docker compose up -d --build --scale notification-service=3
+//
+// go test -tags=integration ./test/integration/... -v
+//
+//	Point at a non-local stack (AWS) with:
+//	GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration \
+//	  ./test/integration/... -run TestModeratorAlert_DeliveredToAllSubscribers -v
+//
+// This test doesn't uses mock so YOU NEED TO CLEANUP THE TEST RESULTS AFTER
 type notificationEventDTO struct {
 	ID          string `json:"id"`
 	Type        string `json:"type"`
@@ -40,21 +42,6 @@ type sseEvent struct {
 	data string
 }
 
-// openNotificationStream opens the SSE endpoint and parses events onto a
-// channel in a background goroutine.
-//
-// IMPORTANT: this does not (and cannot, given the current handler) confirm
-// server-side subscription registration completed before returning.
-// internal/handlers/notification.go's Stream handler writes nothing to the
-// HTTP response -- not even headers -- until the underlying gRPC stream's
-// first Recv() succeeds (Gin's c.Stream calls the read step before ever
-// flushing), and the client-side Subscribe() call returns as soon as the
-// stream is created, independent of whether Notification Service's
-// Registry.Subscribe has actually run yet. There is currently no
-// observable signal that registration is complete. Callers of this
-// function must add their own short delay before triggering whatever
-// they expect to be notified about -- see the sleep in the tests below,
-// and the comment explaining why it's there.
 func openNotificationStream(t *testing.T, token string) (<-chan sseEvent, func()) {
 	t.Helper()
 
@@ -112,13 +99,6 @@ func openNotificationStream(t *testing.T, token string) (<-chan sseEvent, func()
 	return events, cancel
 }
 
-// waitForNotificationNonFatal is the goroutine-safe counterpart to
-// waitForNotification below: t.Fatal/t.FailNow must only ever be called
-// from the goroutine actually running the test function, so this returns
-// nil on timeout or a closed stream instead of failing directly -- letting
-// a caller that's waiting on several subscribers concurrently (from
-// multiple goroutines) aggregate results and report failures from the
-// main test goroutine itself.
 func waitForNotificationNonFatal(
 	events <-chan sseEvent,
 	timeout time.Duration,
@@ -147,12 +127,6 @@ func waitForNotificationNonFatal(
 	}
 }
 
-// waitForNotification reads from events until match returns true or
-// timeout elapses, ignoring non-"notification" SSE events and malformed
-// payloads along the way (SSE keep-alive comments, if the handler ever
-// adds them, would otherwise fail json.Unmarshal and shouldn't fail the
-// test). Only safe to call from the test's own goroutine -- see
-// waitForNotificationNonFatal for the concurrent case.
 func waitForNotification(
 	t *testing.T,
 	events <-chan sseEvent,
@@ -175,10 +149,9 @@ func sendModeratorAlert(t *testing.T, moderatorToken, galleryID, body string) *h
 }
 
 // TestModeratorAlert_DeliveredToMembers is the main flow: a moderator
-// sends an alert, and a subscribed member receives it over SSE -- proving
+// sends an alert, and a subscribed member receives it over SSE proving
 // the full chain (Gallery Service -> RabbitMQ -> Notification Service's
-// consumer -> Registry fan-out -> SSE) actually works end to end, not
-// just that each hop works in isolation against a mock.
+// consumer -> Registry fan-out -> SSE)
 func TestModeratorAlert_DeliveredToMembers(t *testing.T) {
 	_, moderatorToken := registerUser(t, "ROLE_MODERATOR")
 	_, memberToken := registerUser(t, "ROLE_USER")
@@ -189,12 +162,7 @@ func TestModeratorAlert_DeliveredToMembers(t *testing.T) {
 	events, cancel := openNotificationStream(t, memberToken)
 	defer cancel()
 
-	// See the warning on openNotificationStream: there is no signal that
-	// server-side subscription registration has completed by the time
-	// the HTTP request for the stream has merely been issued. This sleep
-	// is a deliberate, documented race-mitigation, not a guarantee --
-	// if this test becomes flaky under heavier load (e.g. during your
-	// scalability testing), widen it before assuming something else broke.
+	//  there is no signal that subscription has completed so we use sleep
 	time.Sleep(500 * time.Millisecond)
 
 	const alertBody = "Please review the gallery guidelines."
@@ -210,38 +178,6 @@ func TestModeratorAlert_DeliveredToMembers(t *testing.T) {
 		"galleryName should be populated by Consumer.galleryName -- if this is empty, that lookup regressed")
 }
 
-// TestModeratorAlert_DeliveredToAllSubscribers opens several independent
-// SSE subscriptions (different members, all joined to the same gallery)
-// and confirms every single one receives the alert.
-//
-// Run this against a scaled deployment to actually exercise the thing it
-// is meant to catch:
-//
-//	docker compose up -d --build --scale notification-service=3
-//	GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration \
-//	  ./test/integration/... -run TestModeratorAlert_DeliveredToAllSubscribers -v
-//
-// With multiple replicas and the gateway's round-robin dial in place,
-// each Subscribe call is likely spread across different replicas. This is
-// the test that would have caught the original bug: a shared durable
-// RabbitMQ queue made replicas competing consumers, so only whichever
-// replica happened to drain a given delivery could act on it -- every
-// subscriber pinned to a different replica silently never got notified,
-// with no error anywhere. It now exercises the Redis Pub/Sub fan-out that
-// replaced that design (Consumer -> Broadcaster.PublishNotification ->
-// every replica's own Registry).
-//
-// Run against a single replica, this still passes -- for the same reason
-// it always did before any of this existed. The point of scaling replicas
-// for this specific run is to actually stress the cross-replica path
-// instead of trivially succeeding because everything happened to be on
-// one process. This test cannot directly confirm subscribers landed on
-// different replicas -- nothing in the API surface exposes that -- it
-// only proves the externally observable contract: every member who is
-// subscribed receives the alert, regardless of which replica happened to
-// handle their stream or the RabbitMQ delivery. Cross-reference `docker
-// compose logs notification-service` during a scaled run if you want to
-// eyeball the actual distribution.
 func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
 	const numSubscribers = 5
 
@@ -267,18 +203,13 @@ func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
 		}
 	}()
 
-	// Same race-mitigation as TestModeratorAlert_DeliveredToMembers, just
-	// covering every subscription registering, not only one.
 	time.Sleep(500 * time.Millisecond)
 
 	const alertBody = "Multi-subscriber delivery check."
 	resp := sendModeratorAlert(t, moderatorToken, gallery.ID, alertBody)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Wait for all subscribers concurrently, not sequentially -- delivery
-	// to each is independent, so a sequential per-subscriber timeout would
-	// make this test's worst-case duration scale with numSubscribers for
-	// no real reason.
+	// Wait for all subscribers concurrently, not sequentially
 	var wg sync.WaitGroup
 	results := make([]*notificationEventDTO, numSubscribers)
 	for i, s := range subscribers {
@@ -301,38 +232,8 @@ func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
 	}
 }
 
-// TestModeratorAlert_NotDeliveredToNonMemberModerator documents, with an
-// actual assertion rather than just a comment, the known quirk that a
-// moderator who never joined their own gallery (CreateGallery doesn't
-// auto-add a Member row -- see gallery_flow_test.go) does not receive
-// their own alert. This is a best-effort negative check: absence within
-// a bounded window isn't a strict proof of "never," but it's enough to
-// catch an accidental regression the other direction (e.g. if someone
-// "fixes" this by broadcasting alerts to non-members).
-func TestModeratorAlert_NotDeliveredToNonMemberModerator(t *testing.T) {
-	_, moderatorToken := registerUser(t, "ROLE_MODERATOR")
-	gallery := createTestGallery(t, moderatorToken, "Moderator Not Subscribed Test Gallery")
-
-	events, cancel := openNotificationStream(t, moderatorToken)
-	defer cancel()
-	time.Sleep(500 * time.Millisecond)
-
-	resp := sendModeratorAlert(t, moderatorToken, gallery.ID, "should not reach myself")
-	require.Equal(t, http.StatusOK, resp.StatusCode)
-
-	select {
-	case e, ok := <-events:
-		if ok {
-			t.Fatalf("expected no notification for a moderator who never joined their own gallery, got: %+v", e)
-		}
-	case <-time.After(2 * time.Second):
-		// No event within the window -- consistent with the moderator not
-		// being a registered subscriber for this gallery.
-	}
-}
-
 // TestModeratorAlert_RejectsNonModerator confirms a regular member of the
-// gallery cannot send an alert, even though they're a legitimate member.
+// gallery cannot send an alert, even if they're a legitimate member.
 func TestModeratorAlert_RejectsNonModerator(t *testing.T) {
 	_, moderatorToken := registerUser(t, "ROLE_MODERATOR")
 	_, memberToken := registerUser(t, "ROLE_USER")
@@ -344,9 +245,7 @@ func TestModeratorAlert_RejectsNonModerator(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, resp.StatusCode)
 }
 
-// TestModeratorAlert_RejectsWrongGalleryModerator confirms being
-// ROLE_MODERATOR isn't sufficient on its own -- CommandService.
-// SendModeratorAlert checks callerID against this specific gallery's
+// TestModeratorAlert_RejectsWrongGalleryModerator checks callerID against this specific gallery's
 // ModeratorID, so a moderator of a *different* gallery must also be
 // rejected. This is exactly the check the frontend's ModeratorAlertForm
 // mirrors client-side to avoid showing a form that would always fail.

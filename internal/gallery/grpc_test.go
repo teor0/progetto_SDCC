@@ -22,6 +22,7 @@ import (
 	userpb "photogallery/gen/user"
 )
 
+// unit-test file
 const jwtSecret = "test-secret"
 
 func newTestServer(t *testing.T) (*api.Server, *mocks.MockCommandRunner, *mocks.MockQueryRunner) {

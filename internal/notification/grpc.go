@@ -12,8 +12,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// membershipPageSize batches ListGalleriesByMember calls when resolving a
-// subscriber's memberships.
 const membershipPageSize = 100
 
 type Server struct {
@@ -29,11 +27,7 @@ func NewServer(registry *Registry, galleryClient gallerypb.GalleryServiceClient)
 	}
 }
 
-// Subscribe opens a persistent server-streaming connection: it resolves
-// every gallery the caller belongs to, registers the stream against each
-// one so Consumer.Consume can fan events out to it, then blocks until the
-// client disconnects. Notification delivery itself happens out-of-band --
-// this method's only job is registration and cleanup, not sending.
+// Subscribe opens a persistent server-streaming connection
 func (s *Server) Subscribe(
 	_ *notificationpb.SubscribeRequest,
 	stream notificationpb.NotificationService_SubscribeServer,
@@ -84,11 +78,6 @@ func (s *Server) Subscribe(
 	return ctx.Err()
 }
 
-// resolveMemberships asks Gallery Service which galleries userID belongs
-// to via the dedicated internal query, rather than paginating over every
-// gallery and filtering client-side. Unlike a plain ListGalleries call,
-// this doesn't need any identity forwarding: userID is passed explicitly,
-// the same trust model as IsMember.
 func (s *Server) resolveMemberships(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
 	var galleryIDs []uuid.UUID
 

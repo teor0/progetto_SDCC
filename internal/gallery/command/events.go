@@ -104,7 +104,6 @@ func (p *RabbitMQPublisher) Publish(ctx context.Context, eventType string, paylo
 	return nil
 }
 
-// Close releases the channel and connection.
 func (p *RabbitMQPublisher) Close() error {
 	if err := p.channel.Close(); err != nil {
 		return err
@@ -119,12 +118,6 @@ func routingKeyFor(eventType string) string {
 		return "gallery.created"
 	case "GalleryClosed":
 		return "gallery.closed"
-	case "MemberAdded":
-		return "gallery.member_added"
-	case "GalleryDeleted":
-		return "gallery.deleted"
-	case "MemberRemoved":
-		return "gallery.member_removed"
 	case "ModeratorAlert":
 		return "gallery.moderator_alert"
 	default:

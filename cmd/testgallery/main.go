@@ -1,18 +1,13 @@
 // Command testgallery drives concurrent load specifically against
-// Gallery Service's command and query paths (through the API Gateway),
-// independent of Upload/Notification Service. Unlike cmd/loadtest, which
-// hammers ONE shared gallery to stress concurrency on a single hotspot,
-// this tool grows a pool of many galleries during the measured run, so
-// ListGalleries/ListGalleriesByMember get exercised against an actually
-// expanding dataset -- the more relevant shape of load for evaluating the
-// query side of a CQRS split.
-//
+// Gallery Service's command and query paths independent of
+// Upload/Notification Service. Unlike cmd/testupload, which
+// use ONE shared gallery to stress concurrency on a single hotspot,
+// this test use a pool of many galleries during the measured run
 // Usage:
 //
+//	docker compose up -d --build --scale gallery-service=3
 //	go run ./cmd/testgallery -gateway http://<PUBLIC_IPV4>:8080 \
 //	  -moderators 5 -members 50 -duration 60s
-//
-// docker compose up -d --build --scale gallery-service=3
 package main
 
 import (
@@ -24,14 +19,20 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"slices"
 	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
+// gatewayURL is set once from flags in main
 var gatewayURL string
 
+// httpClient is shared across every request the load generator makes.
+// The explicit transport matters: net/http's zero-value transport (what
+// http.DefaultClient uses) caps idle connections per host at 2, which
+// would cause a bottleneck
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
 	Transport: &http.Transport{
@@ -45,7 +46,7 @@ type config struct {
 	moderators     int
 	members        int
 	duration       time.Duration
-	createInterval time.Duration // how often EACH moderator attempts to create a new gallery
+	createInterval time.Duration // how often each moderator attempts to create a new gallery
 	joinPct        int
 	leavePct       int
 	getPct         int
@@ -71,9 +72,7 @@ type galleryResponse struct {
 var totalRequests atomic.Int64
 
 // galleryPool is the shared, growing set of gallery IDs member workers
-// pick from. It starts seeded during setup and keeps growing throughout
-// the load phase as moderator workers create more -- deliberately mutable
-// concurrent state, guarded by a mutex rather than recreated per read,
+// pick from. Guarded by a mutex rather than recreated per read,
 // since member workers need to see newly created galleries mid-run.
 type galleryPool struct {
 	mu  sync.RWMutex
@@ -131,10 +130,6 @@ func main() {
 				defer func() { <-sem }()
 				token := mustRegister("ROLE_MODERATOR")
 				moderatorTokens[i] = token
-				// Seed one gallery per moderator up front, so member
-				// workers have something to Join/Get/ListMembers against
-				// from the very first tick of the load phase instead of
-				// racing an empty pool.
 				g := mustCreateGallerySetup(token)
 				pool.add(g.ID)
 			}(i)
@@ -250,11 +245,7 @@ func parseFlags() config {
 }
 
 // memberOp is one weighted operation a member worker might perform.
-// Weight is a percentage point count (they're built to sum to 100 by
-// buildMemberOps), and pickMemberOp does a straightforward weighted pick
-// over them -- a small table-driven approach rather than a cascade of
-// if/else percentage bands, since there are six operations here instead
-// of cmd/loadtest's two or three.
+// Weight is a percentage point count and pickMemberOp does a weighted pick over them
 type memberOp struct {
 	name   string
 	weight int
@@ -289,7 +280,7 @@ func pickMemberOp(ops []memberOp, rng *rand.Rand) memberOp {
 		}
 		r -= o.weight
 	}
-	return ops[len(ops)-1] // unreachable given the weights sum correctly, but a safe fallback
+	return ops[len(ops)-1] // safe fallback
 }
 
 func runMemberWorker(token string, pool *galleryPool, ops []memberOp, stop time.Time) []opResult {
@@ -305,11 +296,7 @@ func runMemberWorker(token string, pool *galleryPool, ops []memberOp, stop time.
 	return results
 }
 
-// runModeratorWorker calls CreateGallery on a fixed interval rather than
-// as fast as possible -- moderators creating content is inherently rarer
-// than members browsing/joining/leaving it, and an unthrottled creation
-// loop would flood the pool with galleries far faster than any real
-// usage pattern, skewing what the read-side latencies actually mean.
+// runModeratorWorker calls CreateGallery on a fixed interval
 func runModeratorWorker(token string, pool *galleryPool, interval time.Duration, stop time.Time) []opResult {
 	var results []opResult
 	for {
@@ -351,10 +338,10 @@ func timedCreateGallery(token string, pool *galleryPool) opResult {
 		if json.NewDecoder(resp.Body).Decode(&g) == nil && g.ID != "" {
 			pool.add(g.ID)
 		} else {
-			ok = false // decoded 200 but got garbage back -- treat as a failure, don't silently skip adding to the pool
+			ok = false // decoded 200 but got something wrong back
 		}
 	} else {
-		io.Copy(io.Discard, resp.Body) //nolint:errcheck
+		io.Copy(io.Discard, resp.Body)
 	}
 
 	return opResult{op: "createGallery", latency: time.Since(start), ok: ok}
@@ -362,11 +349,7 @@ func timedCreateGallery(token string, pool *galleryPool) opResult {
 
 // timedJoinGallery and timedLeaveGallery pick a RANDOM gallery from the
 // pool with no membership bookkeeping -- both operations are idempotent
-// server-side (JoinGallery's OnConflict{DoNothing}, LeaveGallery's
-// no-op-if-absent Delete), so joining something you're already in, or
-// leaving something you were never in, both just succeed. That's what
-// makes uncoordinated random selection across many concurrent workers
-// safe here, rather than a source of false failures.
+// so joining something you're already in, or leaving something you were never in, both just succeed.
 func timedJoinGallery(token string, pool *galleryPool, rng *rand.Rand) opResult {
 	id, ok := pool.random(rng)
 	if !ok {
@@ -385,7 +368,7 @@ func timedJoinGallery(token string, pool *galleryPool, rng *rand.Rand) opResult 
 		return opResult{op: "joinGallery", latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	return opResult{op: "joinGallery", latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
@@ -408,7 +391,7 @@ func timedLeaveGallery(token string, pool *galleryPool, rng *rand.Rand) opResult
 		return opResult{op: "leaveGallery", latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	return opResult{op: "leaveGallery", latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
@@ -424,14 +407,14 @@ func timedGetGallery(token string, pool *galleryPool, rng *rand.Rand) opResult {
 	if err != nil {
 		return opResult{op: "getGallery", latency: time.Since(start), ok: false}
 	}
-	req.Header.Set("Authorization", "Bearer "+token) // not required (GetGallery is public), sent anyway for consistency
+	req.Header.Set("Authorization", "Bearer "+token) // not required GetGallery is public
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return opResult{op: "getGallery", latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	return opResult{op: "getGallery", latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
@@ -447,14 +430,14 @@ func timedListMembers(token string, pool *galleryPool, rng *rand.Rand) opResult 
 	if err != nil {
 		return opResult{op: "listMembers", latency: time.Since(start), ok: false}
 	}
-	req.Header.Set("Authorization", "Bearer "+token) // required -- ListMembers is not a public method
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return opResult{op: "listMembers", latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
 	return opResult{op: "listMembers", latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
@@ -517,8 +500,6 @@ func mustRegister(role string) string {
 	return tr.Token
 }
 
-// mustCreateGallerySetup is used only during the unmeasured setup phase,
-// to seed one gallery per moderator before the load phase starts.
 func mustCreateGallerySetup(moderatorToken string) galleryResponse {
 	body, _ := json.Marshal(map[string]string{
 		"name":        fmt.Sprintf("loadtest-gallery-seed-%d", time.Now().UnixNano()),
@@ -549,10 +530,6 @@ func mustCreateGallerySetup(moderatorToken string) galleryResponse {
 	}
 	return g
 }
-
-// --- reporting (same shape as cmd/loadtest, duplicated rather than
-// shared -- this tool is meant to be runnable standalone without pulling
-// in anything from the upload-focused tool) ---
 
 type opStats struct {
 	op                            string
@@ -593,7 +570,7 @@ func computeStats(op string, results []opResult) opStats {
 			errors++
 		}
 	}
-	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+	slices.Sort(latencies)
 
 	pct := func(p float64) time.Duration {
 		if len(latencies) == 0 {

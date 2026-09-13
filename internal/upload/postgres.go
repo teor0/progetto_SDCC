@@ -10,9 +10,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// PostgresRepository is the Repository implementation to use once you're
-// running more than one Upload Service replica, or you care about upload
-// history surviving a redeployment.
 type PostgresRepository struct {
 	db *gorm.DB
 }

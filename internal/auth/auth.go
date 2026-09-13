@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// ClaimsKey is the context key under which *UserClaims is stored after
+// claimsKey is the context key under which *UserClaims is stored after
 // successful authentication. Use FromContext to retrieve it.
 type claimsKey struct{}
 

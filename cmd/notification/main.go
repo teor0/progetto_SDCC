@@ -70,7 +70,6 @@ func main() {
 	defer galleryConn.Close()
 	galleryClient := gallerypb.NewGalleryServiceClient(galleryConn)
 
-	// --- RabbitMQ consumer ---------------------------------------------------
 	conn, err := amqp.Dial(amqpURL)
 	if err != nil {
 		log.Fatalln("Failed to connect to RabbitMQ:", err)
@@ -104,10 +103,9 @@ func main() {
 		log.Fatalln("Failed to bind queue:", err)
 	}
 
-	// Fair dispatch: still meaningful per replica even though it's no longer
-	// sharing the queue with siblings -- bounds how many in-flight unacked
-	// deliveries this one replica takes on at once, protecting it from being
-	// overwhelmed by a burst.
+	//Qos controls how many messages or how many bytes the server will try to keep on the network
+	//for consumers before receiving delivery acks. The intent of Qos is to make sure
+	//the network buffers stay full between the server and client.
 	if err := ch.Qos(10, 0, false); err != nil {
 		log.Fatalln("Failed to set QoS:", err)
 	}

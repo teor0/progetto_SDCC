@@ -77,7 +77,6 @@ message GetGalleryRequest {
 }
 
 message ListGalleriesRequest {
-  // Optional: filter to galleries the caller belongs to.
   bool   my_galleries = 1;
   int32  page_size    = 2;
   string page_token   = 3;
@@ -92,14 +91,7 @@ message ListMembersRequest {
   string gallery_id = 1;
 }
 
-// ListGalleriesByMemberRequest queries galleries a specific user belongs
-// to directly (a proper "by member" query), rather than paginating over
-// all galleries and filtering client-side the way
-// ListGalleries(my_galleries=true) currently does. Intended for internal
-// service-to-service use (e.g. Notification Service resolving a
-// subscriber's memberships) -- like IsMember, not exposed via the HTTP
-// gateway, and the caller passes user_id explicitly rather than relying
-// on forwarded JWT identity.
+// ListGalleriesByMemberRequest queries galleries a specific user belongs to directly
 message ListGalleriesByMemberRequest {
   string user_id    = 1;
   int32  page_size  = 2;
@@ -110,10 +102,7 @@ message ListMembersResponse {
   repeated Member members = 1;
 }
 
-// IsMember is a cheap existence check, intended for other services
-// (e.g. Upload Service) to validate a single user's membership without
-// pulling the full member list. Also returns gallery status so callers
-// can validate "open" state in the same round trip.
+// IsMember is intended for other services to validate a single user's membership
 message IsMemberRequest {
   string gallery_id = 1;
   string user_id    = 2;
@@ -202,16 +191,9 @@ service GalleryService {
     };
   }
 
-  // IsMember is used internally (not exposed via the HTTP gateway) by
-  // other services -- primarily Upload Service -- to check membership
-  // and gallery status in a single low-cost call before accepting work.
-  // This is the call Upload Service wraps in its circuit breaker.
+
   rpc IsMember(IsMemberRequest) returns (IsMemberResponse);
 
-  // ListGalleriesByMember is used internally (not exposed via the HTTP
-  // gateway) by other services -- primarily Notification Service, to
-  // resolve which galleries a subscribing user belongs to -- to query
-  // membership directly instead of paginating over every gallery.
   rpc ListGalleriesByMember(ListGalleriesByMemberRequest) returns (ListGalleriesResponse);
 
 }

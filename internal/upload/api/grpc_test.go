@@ -22,8 +22,6 @@ import (
 
 // newAuthedContext builds a context carrying the incoming gRPC metadata
 // that internal/auth.FromContext reads to resolve the caller's identity.
-// Adjust this helper if your actual auth implementation resolves claims
-// a different way (e.g. a context value set by an interceptor).
 func newAuthedContext(userID uuid.UUID) context.Context {
 	return auth.NewContext(context.Background(), &auth.Claims{
 		UserID: userID,
@@ -31,8 +29,7 @@ func newAuthedContext(userID uuid.UUID) context.Context {
 	})
 }
 
-// expectRecvSequence queues up the standard "metadata, then one chunk,
-// then EOF" sequence a well-behaved client sends.
+// expectRecvSequence queues up the standard "metadata, then one chunk, then EOF" sequence a client sends.
 func expectRecvSequence(stream *mocks.MockuploadStream, meta *uploadpb.UploadMetadata, chunk []byte) {
 	gomock.InOrder(
 		stream.EXPECT().Recv().Return(&uploadpb.UploadPhotoRequest{
@@ -73,8 +70,6 @@ func TestUploadPhoto_Success(t *testing.T) {
 			GalleryStatus: gallerypb.GalleryStatus_GALLERY_STATUS_OPEN,
 		}, nil)
 
-	// UploadPhoto also calls resolveMembers (-> ListMembers) to build the
-	// notification fan-out list before publishing.
 	galleryClient.EXPECT().
 		ListMembers(gomock.Any(), &gallerypb.ListMembersRequest{GalleryId: galleryID.String()}).
 		Return(&gallerypb.ListMembersResponse{
@@ -119,8 +114,8 @@ func TestUploadPhoto_RejectsNonMember(t *testing.T) {
 
 	stream := mocks.NewMockuploadStream(ctrl)
 	galleryClient := mocks.NewMockGalleryServiceClient(ctrl)
-	uploader := mocks.NewMockUploader(ctrl) // no calls expected
-	notifier := mocks.NewMockNotifier(ctrl) // no calls expected
+	uploader := mocks.NewMockUploader(ctrl)
+	notifier := mocks.NewMockNotifier(ctrl)
 
 	galleryID := uuid.New()
 	userID := uuid.New()
@@ -136,9 +131,6 @@ func TestUploadPhoto_RejectsNonMember(t *testing.T) {
 			IsMember:      false,
 			GalleryStatus: gallerypb.GalleryStatus_GALLERY_STATUS_OPEN,
 		}, nil)
-
-	// Deliberately no EXPECT() on uploader/notifier/stream.SendAndClose --
-	// if UploadPhoto calls any of them, the test fails on an unexpected call.
 
 	srv := NewServer(uploader, notifier, galleryClient, upload.NewInMemoryRepository())
 
@@ -185,7 +177,7 @@ func TestUploadPhoto_StorageFailure(t *testing.T) {
 	stream := mocks.NewMockuploadStream(ctrl)
 	galleryClient := mocks.NewMockGalleryServiceClient(ctrl)
 	uploader := mocks.NewMockUploader(ctrl)
-	notifier := mocks.NewMockNotifier(ctrl) // no calls expected: we never get to publish
+	notifier := mocks.NewMockNotifier(ctrl)
 
 	galleryID := uuid.New()
 	userID := uuid.New()
@@ -216,15 +208,12 @@ func TestUploadPhoto_StorageFailure(t *testing.T) {
 
 // TestIsMember_CircuitBreakerOpensAfterConsecutiveFailures verifies that
 // once Gallery Service fails enough times in a row, isMember stops calling
-// it at all and fails fast instead -- the actual behavior the breaker
-// exists to provide.
+// it at all and fails fast instead
 func TestIsMember_CircuitBreakerOpensAfterConsecutiveFailures(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	galleryClient := mocks.NewMockGalleryServiceClient(ctrl)
 
-	// galleryMaxFailures is defined in grpc.go; referencing it directly
-	// (same package) instead of a hardcoded number means this test can't
-	// silently drift out of sync if that constant changes.
+	// galleryMaxFailures is defined in grpc.go;
 	galleryClient.EXPECT().
 		IsMember(gomock.Any(), gomock.Any()).
 		Return(nil, errors.New("gallery service unreachable")).

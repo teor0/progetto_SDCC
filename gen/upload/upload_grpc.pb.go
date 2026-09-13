@@ -19,10 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UploadService_UploadPhoto_FullMethodName     = "/proto.UploadService/UploadPhoto"
-	UploadService_GetUploadStatus_FullMethodName = "/proto.UploadService/GetUploadStatus"
-	UploadService_ListUploads_FullMethodName     = "/proto.UploadService/ListUploads"
-	UploadService_HealthCheck_FullMethodName     = "/proto.UploadService/HealthCheck"
+	UploadService_UploadPhoto_FullMethodName = "/proto.UploadService/UploadPhoto"
+	UploadService_ListUploads_FullMethodName = "/proto.UploadService/ListUploads"
+	UploadService_HealthCheck_FullMethodName = "/proto.UploadService/HealthCheck"
 )
 
 // UploadServiceClient is the client API for UploadService service.
@@ -39,9 +38,6 @@ type UploadServiceClient interface {
 	// all subsequent messages carry raw chunk data. Streaming avoids
 	// loading full images into a single gRPC message (default max is 4MB).
 	UploadPhoto(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadPhotoRequest, UploadPhotoResponse], error)
-	// GetUploadStatus lets a client (or the Notification Service) poll
-	// the state of a previously submitted upload.
-	GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error)
 	// ListUploads returns uploads for a gallery, most recent first.
 	ListUploads(ctx context.Context, in *ListUploadsRequest, opts ...grpc.CallOption) (*ListUploadsResponse, error)
 	// HealthCheck is used by Docker Compose healthchecks and by callers'
@@ -69,16 +65,6 @@ func (c *uploadServiceClient) UploadPhoto(ctx context.Context, opts ...grpc.Call
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type UploadService_UploadPhotoClient = grpc.ClientStreamingClient[UploadPhotoRequest, UploadPhotoResponse]
-
-func (c *uploadServiceClient) GetUploadStatus(ctx context.Context, in *GetUploadStatusRequest, opts ...grpc.CallOption) (*GetUploadStatusResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetUploadStatusResponse)
-	err := c.cc.Invoke(ctx, UploadService_GetUploadStatus_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
 
 func (c *uploadServiceClient) ListUploads(ctx context.Context, in *ListUploadsRequest, opts ...grpc.CallOption) (*ListUploadsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
@@ -114,9 +100,6 @@ type UploadServiceServer interface {
 	// all subsequent messages carry raw chunk data. Streaming avoids
 	// loading full images into a single gRPC message (default max is 4MB).
 	UploadPhoto(grpc.ClientStreamingServer[UploadPhotoRequest, UploadPhotoResponse]) error
-	// GetUploadStatus lets a client (or the Notification Service) poll
-	// the state of a previously submitted upload.
-	GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error)
 	// ListUploads returns uploads for a gallery, most recent first.
 	ListUploads(context.Context, *ListUploadsRequest) (*ListUploadsResponse, error)
 	// HealthCheck is used by Docker Compose healthchecks and by callers'
@@ -133,9 +116,6 @@ type UnimplementedUploadServiceServer struct{}
 
 func (UnimplementedUploadServiceServer) UploadPhoto(grpc.ClientStreamingServer[UploadPhotoRequest, UploadPhotoResponse]) error {
 	return status.Error(codes.Unimplemented, "method UploadPhoto not implemented")
-}
-func (UnimplementedUploadServiceServer) GetUploadStatus(context.Context, *GetUploadStatusRequest) (*GetUploadStatusResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetUploadStatus not implemented")
 }
 func (UnimplementedUploadServiceServer) ListUploads(context.Context, *ListUploadsRequest) (*ListUploadsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListUploads not implemented")
@@ -169,24 +149,6 @@ func _UploadService_UploadPhoto_Handler(srv interface{}, stream grpc.ServerStrea
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type UploadService_UploadPhotoServer = grpc.ClientStreamingServer[UploadPhotoRequest, UploadPhotoResponse]
-
-func _UploadService_GetUploadStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetUploadStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UploadServiceServer).GetUploadStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UploadService_GetUploadStatus_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UploadServiceServer).GetUploadStatus(ctx, req.(*GetUploadStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
 
 func _UploadService_ListUploads_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListUploadsRequest)
@@ -231,10 +193,6 @@ var UploadService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.UploadService",
 	HandlerType: (*UploadServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetUploadStatus",
-			Handler:    _UploadService_GetUploadStatus_Handler,
-		},
 		{
 			MethodName: "ListUploads",
 			Handler:    _UploadService_ListUploads_Handler,

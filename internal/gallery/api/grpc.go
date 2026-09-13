@@ -16,8 +16,7 @@ import (
 )
 
 // Server implements proto.GalleryServiceServer, delegating writes
-// to CommandService and reads to QueryService. It contains no business
-// logic itself — only request/response translation and auth-context extraction.
+// to CommandService and reads to QueryService.
 type Server struct {
 	gallerypb.UnimplementedGalleryServiceServer
 	cmd       CommandRunner

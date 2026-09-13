@@ -70,9 +70,7 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 	switch cb.current {
 	case stateOpen:
 		if time.Since(cb.lastFailure) >= cb.resetTimeout {
-			// Enough time has passed — allow exactly one probe call, and
-			// mark it in-flight so nobody else can piggyback on it while
-			// fn() is running outside the lock below.
+			// Enough time has passed
 			cb.current = stateHalfOpen
 			cb.probing = true
 			log.Printf("CircuitBreaker → %s (probing)", cb.current)
@@ -83,8 +81,6 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 
 	case stateHalfOpen:
 		if cb.probing {
-			// A probe is already in flight — reject instead of piling on
-			// a dependency that's still being tested for recovery.
 			cb.mu.Unlock()
 			return ErrCircuitOpen
 		}
@@ -93,8 +89,7 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 
 	cb.mu.Unlock()
 
-	// Execute the call outside the lock so we do not block other goroutines
-	// for the duration of the network call.
+	// Execute the call outside the lock
 	err := fn()
 
 	cb.mu.Lock()
@@ -113,7 +108,6 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 		return err
 	}
 
-	// Success — reset to closed regardless of previous state.
 	if cb.current != stateClosed {
 		log.Printf("CircuitBreaker → %s (recovered)", stateClosed)
 	}
@@ -122,7 +116,7 @@ func (cb *CircuitBreaker) Call(fn func() error) error {
 	return nil
 }
 
-// State returns the current circuit breaker state (for logging / metrics).
+// State returns the current circuit breaker state
 func (cb *CircuitBreaker) State() string {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()

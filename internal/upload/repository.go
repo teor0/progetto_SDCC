@@ -1,13 +1,3 @@
-// Package repository stores upload metadata queried back out via
-// GetUploadStatus and ListUploads.
-// The photo bytes themselves live durably in MinIO, and the "an upload
-// happened" fact is durably recorded as a RabbitMQ event -- so the
-// in-memory implementation below only affects query convenience, not
-// correctness of the write path. That said, it will NOT survive a
-// restart and will NOT be shared across multiple Upload Service
-// replicas. Swap InMemoryRepository for a Postgres-backed implementation
-// (same Repository interface) before running more than one replica or
-// caring about history surviving a redeploy.
 package upload
 
 import (
@@ -18,12 +8,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// SWAP WITH POSTGRES
 type Repository interface {
 	Save(ctx context.Context, rec *model.Record) error
 	Get(ctx context.Context, photoID uuid.UUID) (*model.Record, bool, error)
-	// ListByGallery returns up to `limit` records for a gallery, most
-	// recent first, starting after `offset` records, plus the total
-	// count of records for that gallery (for pagination).
 	ListByGallery(ctx context.Context, galleryID uuid.UUID, offset, limit int) ([]*model.Record, int, error)
 }
 

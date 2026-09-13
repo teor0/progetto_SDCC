@@ -126,7 +126,7 @@ func (x HealthCheckResponse_ServingStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use HealthCheckResponse_ServingStatus.Descriptor instead.
 func (HealthCheckResponse_ServingStatus) EnumDescriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{9, 0}
+	return file_upload_upload_proto_rawDescGZIP(), []int{7, 0}
 }
 
 type UploadPhotoRequest struct {
@@ -380,126 +380,6 @@ func (x *UploadPhotoResponse) GetErrorMessage() string {
 	return ""
 }
 
-type GetUploadStatusRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PhotoId       string                 `protobuf:"bytes,1,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUploadStatusRequest) Reset() {
-	*x = GetUploadStatusRequest{}
-	mi := &file_upload_upload_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUploadStatusRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUploadStatusRequest) ProtoMessage() {}
-
-func (x *GetUploadStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUploadStatusRequest.ProtoReflect.Descriptor instead.
-func (*GetUploadStatusRequest) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetUploadStatusRequest) GetPhotoId() string {
-	if x != nil {
-		return x.PhotoId
-	}
-	return ""
-}
-
-type GetUploadStatusResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PhotoId       string                 `protobuf:"bytes,1,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
-	GalleryId     string                 `protobuf:"bytes,2,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	Status        UploadStatus           `protobuf:"varint,3,opt,name=status,proto3,enum=proto.UploadStatus" json:"status,omitempty"`
-	ErrorMessage  string                 `protobuf:"bytes,4,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetUploadStatusResponse) Reset() {
-	*x = GetUploadStatusResponse{}
-	mi := &file_upload_upload_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetUploadStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetUploadStatusResponse) ProtoMessage() {}
-
-func (x *GetUploadStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetUploadStatusResponse.ProtoReflect.Descriptor instead.
-func (*GetUploadStatusResponse) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *GetUploadStatusResponse) GetPhotoId() string {
-	if x != nil {
-		return x.PhotoId
-	}
-	return ""
-}
-
-func (x *GetUploadStatusResponse) GetGalleryId() string {
-	if x != nil {
-		return x.GalleryId
-	}
-	return ""
-}
-
-func (x *GetUploadStatusResponse) GetStatus() UploadStatus {
-	if x != nil {
-		return x.Status
-	}
-	return UploadStatus_UPLOAD_STATUS_UNSPECIFIED
-}
-
-func (x *GetUploadStatusResponse) GetErrorMessage() string {
-	if x != nil {
-		return x.ErrorMessage
-	}
-	return ""
-}
-
-func (x *GetUploadStatusResponse) GetUpdatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return nil
-}
-
 type ListUploadsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
@@ -511,7 +391,7 @@ type ListUploadsRequest struct {
 
 func (x *ListUploadsRequest) Reset() {
 	*x = ListUploadsRequest{}
-	mi := &file_upload_upload_proto_msgTypes[5]
+	mi := &file_upload_upload_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -523,7 +403,7 @@ func (x *ListUploadsRequest) String() string {
 func (*ListUploadsRequest) ProtoMessage() {}
 
 func (x *ListUploadsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[5]
+	mi := &file_upload_upload_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -536,7 +416,7 @@ func (x *ListUploadsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUploadsRequest.ProtoReflect.Descriptor instead.
 func (*ListUploadsRequest) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{5}
+	return file_upload_upload_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListUploadsRequest) GetGalleryId() string {
@@ -570,7 +450,7 @@ type ListUploadsResponse struct {
 
 func (x *ListUploadsResponse) Reset() {
 	*x = ListUploadsResponse{}
-	mi := &file_upload_upload_proto_msgTypes[6]
+	mi := &file_upload_upload_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +462,7 @@ func (x *ListUploadsResponse) String() string {
 func (*ListUploadsResponse) ProtoMessage() {}
 
 func (x *ListUploadsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[6]
+	mi := &file_upload_upload_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +475,7 @@ func (x *ListUploadsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUploadsResponse.ProtoReflect.Descriptor instead.
 func (*ListUploadsResponse) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{6}
+	return file_upload_upload_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListUploadsResponse) GetUploads() []*UploadSummary {
@@ -627,7 +507,7 @@ type UploadSummary struct {
 
 func (x *UploadSummary) Reset() {
 	*x = UploadSummary{}
-	mi := &file_upload_upload_proto_msgTypes[7]
+	mi := &file_upload_upload_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -639,7 +519,7 @@ func (x *UploadSummary) String() string {
 func (*UploadSummary) ProtoMessage() {}
 
 func (x *UploadSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[7]
+	mi := &file_upload_upload_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -652,7 +532,7 @@ func (x *UploadSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadSummary.ProtoReflect.Descriptor instead.
 func (*UploadSummary) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{7}
+	return file_upload_upload_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UploadSummary) GetPhotoId() string {
@@ -712,7 +592,7 @@ type HealthCheckRequest struct {
 
 func (x *HealthCheckRequest) Reset() {
 	*x = HealthCheckRequest{}
-	mi := &file_upload_upload_proto_msgTypes[8]
+	mi := &file_upload_upload_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -724,7 +604,7 @@ func (x *HealthCheckRequest) String() string {
 func (*HealthCheckRequest) ProtoMessage() {}
 
 func (x *HealthCheckRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[8]
+	mi := &file_upload_upload_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -737,7 +617,7 @@ func (x *HealthCheckRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthCheckRequest.ProtoReflect.Descriptor instead.
 func (*HealthCheckRequest) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{8}
+	return file_upload_upload_proto_rawDescGZIP(), []int{6}
 }
 
 type HealthCheckResponse struct {
@@ -749,7 +629,7 @@ type HealthCheckResponse struct {
 
 func (x *HealthCheckResponse) Reset() {
 	*x = HealthCheckResponse{}
-	mi := &file_upload_upload_proto_msgTypes[9]
+	mi := &file_upload_upload_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -761,7 +641,7 @@ func (x *HealthCheckResponse) String() string {
 func (*HealthCheckResponse) ProtoMessage() {}
 
 func (x *HealthCheckResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_upload_upload_proto_msgTypes[9]
+	mi := &file_upload_upload_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -774,7 +654,7 @@ func (x *HealthCheckResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthCheckResponse.ProtoReflect.Descriptor instead.
 func (*HealthCheckResponse) Descriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{9}
+	return file_upload_upload_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *HealthCheckResponse) GetStatus() HealthCheckResponse_ServingStatus {
@@ -813,17 +693,7 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\vuploaded_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"uploadedAt\x12(\n" +
 	"\rerror_message\x18\b \x01(\tH\x00R\ferrorMessage\x88\x01\x01B\x10\n" +
-	"\x0e_error_message\"3\n" +
-	"\x16GetUploadStatusRequest\x12\x19\n" +
-	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\"\xe0\x01\n" +
-	"\x17GetUploadStatusResponse\x12\x19\n" +
-	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\x12\x1d\n" +
-	"\n" +
-	"gallery_id\x18\x02 \x01(\tR\tgalleryId\x12+\n" +
-	"\x06status\x18\x03 \x01(\x0e2\x13.proto.UploadStatusR\x06status\x12#\n" +
-	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\x129\n" +
-	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"o\n" +
+	"\x0e_error_message\"o\n" +
 	"\x12ListUploadsRequest\x12\x1d\n" +
 	"\n" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x1b\n" +
@@ -858,10 +728,9 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\x14UPLOAD_STATUS_STORED\x10\x02\x12\x1b\n" +
 	"\x17UPLOAD_STATUS_COMPLETED\x10\x03\x12\x18\n" +
 	"\x14UPLOAD_STATUS_FAILED\x10\x04\x12\x1a\n" +
-	"\x16UPLOAD_STATUS_REJECTED\x10\x052\xb5\x02\n" +
+	"\x16UPLOAD_STATUS_REJECTED\x10\x052\xe3\x01\n" +
 	"\rUploadService\x12F\n" +
-	"\vUploadPhoto\x12\x19.proto.UploadPhotoRequest\x1a\x1a.proto.UploadPhotoResponse(\x01\x12P\n" +
-	"\x0fGetUploadStatus\x12\x1d.proto.GetUploadStatusRequest\x1a\x1e.proto.GetUploadStatusResponse\x12D\n" +
+	"\vUploadPhoto\x12\x19.proto.UploadPhotoRequest\x1a\x1a.proto.UploadPhotoResponse(\x01\x12D\n" +
 	"\vListUploads\x12\x19.proto.ListUploadsRequest\x1a\x1a.proto.ListUploadsResponse\x12D\n" +
 	"\vHealthCheck\x12\x19.proto.HealthCheckRequest\x1a\x1a.proto.HealthCheckResponseBe\n" +
 	"\tcom.protoB\vUploadProtoP\x01Z\x17photogallery/gen/upload\xa2\x02\x03PXX\xaa\x02\x05Proto\xca\x02\x05Proto\xe2\x02\x11Proto\\GPBMetadata\xea\x02\x05Protob\x06proto3"
@@ -879,45 +748,39 @@ func file_upload_upload_proto_rawDescGZIP() []byte {
 }
 
 var file_upload_upload_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_upload_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_upload_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_upload_upload_proto_goTypes = []any{
 	(UploadStatus)(0),                      // 0: proto.UploadStatus
 	(HealthCheckResponse_ServingStatus)(0), // 1: proto.HealthCheckResponse.ServingStatus
 	(*UploadPhotoRequest)(nil),             // 2: proto.UploadPhotoRequest
 	(*UploadMetadata)(nil),                 // 3: proto.UploadMetadata
 	(*UploadPhotoResponse)(nil),            // 4: proto.UploadPhotoResponse
-	(*GetUploadStatusRequest)(nil),         // 5: proto.GetUploadStatusRequest
-	(*GetUploadStatusResponse)(nil),        // 6: proto.GetUploadStatusResponse
-	(*ListUploadsRequest)(nil),             // 7: proto.ListUploadsRequest
-	(*ListUploadsResponse)(nil),            // 8: proto.ListUploadsResponse
-	(*UploadSummary)(nil),                  // 9: proto.UploadSummary
-	(*HealthCheckRequest)(nil),             // 10: proto.HealthCheckRequest
-	(*HealthCheckResponse)(nil),            // 11: proto.HealthCheckResponse
-	(*timestamppb.Timestamp)(nil),          // 12: google.protobuf.Timestamp
+	(*ListUploadsRequest)(nil),             // 5: proto.ListUploadsRequest
+	(*ListUploadsResponse)(nil),            // 6: proto.ListUploadsResponse
+	(*UploadSummary)(nil),                  // 7: proto.UploadSummary
+	(*HealthCheckRequest)(nil),             // 8: proto.HealthCheckRequest
+	(*HealthCheckResponse)(nil),            // 9: proto.HealthCheckResponse
+	(*timestamppb.Timestamp)(nil),          // 10: google.protobuf.Timestamp
 }
 var file_upload_upload_proto_depIdxs = []int32{
 	3,  // 0: proto.UploadPhotoRequest.metadata:type_name -> proto.UploadMetadata
 	0,  // 1: proto.UploadPhotoResponse.status:type_name -> proto.UploadStatus
-	12, // 2: proto.UploadPhotoResponse.uploaded_at:type_name -> google.protobuf.Timestamp
-	0,  // 3: proto.GetUploadStatusResponse.status:type_name -> proto.UploadStatus
-	12, // 4: proto.GetUploadStatusResponse.updated_at:type_name -> google.protobuf.Timestamp
-	9,  // 5: proto.ListUploadsResponse.uploads:type_name -> proto.UploadSummary
-	0,  // 6: proto.UploadSummary.status:type_name -> proto.UploadStatus
-	12, // 7: proto.UploadSummary.uploaded_at:type_name -> google.protobuf.Timestamp
-	1,  // 8: proto.HealthCheckResponse.status:type_name -> proto.HealthCheckResponse.ServingStatus
-	2,  // 9: proto.UploadService.UploadPhoto:input_type -> proto.UploadPhotoRequest
-	5,  // 10: proto.UploadService.GetUploadStatus:input_type -> proto.GetUploadStatusRequest
-	7,  // 11: proto.UploadService.ListUploads:input_type -> proto.ListUploadsRequest
-	10, // 12: proto.UploadService.HealthCheck:input_type -> proto.HealthCheckRequest
-	4,  // 13: proto.UploadService.UploadPhoto:output_type -> proto.UploadPhotoResponse
-	6,  // 14: proto.UploadService.GetUploadStatus:output_type -> proto.GetUploadStatusResponse
-	8,  // 15: proto.UploadService.ListUploads:output_type -> proto.ListUploadsResponse
-	11, // 16: proto.UploadService.HealthCheck:output_type -> proto.HealthCheckResponse
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	10, // 2: proto.UploadPhotoResponse.uploaded_at:type_name -> google.protobuf.Timestamp
+	7,  // 3: proto.ListUploadsResponse.uploads:type_name -> proto.UploadSummary
+	0,  // 4: proto.UploadSummary.status:type_name -> proto.UploadStatus
+	10, // 5: proto.UploadSummary.uploaded_at:type_name -> google.protobuf.Timestamp
+	1,  // 6: proto.HealthCheckResponse.status:type_name -> proto.HealthCheckResponse.ServingStatus
+	2,  // 7: proto.UploadService.UploadPhoto:input_type -> proto.UploadPhotoRequest
+	5,  // 8: proto.UploadService.ListUploads:input_type -> proto.ListUploadsRequest
+	8,  // 9: proto.UploadService.HealthCheck:input_type -> proto.HealthCheckRequest
+	4,  // 10: proto.UploadService.UploadPhoto:output_type -> proto.UploadPhotoResponse
+	6,  // 11: proto.UploadService.ListUploads:output_type -> proto.ListUploadsResponse
+	9,  // 12: proto.UploadService.HealthCheck:output_type -> proto.HealthCheckResponse
+	10, // [10:13] is the sub-list for method output_type
+	7,  // [7:10] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_upload_upload_proto_init() }
@@ -936,7 +799,7 @@ func file_upload_upload_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_upload_upload_proto_rawDesc), len(file_upload_upload_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   10,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

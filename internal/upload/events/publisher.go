@@ -1,5 +1,3 @@
-// Package events publishes upload notifications to RabbitMQ for the
-// Notification Service to fan out to gallery members.
 package events
 
 import (
@@ -17,21 +15,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// envelope mirrors the wire shape Gallery Service's command.Envelope uses
-// (internal/gallery/command/events.go). It's intentionally a separate,
-// duplicated type rather than an import of that package: services should
-// stay independently buildable/deployable, and this struct is small enough
-// that keeping the JSON *shape* in sync is simpler than sharing the Go type
-// across service boundaries. If a third producer needs this, promote it to
-// a small shared package instead of duplicating a third time.
+// envelope mirrors the wire shape Gallery Service's command.Envelope
 type envelope struct {
 	EventType string          `json:"event_type"`
 	Timestamp time.Time       `json:"timestamp"`
 	Payload   json.RawMessage `json:"payload"`
 }
 
-// UploadEvent is the payload published whenever a photo finishes
-// uploading and is durably stored in MinIO.
+// UploadEvent is the payload published whenever a photo finishes uploading and is durably stored in MinIO.
 type UploadEvent struct {
 	PhotoID     uuid.UUID `json:"photo_id"`
 	GalleryID   uuid.UUID `json:"gallery_id"`
@@ -62,14 +53,11 @@ func NewPublisher() (*Publisher, error) {
 		breaker: upload.NewCircuitBreaker(configuration.MaxFailures, configuration.PublishTimeout),
 	}
 	if err := p.connect(); err != nil {
-		// Non-fatal: we can still serve uploads, just without notifications.
 		log.Printf("Publisher: initial RabbitMQ connection failed (%v) — events will be dropped until recovery", err)
 	}
 	return p, nil
 }
 
-// connect (re)establishes the AMQP connection and channel.
-// Must be called with p.mu held or before the publisher is shared.
 func (p *Publisher) connect() error {
 	conn, err := amqp.Dial(os.Getenv("RABBITMQ_URL"))
 	if err != nil {
@@ -157,7 +145,6 @@ func (p *Publisher) publish(ctx context.Context, routingKey string, body []byte)
 
 	err := p.tryPublish(ctx, routingKey, body)
 	if err != nil {
-		// Channel may have been closed — attempt one reconnect.
 		log.Printf("Publisher: publish error (%v) — reconnecting", err)
 		if reconnErr := p.connect(); reconnErr != nil {
 			return fmt.Errorf("reconnect: %w", reconnErr)

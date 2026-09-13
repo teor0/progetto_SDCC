@@ -4,19 +4,10 @@ option go_package = "photogallery/gen/upload";
 package proto;
 import "google/protobuf/timestamp.proto";
 
-enum UploadStatus {
-  UPLOAD_STATUS_UNSPECIFIED = 0;
-  UPLOAD_STATUS_PENDING = 1;    // received, being written to MinIO
-  UPLOAD_STATUS_STORED = 2;     // saved to MinIO, event not yet published
-  UPLOAD_STATUS_COMPLETED = 3;  // stored + event published to RabbitMQ
-  UPLOAD_STATUS_FAILED = 4;
-  UPLOAD_STATUS_REJECTED= 5;
-}
-
 message UploadPhotoRequest {
   oneof payload {
     UploadMetadata metadata = 1; // must be the first message in the stream
-    bytes chunk_data = 2;        // subsequent messages
+    bytes chunk_data = 2;
   }
 }
 
@@ -32,23 +23,8 @@ message UploadPhotoResponse {
   string gallery_id = 2;
   string storage_key = 3;      // MinIO object key/path
   int64 size_bytes = 4;
-  // Publicly accessible URL (or presigned URL) for the stored photo.
   string url        = 5;
-  UploadStatus status = 6;
-  google.protobuf.Timestamp uploaded_at = 7;
-  optional string error_message = 8;    // populated when status == FAILED
-}
-
-message GetUploadStatusRequest {
-  string photo_id = 1;
-}
-
-message GetUploadStatusResponse {
-  string photo_id = 1;
-  string gallery_id = 2;
-  UploadStatus status = 3;
-  string error_message = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  google.protobuf.Timestamp uploaded_at = 6;
 }
 
 message ListUploadsRequest {
@@ -68,8 +44,7 @@ message UploadSummary {
   string uploader_user_id = 3;
   string storage_key = 4;
   int64 size_bytes = 5;
-  UploadStatus status = 6;
-  google.protobuf.Timestamp uploaded_at = 7;
+  google.protobuf.Timestamp uploaded_at = 6;
 }
 
 message HealthCheckRequest {}
@@ -83,20 +58,15 @@ message HealthCheckResponse {
   ServingStatus status = 1;
 }
 
-// UploadService receives photos from clients (via the API Gateway),
-// persists them to object storage (MinIO), and emits an upload event
+// UploadService receives photos from clients persists them to MinIO, and emits an upload event
 // to RabbitMQ once storage succeeds. It calls out to GalleryService to
-// verify the gallery exists and the user is a member; that call is
+// verify the gallery exists and the user is a member. That call is
 // wrapped in a circuit breaker on the server implementation side.
 service UploadService {
   // UploadPhoto is client-streaming: the first message carries metadata,
   // all subsequent messages carry raw chunk data. Streaming avoids
   // loading full images into a single gRPC message (default max is 4MB).
   rpc UploadPhoto(stream UploadPhotoRequest) returns (UploadPhotoResponse);
-
-  // GetUploadStatus lets a client (or the Notification Service) poll
-  // the state of a previously submitted upload.
-  rpc GetUploadStatus(GetUploadStatusRequest) returns (GetUploadStatusResponse);
 
   // ListUploads returns uploads for a gallery, most recent first.
   rpc ListUploads(ListUploadsRequest) returns (ListUploadsResponse);

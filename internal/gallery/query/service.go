@@ -60,8 +60,7 @@ func (s *Service) ListGalleries(ctx context.Context, myGalleries bool, callerID 
 }
 
 // ListGalleriesByMember returns a page of galleries a specific user
-// belongs to, queried directly. Intended for internal callers that already know
-// exactly which user they're asking about.
+// belongs to, queried directly. Intended for internal callers
 func (s *Service) ListGalleriesByMember(ctx context.Context, userID uuid.UUID, pageSize int, pageToken string) ([]models.Gallery, string, error) {
 	if userID == uuid.Nil {
 		return nil, "", status.Error(codes.InvalidArgument, "user_id is required")

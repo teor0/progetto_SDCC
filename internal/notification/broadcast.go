@@ -25,24 +25,15 @@ const broadcastChannel = "notification-fanout"
 //     connection stays in sync with their actual memberships regardless
 //     of which replica happens to be holding that connection.
 //
-// Every replica publishes and subscribes to the SAME channel and applies
-// every message to its own local state -- there's no per-replica
-// targeting/directory. At this project's scale, broadcast-and-filter-
-// locally is simpler and easier to reason about than maintaining a live
-// directory of which replica holds which connection.
+// Every replica publishes and subscribes to the same channel and applies
+// every message to its own local state
 type broadcastEnvelope struct {
 	Kind           string `json:"kind"`
-	NotificationPB []byte `json:"notification_pb,omitempty"` // proto.Marshal'd Notification, for kind=="notify"
+	NotificationPB []byte `json:"notification_pb,omitempty"`
 	GalleryID      string `json:"gallery_id,omitempty"`
 	UserID         string `json:"user_id,omitempty"`
 }
 
-// Broadcaster is the fan-out layer between whichever replica drains a
-// RabbitMQ message and every replica's local Registry. Consumer is the
-// only thing that calls the Publish* methods; every replica's Run loop
-// subscribes and applies -- including the replica that published, so
-// there's exactly one code path for "apply to local Registry," not a
-// separate one for "the replica that happened to drain this."
 type Broadcaster struct {
 	rdb      *redis.Client
 	registry *Registry
@@ -76,9 +67,8 @@ func (b *Broadcaster) publish(ctx context.Context, env broadcastEnvelope) error 
 	return b.rdb.Publish(ctx, broadcastChannel, body).Err()
 }
 
-// Run subscribes to the broadcast channel and applies every envelope --
-// including ones this same replica published -- to the local Registry.
-// Blocks until ctx is cancelled; run it in a goroutine.
+// Run subscribes to the broadcast channel and applies every envelope
+// including ones this same replica published to the local Registry.
 func (b *Broadcaster) Run(ctx context.Context) {
 	sub := b.rdb.Subscribe(ctx, broadcastChannel)
 	defer sub.Close()

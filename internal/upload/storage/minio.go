@@ -30,8 +30,6 @@ const publicReadPolicy = `{
 }`
 
 // Uploader is the subset of Storage's behavior that Server depends on.
-// Declaring it lets tests substitute a GoMock-generated mock instead of a
-// real MinIO connection, without Storage itself needing to change.
 type Uploader interface {
 	Upload(ctx context.Context, objectKey string, contentType string, data []byte) (string, error)
 }
@@ -41,8 +39,7 @@ type Storage struct {
 	bucket string
 }
 
-// NewStorage connects to MinIO and ensures the target bucket exists, so the
-// service can start cold against a freshly provisioned MinIO container.
+// NewStorage connects to MinIO and ensures the target bucket exists
 func NewStorage(ctx context.Context, cfg Config) (*Storage, error) {
 	client, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),

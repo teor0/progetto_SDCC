@@ -66,11 +66,6 @@ func main() {
 	defer galleryConn.Close()
 	galleryClient := gallerypb.NewGalleryServiceClient(galleryConn)
 
-	// In-memory only: does not survive a restart and is not shared across
-	// replicas. Fine for a single-replica deployment; swap for a
-	// Postgres-backed Repository before running more than one.
-	//repo := upload.NewInMemoryRepository()
-
 	db, err := upload.NewDB()
 	if err != nil {
 		log.Fatalln("Failed to connect to database:", err)

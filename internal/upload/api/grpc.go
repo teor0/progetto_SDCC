@@ -191,7 +191,6 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 	log.Printf("UploadPhoto: gallery=%s uploader=%s size=%d bytes filename=%s",
 		galleryID, uploaderID, buf.Len(), meta.Filename)
 
-	// ── 2. Store in MinIO ────────────────────────────────────────────────────
 	photoID := uuid.New()
 	objectKey := fmt.Sprintf("galleries/%s/%s", galleryID.String(), photoID.String())
 	if meta.Filename != "" {
@@ -215,10 +214,7 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 
 	log.Printf("UploadPhoto: stored photo_id=%s url=%s", photoID, photoURL)
 
-	// Persist a queryable record for GetUploadStatus/ListUploads. This is
-	// best-effort: the RabbitMQ event below is the durable "an upload
-	// happened" fact, so a save failure here shouldn't fail the request --
-	// it just means this upload won't show up in status/list queries.
+	// Persist a queryable record for GetUploadStatus/ListUploads.
 	now := time.Now().UTC()
 	rec := &model.Record{
 		PhotoID:     photoID,
@@ -238,7 +234,6 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 
 	memberIDs := s.resolveMembers(galleryID)
 
-	// ── 4. Publish event (circuit-breaker protected, fire-and-forget) ────────
 	s.publisher.PublishPhoto(stream.Context(), &events.UploadEvent{
 		PhotoID:     photoID,
 		GalleryID:   galleryID,
@@ -263,7 +258,7 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 }
 
 // resolveMembers calls GalleryService.ListMembers and returns the member IDs.
-// On any error it logs and returns an empty slice — the upload still succeeds,
+// On any error it logs and returns an empty slice the upload still succeeds,
 // but no notifications will be delivered for this event.
 func (s *Server) resolveMembers(galleryID uuid.UUID) []string {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -289,11 +284,7 @@ func (s *Server) resolveMembers(galleryID uuid.UUID) []string {
 // that if the client disconnects or the parent request is cancelled, that
 // cancellation actually propagates into the outbound call instead of it
 // running to its own independent timeout regardless.
-//
-// If the breaker is open (or trips as a result of this call), it returns
-// a gRPC Unavailable error — the caller treats that the same as any other
-// rejection, it just doesn't retry synchronously against a dependency
-// that's already known to be unhealthy.
+// If the breaker is open it returns a gRPC Unavailable error
 func (s *Server) isMember(ctx context.Context, galleryID, userID uuid.UUID) (bool, gallerypb.GalleryStatus, error) {
 	var resp *gallerypb.IsMemberResponse
 
@@ -324,35 +315,7 @@ func (s *Server) isMember(ctx context.Context, galleryID, userID uuid.UUID) (boo
 	return resp.GetIsMember(), resp.GetGalleryStatus(), nil
 }
 
-// GetUploadStatus returns the persisted status of a single upload.
-func (s *Server) GetUploadStatus(ctx context.Context, req *uploadpb.GetUploadStatusRequest) (*uploadpb.GetUploadStatusResponse, error) {
-	if req.GetPhotoId() == "" {
-		return nil, status.Error(codes.InvalidArgument, "photo_id is required")
-	}
-
-	photoID, _ := uuid.Parse(req.GetPhotoId())
-
-	rec, found, err := s.repo.Get(ctx, photoID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get upload status: %v", err)
-	}
-	if !found {
-		return nil, status.Error(codes.NotFound, "upload not found")
-	}
-
-	return &uploadpb.GetUploadStatusResponse{
-		PhotoId:      rec.PhotoID.String(),
-		GalleryId:    rec.GalleryID.String(),
-		Status:       rec.Status,
-		ErrorMessage: rec.ErrorMessage,
-		UpdatedAt:    timestamppb.New(rec.UpdatedAt),
-	}, nil
-}
-
 // ListUploads returns a page of uploads for a gallery, most recent first.
-// Pagination is offset-based: page_token is the decimal offset to resume
-// from, and next_page_token comes back empty once the last page has been
-// returned.
 func (s *Server) ListUploads(ctx context.Context, req *uploadpb.ListUploadsRequest) (*uploadpb.ListUploadsResponse, error) {
 	if req.GetGalleryId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "gallery_id is required")
@@ -411,20 +374,13 @@ func parsePageToken(token string) (int, error) {
 	return offset, nil
 }
 
-// HealthCheck reports SERVING as long as the process is up and able to
-// answer gRPC calls. It deliberately does not probe MinIO, RabbitMQ, or
-// Gallery Service -- those already have their own failure handling (the
-// gallery circuit breaker, and the publisher's own breaker + reconnect
-// logic), and a health check that itself blocks on a flaky dependency
-// defeats the point of a fast liveness probe.
+// HealthCheck reports SERVING as long as the process is up and able to answer gRPC calls.
 func (s *Server) HealthCheck(_ context.Context, _ *uploadpb.HealthCheckRequest) (*uploadpb.HealthCheckResponse, error) {
 	return &uploadpb.HealthCheckResponse{
 		Status: uploadpb.HealthCheckResponse_SERVING,
 	}, nil
 }
 
-// uploaderFromMeta extracts x-user-id from the incoming gRPC metadata set by
-// the API Gateway after JWT validation.
 func uploaderFromMeta(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
@@ -433,7 +389,6 @@ func uploaderFromMeta(ctx context.Context) (uuid.UUID, error) {
 	return claims.UserID, nil
 }
 
-// isEOF checks whether err signals the end of a client stream.
 func isEOF(err error) bool {
 	return err != nil && errors.Is(err, io.EOF)
 }

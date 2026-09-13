@@ -35,8 +35,8 @@ type notificationDTO struct {
 }
 
 // Stream opens a Server-Sent Events connection and forwards every
-// Notification the caller is subscribed to -- one "notification" SSE event
-// per message -- until the browser disconnects or NotificationService closes
+// Notification the caller is subscribed to one "notification" SSE event
+// per message until the browser disconnects or NotificationService closes
 // the underlying stream.
 func (h *NotificationHandler) Stream(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
@@ -45,9 +45,6 @@ func (h *NotificationHandler) Stream(c *gin.Context) {
 		return
 	}
 
-	// Forward the browser's JWT so NotificationService's auth interceptor
-	// can resolve the caller's identity -- Subscribe() reads it via
-	// auth.FromContext to know which galleries to fan out to.
 	ctx := metadata.NewOutgoingContext(
 		c.Request.Context(),
 		metadata.Pairs("authorization", authHeader),
@@ -67,8 +64,6 @@ func (h *NotificationHandler) Stream(c *gin.Context) {
 	c.Stream(func(w io.Writer) bool {
 		n, err := stream.Recv()
 		if err != nil {
-			// c.Request.Context() cancellation (browser disconnected) is the
-			// expected way this loop ends
 			if c.Request.Context().Err() != nil {
 				return false
 			}

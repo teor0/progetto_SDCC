@@ -22,6 +22,7 @@ type Config struct {
 	GalleryCallTimeout    time.Duration
 }
 
+// check .env file
 func Load() (Config, error) {
 	cfg := Config{
 		GRPCPort:              os.Getenv("UPLOAD_GRPC_PORT"),

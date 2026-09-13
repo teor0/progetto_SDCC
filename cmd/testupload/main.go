@@ -7,11 +7,8 @@
 //
 // Example profiles:
 //
-//	read-heavy (default):
-//	  go run ./cmd/testupload -gateway http://<IP>:8080 -users 100 -duration 60s
-//
 // Chaos injection (automatically trip and recover the circuit breaker):
-//
+// use go run ./cmd/testupload -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
 // use -upload-pct to specify the percent of requests that are photo uploads
 // use -list-my-pct to specify the percent of requests that are ListGalleries(my_galleries=true)
 //
@@ -19,8 +16,6 @@
 //	  -upload-pct 60 -list-my-pct 20 \
 //	  -chaos-after 20s -chaos-duration 20s \
 //	  -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
-//
-//	use go run ./cmd/testupload -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
 package main
 
 import (
@@ -68,7 +63,6 @@ type config struct {
 	listMyPct  int
 }
 
-// chaosConfig controls the automatic fault injection
 type chaosConfig struct {
 	enabled    bool
 	after      time.Duration
@@ -76,7 +70,7 @@ type chaosConfig struct {
 	service    string
 	sshHost    string
 	sshKey     string
-	composeDir string // remote directory containing docker-compose.yml
+	composeDir string // remote directory containing docker-compose.yaml
 }
 
 type opResult struct {
@@ -150,11 +144,9 @@ func main() {
 	var chaosStopOffset, chaosRestartOffset time.Duration
 
 	if chaos.enabled {
-		chaosWG.Add(1)
-		go func() {
-			defer chaosWG.Done()
+		chaosWG.Go(func() {
 			runChaos(chaos, start, &chaosStopOffset, &chaosRestartOffset)
-		}()
+		})
 	}
 
 	for _, token := range tokens {
@@ -372,15 +364,8 @@ func timedUploadPhoto(token, galleryID string) opResult {
 		return opResult{op: "uploadPhoto", latency: time.Since(start), ok: false}
 	}
 	defer resp.Body.Close()
-	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	io.Copy(io.Discard, resp.Body)
 
-	// internal/handlers/upload.go collapses every failure to HTTP 500
-	// regardless of the underlying gRPC code (circuit-open, not-a-member,
-	// storage error, etc. all look identical here) -- this tool can only
-	// report pass/fail for uploads, not distinguish *why* one failed.
-	// Cross-reference service logs during the run if you need that detail
-	// -- which is exactly what the chaos-injection offsets printed at the
-	// end are for.
 	return opResult{op: "uploadPhoto", latency: time.Since(start), ok: resp.StatusCode == http.StatusOK}
 }
 

@@ -16,6 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// unit-test file
 func TestRegistryNotify(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -29,8 +30,6 @@ func TestRegistryNotify(t *testing.T) {
 	userID1 := uuid.New()
 	userID2 := uuid.New()
 
-	// CreateClient registers the stream and hands back a connection ID --
-	// Subscribe then operates on that ID, not on userID/stream directly.
 	conn1 := registry.CreateClient(userID1, stream1)
 	conn2 := registry.CreateClient(userID2, stream2)
 
@@ -73,8 +72,6 @@ func TestRegistryNotify_RemovesDisconnectedClient(t *testing.T) {
 
 	registry.Notify(context.Background(), galleryID, n)
 
-	// Notify should have called RemoveClient internally after the failed Send,
-	// so a second Notify must not invoke Send again.
 	// If Send is called, gomock fails the test.
 	registry.Notify(context.Background(), galleryID, n)
 }
@@ -156,8 +153,7 @@ func TestRegistryRemoveClient(t *testing.T) {
 	})
 }
 
-// TestAddGalleryForClient_RegistersEveryConnectionOfUser covers the
-// join-mid-session
+// TestAddGalleryForClient_RegistersEveryConnectionOfUser covers the join-mid-session
 func TestAddGalleryForClient_RegistersEveryConnectionOfUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -173,8 +169,6 @@ func TestAddGalleryForClient_RegistersEveryConnectionOfUser(t *testing.T) {
 	registry.CreateClient(userID, streamTab1)
 	registry.CreateClient(userID, streamTab2)
 
-	// Neither connection has subscribed to galleryID yet -- this simulates
-	// the user joining a gallery after both tabs are already connected.
 	registry.AddGalleryForClient(galleryID, userID)
 
 	n := &notificationpb.Notification{GalleryId: galleryID.String()}
@@ -184,21 +178,13 @@ func TestAddGalleryForClient_RegistersEveryConnectionOfUser(t *testing.T) {
 	registry.Notify(context.Background(), galleryID, n)
 }
 
-// --- Consumer / GalleryClosed ---
-
-// wireEnvelope mirrors the private "envelope" shape Consumer parses
-// (internal/notification/consumer.go) -- duplicated here deliberately so
-// this test exercises the actual wire contract (JSON field names) rather
-// than reaching into an unexported type from another package.
+// wireEnvelope mirrors the private envelope shape Consumer parses
 type wireEnvelope struct {
 	EventType string          `json:"event_type"`
 	Timestamp time.Time       `json:"timestamp"`
 	Payload   json.RawMessage `json:"payload"`
 }
 
-// fakeAcknowledger stands in for the real AMQP channel so
-// amqp.Delivery.Ack/Nack (called internally by Consumer.handle) have
-// something non-nil to call, and so the test can assert which one fired.
 type fakeAcknowledger struct {
 	acked  bool
 	nacked bool
@@ -244,8 +230,7 @@ func galleryClosedDelivery(t *testing.T, ack *fakeAcknowledger, payload map[stri
 // TestConsumer_GalleryClosed_PublishesNotification exercises the full
 // path a real "gallery.closed" RabbitMQ delivery takes: Consumer.Consume
 // decodes the envelope, builds a NOTIFICATION_TYPE_GALLERY_CLOSED
-// Notification, and hands it to the broadcaster for fan-out -- then acks
-// the delivery.
+// Notification, and hands it to the broadcaster for fan-out then acks the delivery.
 func TestConsumer_GalleryClosed_PublishesNotification(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -299,8 +284,7 @@ func TestConsumer_GalleryClosed_PublishesNotification(t *testing.T) {
 }
 
 // TestConsumer_GalleryClosed_MissingGalleryID_NacksAndDrops confirms a
-// malformed event (missing gallery_id) never reaches the broadcaster and
-// is Nacked rather than Acked.
+// malformed event never reaches the broadcaster and is Nacked rather than Acked.
 func TestConsumer_GalleryClosed_MissingGalleryID_NacksAndDrops(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -315,7 +299,7 @@ func TestConsumer_GalleryClosed_MissingGalleryID_NacksAndDrops(t *testing.T) {
 	ack := &fakeAcknowledger{}
 	deliveries := make(chan amqp.Delivery, 1)
 	deliveries <- galleryClosedDelivery(t, ack, map[string]string{
-		"gallery_name": "Summer Trip", // gallery_id deliberately omitted
+		"gallery_name": "Summer Trip",
 	})
 	close(deliveries)
 
