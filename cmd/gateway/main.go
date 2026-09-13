@@ -76,7 +76,7 @@ func main() {
 	}
 
 	uploadConn, err := grpc.NewClient(
-		uploadAddr,
+		"dns:///"+uploadAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
 	)
@@ -87,7 +87,7 @@ func main() {
 	uploadClient := clients.NewUploadClient(uploadConn)
 
 	notificationConn, err := grpc.NewClient(
-		notificationAddr,
+		"dns:///"+notificationAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
 	)
