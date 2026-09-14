@@ -14,7 +14,6 @@ import (
 	notification "photogallery/gen/notification"
 	reflect "reflect"
 
-	uuid "github.com/google/uuid"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,34 +39,6 @@ func NewMocknotifier(ctrl *gomock.Controller) *Mocknotifier {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Mocknotifier) EXPECT() *MocknotifierMockRecorder {
 	return m.recorder
-}
-
-// PublishMemberAdded mocks base method.
-func (m *Mocknotifier) PublishMemberAdded(ctx context.Context, galleryID, userID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PublishMemberAdded", ctx, galleryID, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PublishMemberAdded indicates an expected call of PublishMemberAdded.
-func (mr *MocknotifierMockRecorder) PublishMemberAdded(ctx, galleryID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishMemberAdded", reflect.TypeOf((*Mocknotifier)(nil).PublishMemberAdded), ctx, galleryID, userID)
-}
-
-// PublishMemberRemoved mocks base method.
-func (m *Mocknotifier) PublishMemberRemoved(ctx context.Context, galleryID, userID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PublishMemberRemoved", ctx, galleryID, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// PublishMemberRemoved indicates an expected call of PublishMemberRemoved.
-func (mr *MocknotifierMockRecorder) PublishMemberRemoved(ctx, galleryID, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishMemberRemoved", reflect.TypeOf((*Mocknotifier)(nil).PublishMemberRemoved), ctx, galleryID, userID)
 }
 
 // PublishNotification mocks base method.

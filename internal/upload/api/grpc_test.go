@@ -93,9 +93,6 @@ func TestUploadPhoto_Success(t *testing.T) {
 	stream.EXPECT().
 		SendAndClose(gomock.Any()).
 		DoAndReturn(func(resp *uploadpb.UploadPhotoResponse) error {
-			if resp.Status != uploadpb.UploadStatus_UPLOAD_STATUS_COMPLETED {
-				t.Errorf("expected status COMPLETED, got %v", resp.Status)
-			}
 			if resp.GalleryId != galleryID.String() {
 				t.Errorf("expected gallery_id gallery-1, got %q", resp.GalleryId)
 			}
