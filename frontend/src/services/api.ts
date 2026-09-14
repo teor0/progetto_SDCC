@@ -3,10 +3,7 @@ import { dispatcher } from "../stores/Dispatcher";
 const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
-// Must match AuthStore's TOKEN_KEY -- kept as a literal there too rather
-// than a shared constant, but both need to agree on sessionStorage (not
-// localStorage) so a token AuthStore just wrote is actually the one this
-// client reads back for the Authorization header.
+
 const TOKEN_KEY = "access_token";
 
 class ApiClient {
@@ -80,11 +77,7 @@ class ApiClient {
         this.loggingOut = true;
 
         dispatcher.dispatch({ type: "AUTH_LOGOUT" });
-
-        // Hard redirect rather than client-side navigation: this module
-        // sits outside the React tree, and a full reload guarantees every
-        // page resets to a clean, logged-out state regardless of whether
-        // the current view happens to be subscribed to AuthStore.
+        
         window.location.href = "/login";
     }
 

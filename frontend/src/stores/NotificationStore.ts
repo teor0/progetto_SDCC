@@ -36,8 +36,7 @@ class NotificationStore {
         switch (action.type) {
             case "NOTIFICATION_RECEIVED": {
                 const notification = action.payload as NotificationEvent;
-                // Most recent first, capped so a long session doesn't grow
-                // this list -- and the DOM it renders -- without bound.
+
                 const notifications = [notification, ...this.state.notifications].slice(
                     0,
                     MAX_NOTIFICATIONS

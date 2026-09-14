@@ -18,11 +18,6 @@ export default function ModeratorAlertForm({
     const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false);
 
-    // Being ROLE_MODERATOR alone isn't enough -- the backend only allows
-    // the gallery's own moderator (CommandService.SendModeratorAlert
-    // checks callerID != g.ModeratorID). This mirrors that check so a
-    // moderator of a *different* gallery doesn't see a form that would
-    // always fail with PermissionDenied.
     if (auth.role !== "ROLE_MODERATOR" || auth.userId !== galleryModeratorId) {
         return null;
     }

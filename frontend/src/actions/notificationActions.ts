@@ -4,8 +4,7 @@ import type { NotificationEvent } from "../types/notification";
 
 let unsubscribe: (() => void) | null = null;
 
-// Guards against double-connecting if the feed mounts twice (e.g. React
-// StrictMode's dev-only double-invoke of effects).
+// Guards against double-connecting if the feed mounts twice
 export function startNotificationStream(token: string): void {
     if (unsubscribe) {
         return;

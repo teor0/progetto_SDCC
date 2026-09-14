@@ -4,7 +4,7 @@ import type { Gallery } from "../types/gallery";
 export type GalleryState = {
     myGalleries: Gallery[];
     availableGalleries: Gallery[];
-    // null means "no more pages". Set from each response's nextPageToken.
+    // null means "no more pages"
     myGalleriesNextPageToken: string | null;
     availableGalleriesNextPageToken: string | null;
     loadingMoreMy: boolean;
@@ -134,9 +134,7 @@ class GalleryStore {
                 this.state = {
                     ...this.state,
                     myGalleries: [...this.state.myGalleries, ...payload.galleries],
-                    // Safety net: if a gallery just paged into "my galleries"
-                    // is still sitting in "available" from an earlier page,
-                    // drop it from there too.
+
                     availableGalleries: this.state.availableGalleries.filter(
                         (g) => !newMyIds.has(g.id)
                     ),
@@ -162,10 +160,7 @@ class GalleryStore {
                     galleries: Gallery[];
                     nextPageToken: string | null;
                 };
-                // Filter against the memberships we currently know about --
-                // this list is fetched independently of "my galleries", so a
-                // gallery the user already belongs to can still show up in a
-                // raw "all galleries" page.
+
                 const myIds = new Set(this.state.myGalleries.map((g) => g.id));
                 const newAvailable = payload.galleries.filter((g) => !myIds.has(g.id));
 
@@ -191,13 +186,13 @@ class GalleryStore {
                 this.state = {
                     ...this.state,
 
-                    // Remove it from available galleries
+
                     availableGalleries:
                         this.state.availableGalleries.filter(
                             (g) => g.id !== gallery.id
                         ),
 
-                    // Add it to my galleries
+
                     myGalleries: [
                         ...this.state.myGalleries,
                         gallery,
@@ -217,13 +212,13 @@ class GalleryStore {
                 this.state = {
                     ...this.state,
 
-                    // Remove it from my galleries
+
                     myGalleries:
                         this.state.myGalleries.filter(
                             (g) => g.id !== gallery.id
                         ),
 
-                    // Put it back into available galleries
+
                     availableGalleries: [
                         ...this.state.availableGalleries,
                         gallery,

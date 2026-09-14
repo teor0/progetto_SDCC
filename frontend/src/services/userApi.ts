@@ -27,12 +27,4 @@ export const userApi = {
             request
         );
     },
-
-    async getCurrentUser(): Promise<{
-        userId: string;
-    }> {
-        return api.get(
-            "/photogallery/auth/me"
-        );
-    },
 };

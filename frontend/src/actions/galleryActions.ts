@@ -1,10 +1,6 @@
 import { dispatcher } from "../stores/Dispatcher";
 import { galleryApi } from "../services/galleryApi";
 
-// Page sizes are deliberately different: a user's own memberships are
-// usually a short list, so we ask for enough in one request that "Load
-// more" is rarely needed there. The browsable "available" list is
-// expected to grow without bound, so it stays small and paginated.
 const MY_GALLERIES_PAGE_SIZE = 50;
 const AVAILABLE_GALLERIES_PAGE_SIZE = 12;
 
@@ -93,11 +89,6 @@ export async function createGallery(name: string, description: string): Promise<
 
     try {
         await galleryApi.createGallery({ name, description });
-        // Re-sync from the server instead of splicing the new gallery into
-        // local state by hand -- the list always reflects what the backend
-        // actually has, not what this client assumes just happened. This
-        // also resets pagination back to page 1 for both lists, which is
-        // the simplest correct behavior after a mutation.
         await loadGalleries();
     } catch (error) {
         dispatcher.dispatch({

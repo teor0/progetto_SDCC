@@ -60,13 +60,13 @@ func TestLogin_Success_GoMock(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRepo := mocks.NewMockRepository(ctrl)
 	defer ctrl.Finish()
-	mockRepo.EXPECT().GetByEmail(gomock.Any(), "prova2@mail.com").
-		Return(&models.User{Email: "prova2@mail.com", Password: mustHash(t, "mypass"), Role: "ROLE_USER"}, nil)
+	mockRepo.EXPECT().GetByEmail(gomock.Any(), "test@example.com").
+		Return(&models.User{Email: "test@example.com", Password: mustHash(t, "password123"), Role: "ROLE_USER"}, nil)
 
 	s := api.NewServer(mockRepo, "my-secret")
 	resp, err := s.Login(context.Background(), &userpb.LoginRequest{
-		Email:    "prova2@mail.com",
-		Password: "mypass",
+		Email:    "test@example.com",
+		Password: "password123",
 	})
 
 	if err != nil {

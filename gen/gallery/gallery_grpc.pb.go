@@ -54,15 +54,7 @@ type GalleryServiceClient interface {
 	ListGalleries(ctx context.Context, in *ListGalleriesRequest, opts ...grpc.CallOption) (*ListGalleriesResponse, error)
 	// ListMembers returns all members of a gallery.
 	ListMembers(ctx context.Context, in *ListMembersRequest, opts ...grpc.CallOption) (*ListMembersResponse, error)
-	// IsMember is used internally (not exposed via the HTTP gateway) by
-	// other services -- primarily Upload Service -- to check membership
-	// and gallery status in a single low-cost call before accepting work.
-	// This is the call Upload Service wraps in its circuit breaker.
 	IsMember(ctx context.Context, in *IsMemberRequest, opts ...grpc.CallOption) (*IsMemberResponse, error)
-	// ListGalleriesByMember is used internally (not exposed via the HTTP
-	// gateway) by other services -- primarily Notification Service, to
-	// resolve which galleries a subscribing user belongs to -- to query
-	// membership directly instead of paginating over every gallery.
 	ListGalleriesByMember(ctx context.Context, in *ListGalleriesByMemberRequest, opts ...grpc.CallOption) (*ListGalleriesResponse, error)
 }
 
@@ -206,15 +198,7 @@ type GalleryServiceServer interface {
 	ListGalleries(context.Context, *ListGalleriesRequest) (*ListGalleriesResponse, error)
 	// ListMembers returns all members of a gallery.
 	ListMembers(context.Context, *ListMembersRequest) (*ListMembersResponse, error)
-	// IsMember is used internally (not exposed via the HTTP gateway) by
-	// other services -- primarily Upload Service -- to check membership
-	// and gallery status in a single low-cost call before accepting work.
-	// This is the call Upload Service wraps in its circuit breaker.
 	IsMember(context.Context, *IsMemberRequest) (*IsMemberResponse, error)
-	// ListGalleriesByMember is used internally (not exposed via the HTTP
-	// gateway) by other services -- primarily Notification Service, to
-	// resolve which galleries a subscribing user belongs to -- to query
-	// membership directly instead of paginating over every gallery.
 	ListGalleriesByMember(context.Context, *ListGalleriesByMemberRequest) (*ListGalleriesResponse, error)
 }
 

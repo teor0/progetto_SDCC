@@ -28,10 +28,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// UploadService receives photos from clients (via the API Gateway),
-// persists them to object storage (MinIO), and emits an upload event
+// UploadService receives photos from clients persists them to MinIO, and emits an upload event
 // to RabbitMQ once storage succeeds. It calls out to GalleryService to
-// verify the gallery exists and the user is a member; that call is
+// verify the gallery exists and the user is a member. That call is
 // wrapped in a circuit breaker on the server implementation side.
 type UploadServiceClient interface {
 	// UploadPhoto is client-streaming: the first message carries metadata,
@@ -90,10 +89,9 @@ func (c *uploadServiceClient) HealthCheck(ctx context.Context, in *HealthCheckRe
 // All implementations should embed UnimplementedUploadServiceServer
 // for forward compatibility.
 //
-// UploadService receives photos from clients (via the API Gateway),
-// persists them to object storage (MinIO), and emits an upload event
+// UploadService receives photos from clients persists them to MinIO, and emits an upload event
 // to RabbitMQ once storage succeeds. It calls out to GalleryService to
-// verify the gallery exists and the user is a member; that call is
+// verify the gallery exists and the user is a member. That call is
 // wrapped in a circuit breaker on the server implementation side.
 type UploadServiceServer interface {
 	// UploadPhoto is client-streaming: the first message carries metadata,

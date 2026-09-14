@@ -22,64 +22,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type UploadStatus int32
-
-const (
-	UploadStatus_UPLOAD_STATUS_UNSPECIFIED UploadStatus = 0
-	UploadStatus_UPLOAD_STATUS_PENDING     UploadStatus = 1 // received, being written to MinIO
-	UploadStatus_UPLOAD_STATUS_STORED      UploadStatus = 2 // saved to MinIO, event not yet published
-	UploadStatus_UPLOAD_STATUS_COMPLETED   UploadStatus = 3 // stored + event published to RabbitMQ
-	UploadStatus_UPLOAD_STATUS_FAILED      UploadStatus = 4
-	UploadStatus_UPLOAD_STATUS_REJECTED    UploadStatus = 5
-)
-
-// Enum value maps for UploadStatus.
-var (
-	UploadStatus_name = map[int32]string{
-		0: "UPLOAD_STATUS_UNSPECIFIED",
-		1: "UPLOAD_STATUS_PENDING",
-		2: "UPLOAD_STATUS_STORED",
-		3: "UPLOAD_STATUS_COMPLETED",
-		4: "UPLOAD_STATUS_FAILED",
-		5: "UPLOAD_STATUS_REJECTED",
-	}
-	UploadStatus_value = map[string]int32{
-		"UPLOAD_STATUS_UNSPECIFIED": 0,
-		"UPLOAD_STATUS_PENDING":     1,
-		"UPLOAD_STATUS_STORED":      2,
-		"UPLOAD_STATUS_COMPLETED":   3,
-		"UPLOAD_STATUS_FAILED":      4,
-		"UPLOAD_STATUS_REJECTED":    5,
-	}
-)
-
-func (x UploadStatus) Enum() *UploadStatus {
-	p := new(UploadStatus)
-	*p = x
-	return p
-}
-
-func (x UploadStatus) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (UploadStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_upload_upload_proto_enumTypes[0].Descriptor()
-}
-
-func (UploadStatus) Type() protoreflect.EnumType {
-	return &file_upload_upload_proto_enumTypes[0]
-}
-
-func (x UploadStatus) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use UploadStatus.Descriptor instead.
-func (UploadStatus) EnumDescriptor() ([]byte, []int) {
-	return file_upload_upload_proto_rawDescGZIP(), []int{0}
-}
-
 type HealthCheckResponse_ServingStatus int32
 
 const (
@@ -113,11 +55,11 @@ func (x HealthCheckResponse_ServingStatus) String() string {
 }
 
 func (HealthCheckResponse_ServingStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_upload_upload_proto_enumTypes[1].Descriptor()
+	return file_upload_upload_proto_enumTypes[0].Descriptor()
 }
 
 func (HealthCheckResponse_ServingStatus) Type() protoreflect.EnumType {
-	return &file_upload_upload_proto_enumTypes[1]
+	return &file_upload_upload_proto_enumTypes[0]
 }
 
 func (x HealthCheckResponse_ServingStatus) Number() protoreflect.EnumNumber {
@@ -204,7 +146,7 @@ type UploadPhotoRequest_Metadata struct {
 }
 
 type UploadPhotoRequest_ChunkData struct {
-	ChunkData []byte `protobuf:"bytes,2,opt,name=chunk_data,json=chunkData,proto3,oneof"` // subsequent messages
+	ChunkData []byte `protobuf:"bytes,2,opt,name=chunk_data,json=chunkData,proto3,oneof"`
 }
 
 func (*UploadPhotoRequest_Metadata) isUploadPhotoRequest_Payload() {}
@@ -280,16 +222,13 @@ func (x *UploadMetadata) GetTotalSizeBytes() int64 {
 }
 
 type UploadPhotoResponse struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	PhotoId    string                 `protobuf:"bytes,1,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
-	GalleryId  string                 `protobuf:"bytes,2,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
-	StorageKey string                 `protobuf:"bytes,3,opt,name=storage_key,json=storageKey,proto3" json:"storage_key,omitempty"` // MinIO object key/path
-	SizeBytes  int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
-	// Publicly accessible URL (or presigned URL) for the stored photo.
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PhotoId       string                 `protobuf:"bytes,1,opt,name=photo_id,json=photoId,proto3" json:"photo_id,omitempty"`
+	GalleryId     string                 `protobuf:"bytes,2,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`
+	StorageKey    string                 `protobuf:"bytes,3,opt,name=storage_key,json=storageKey,proto3" json:"storage_key,omitempty"` // MinIO object key/path
+	SizeBytes     int64                  `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
 	Url           string                 `protobuf:"bytes,5,opt,name=url,proto3" json:"url,omitempty"`
-	Status        UploadStatus           `protobuf:"varint,6,opt,name=status,proto3,enum=proto.UploadStatus" json:"status,omitempty"`
-	UploadedAt    *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=uploaded_at,json=uploadedAt,proto3" json:"uploaded_at,omitempty"`
-	ErrorMessage  *string                `protobuf:"bytes,8,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"` // populated when status == FAILED
+	UploadedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=uploaded_at,json=uploadedAt,proto3" json:"uploaded_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -359,25 +298,11 @@ func (x *UploadPhotoResponse) GetUrl() string {
 	return ""
 }
 
-func (x *UploadPhotoResponse) GetStatus() UploadStatus {
-	if x != nil {
-		return x.Status
-	}
-	return UploadStatus_UPLOAD_STATUS_UNSPECIFIED
-}
-
 func (x *UploadPhotoResponse) GetUploadedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UploadedAt
 	}
 	return nil
-}
-
-func (x *UploadPhotoResponse) GetErrorMessage() string {
-	if x != nil && x.ErrorMessage != nil {
-		return *x.ErrorMessage
-	}
-	return ""
 }
 
 type ListUploadsRequest struct {
@@ -499,8 +424,7 @@ type UploadSummary struct {
 	UploaderUserId string                 `protobuf:"bytes,3,opt,name=uploader_user_id,json=uploaderUserId,proto3" json:"uploader_user_id,omitempty"`
 	StorageKey     string                 `protobuf:"bytes,4,opt,name=storage_key,json=storageKey,proto3" json:"storage_key,omitempty"`
 	SizeBytes      int64                  `protobuf:"varint,5,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
-	Status         UploadStatus           `protobuf:"varint,6,opt,name=status,proto3,enum=proto.UploadStatus" json:"status,omitempty"`
-	UploadedAt     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=uploaded_at,json=uploadedAt,proto3" json:"uploaded_at,omitempty"`
+	UploadedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=uploaded_at,json=uploadedAt,proto3" json:"uploaded_at,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -568,13 +492,6 @@ func (x *UploadSummary) GetSizeBytes() int64 {
 		return x.SizeBytes
 	}
 	return 0
-}
-
-func (x *UploadSummary) GetStatus() UploadStatus {
-	if x != nil {
-		return x.Status
-	}
-	return UploadStatus_UPLOAD_STATUS_UNSPECIFIED
 }
 
 func (x *UploadSummary) GetUploadedAt() *timestamppb.Timestamp {
@@ -679,7 +596,7 @@ const file_upload_upload_proto_rawDesc = "" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x1a\n" +
 	"\bfilename\x18\x02 \x01(\tR\bfilename\x12!\n" +
 	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12(\n" +
-	"\x10total_size_bytes\x18\x04 \x01(\x03R\x0etotalSizeBytes\"\xc7\x02\n" +
+	"\x10total_size_bytes\x18\x04 \x01(\x03R\x0etotalSizeBytes\"\xde\x01\n" +
 	"\x13UploadPhotoResponse\x12\x19\n" +
 	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\x12\x1d\n" +
 	"\n" +
@@ -688,12 +605,9 @@ const file_upload_upload_proto_rawDesc = "" +
 	"storageKey\x12\x1d\n" +
 	"\n" +
 	"size_bytes\x18\x04 \x01(\x03R\tsizeBytes\x12\x10\n" +
-	"\x03url\x18\x05 \x01(\tR\x03url\x12+\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x13.proto.UploadStatusR\x06status\x12;\n" +
-	"\vuploaded_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"uploadedAt\x12(\n" +
-	"\rerror_message\x18\b \x01(\tH\x00R\ferrorMessage\x88\x01\x01B\x10\n" +
-	"\x0e_error_message\"o\n" +
+	"\x03url\x18\x05 \x01(\tR\x03url\x12;\n" +
+	"\vuploaded_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"uploadedAt\"o\n" +
 	"\x12ListUploadsRequest\x12\x1d\n" +
 	"\n" +
 	"gallery_id\x18\x01 \x01(\tR\tgalleryId\x12\x1b\n" +
@@ -702,7 +616,7 @@ const file_upload_upload_proto_rawDesc = "" +
 	"page_token\x18\x03 \x01(\tR\tpageToken\"m\n" +
 	"\x13ListUploadsResponse\x12.\n" +
 	"\auploads\x18\x01 \x03(\v2\x14.proto.UploadSummaryR\auploads\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9d\x02\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf0\x01\n" +
 	"\rUploadSummary\x12\x19\n" +
 	"\bphoto_id\x18\x01 \x01(\tR\aphotoId\x12\x1d\n" +
 	"\n" +
@@ -711,9 +625,8 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\vstorage_key\x18\x04 \x01(\tR\n" +
 	"storageKey\x12\x1d\n" +
 	"\n" +
-	"size_bytes\x18\x05 \x01(\x03R\tsizeBytes\x12+\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x13.proto.UploadStatusR\x06status\x12;\n" +
-	"\vuploaded_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"size_bytes\x18\x05 \x01(\x03R\tsizeBytes\x12;\n" +
+	"\vuploaded_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"uploadedAt\"\x14\n" +
 	"\x12HealthCheckRequest\"\x93\x01\n" +
 	"\x13HealthCheckResponse\x12@\n" +
@@ -721,14 +634,7 @@ const file_upload_upload_proto_rawDesc = "" +
 	"\rServingStatus\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\v\n" +
 	"\aSERVING\x10\x01\x12\x0f\n" +
-	"\vNOT_SERVING\x10\x02*\xb5\x01\n" +
-	"\fUploadStatus\x12\x1d\n" +
-	"\x19UPLOAD_STATUS_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15UPLOAD_STATUS_PENDING\x10\x01\x12\x18\n" +
-	"\x14UPLOAD_STATUS_STORED\x10\x02\x12\x1b\n" +
-	"\x17UPLOAD_STATUS_COMPLETED\x10\x03\x12\x18\n" +
-	"\x14UPLOAD_STATUS_FAILED\x10\x04\x12\x1a\n" +
-	"\x16UPLOAD_STATUS_REJECTED\x10\x052\xe3\x01\n" +
+	"\vNOT_SERVING\x10\x022\xe3\x01\n" +
 	"\rUploadService\x12F\n" +
 	"\vUploadPhoto\x12\x19.proto.UploadPhotoRequest\x1a\x1a.proto.UploadPhotoResponse(\x01\x12D\n" +
 	"\vListUploads\x12\x19.proto.ListUploadsRequest\x1a\x1a.proto.ListUploadsResponse\x12D\n" +
@@ -747,40 +653,37 @@ func file_upload_upload_proto_rawDescGZIP() []byte {
 	return file_upload_upload_proto_rawDescData
 }
 
-var file_upload_upload_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_upload_upload_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_upload_upload_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_upload_upload_proto_goTypes = []any{
-	(UploadStatus)(0),                      // 0: proto.UploadStatus
-	(HealthCheckResponse_ServingStatus)(0), // 1: proto.HealthCheckResponse.ServingStatus
-	(*UploadPhotoRequest)(nil),             // 2: proto.UploadPhotoRequest
-	(*UploadMetadata)(nil),                 // 3: proto.UploadMetadata
-	(*UploadPhotoResponse)(nil),            // 4: proto.UploadPhotoResponse
-	(*ListUploadsRequest)(nil),             // 5: proto.ListUploadsRequest
-	(*ListUploadsResponse)(nil),            // 6: proto.ListUploadsResponse
-	(*UploadSummary)(nil),                  // 7: proto.UploadSummary
-	(*HealthCheckRequest)(nil),             // 8: proto.HealthCheckRequest
-	(*HealthCheckResponse)(nil),            // 9: proto.HealthCheckResponse
-	(*timestamppb.Timestamp)(nil),          // 10: google.protobuf.Timestamp
+	(HealthCheckResponse_ServingStatus)(0), // 0: proto.HealthCheckResponse.ServingStatus
+	(*UploadPhotoRequest)(nil),             // 1: proto.UploadPhotoRequest
+	(*UploadMetadata)(nil),                 // 2: proto.UploadMetadata
+	(*UploadPhotoResponse)(nil),            // 3: proto.UploadPhotoResponse
+	(*ListUploadsRequest)(nil),             // 4: proto.ListUploadsRequest
+	(*ListUploadsResponse)(nil),            // 5: proto.ListUploadsResponse
+	(*UploadSummary)(nil),                  // 6: proto.UploadSummary
+	(*HealthCheckRequest)(nil),             // 7: proto.HealthCheckRequest
+	(*HealthCheckResponse)(nil),            // 8: proto.HealthCheckResponse
+	(*timestamppb.Timestamp)(nil),          // 9: google.protobuf.Timestamp
 }
 var file_upload_upload_proto_depIdxs = []int32{
-	3,  // 0: proto.UploadPhotoRequest.metadata:type_name -> proto.UploadMetadata
-	0,  // 1: proto.UploadPhotoResponse.status:type_name -> proto.UploadStatus
-	10, // 2: proto.UploadPhotoResponse.uploaded_at:type_name -> google.protobuf.Timestamp
-	7,  // 3: proto.ListUploadsResponse.uploads:type_name -> proto.UploadSummary
-	0,  // 4: proto.UploadSummary.status:type_name -> proto.UploadStatus
-	10, // 5: proto.UploadSummary.uploaded_at:type_name -> google.protobuf.Timestamp
-	1,  // 6: proto.HealthCheckResponse.status:type_name -> proto.HealthCheckResponse.ServingStatus
-	2,  // 7: proto.UploadService.UploadPhoto:input_type -> proto.UploadPhotoRequest
-	5,  // 8: proto.UploadService.ListUploads:input_type -> proto.ListUploadsRequest
-	8,  // 9: proto.UploadService.HealthCheck:input_type -> proto.HealthCheckRequest
-	4,  // 10: proto.UploadService.UploadPhoto:output_type -> proto.UploadPhotoResponse
-	6,  // 11: proto.UploadService.ListUploads:output_type -> proto.ListUploadsResponse
-	9,  // 12: proto.UploadService.HealthCheck:output_type -> proto.HealthCheckResponse
-	10, // [10:13] is the sub-list for method output_type
-	7,  // [7:10] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	2, // 0: proto.UploadPhotoRequest.metadata:type_name -> proto.UploadMetadata
+	9, // 1: proto.UploadPhotoResponse.uploaded_at:type_name -> google.protobuf.Timestamp
+	6, // 2: proto.ListUploadsResponse.uploads:type_name -> proto.UploadSummary
+	9, // 3: proto.UploadSummary.uploaded_at:type_name -> google.protobuf.Timestamp
+	0, // 4: proto.HealthCheckResponse.status:type_name -> proto.HealthCheckResponse.ServingStatus
+	1, // 5: proto.UploadService.UploadPhoto:input_type -> proto.UploadPhotoRequest
+	4, // 6: proto.UploadService.ListUploads:input_type -> proto.ListUploadsRequest
+	7, // 7: proto.UploadService.HealthCheck:input_type -> proto.HealthCheckRequest
+	3, // 8: proto.UploadService.UploadPhoto:output_type -> proto.UploadPhotoResponse
+	5, // 9: proto.UploadService.ListUploads:output_type -> proto.ListUploadsResponse
+	8, // 10: proto.UploadService.HealthCheck:output_type -> proto.HealthCheckResponse
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_upload_upload_proto_init() }
@@ -792,13 +695,12 @@ func file_upload_upload_proto_init() {
 		(*UploadPhotoRequest_Metadata)(nil),
 		(*UploadPhotoRequest_ChunkData)(nil),
 	}
-	file_upload_upload_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_upload_upload_proto_rawDesc), len(file_upload_upload_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,

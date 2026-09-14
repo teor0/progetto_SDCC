@@ -730,11 +730,10 @@ func (x *GetGalleryRequest) GetGalleryId() string {
 }
 
 type ListGalleriesRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Optional: filter to galleries the caller belongs to.
-	MyGalleries   bool   `protobuf:"varint,1,opt,name=my_galleries,json=myGalleries,proto3" json:"my_galleries,omitempty"`
-	PageSize      int32  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MyGalleries   bool                   `protobuf:"varint,1,opt,name=my_galleries,json=myGalleries,proto3" json:"my_galleries,omitempty"`
+	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string                 `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -886,14 +885,7 @@ func (x *ListMembersRequest) GetGalleryId() string {
 	return ""
 }
 
-// ListGalleriesByMemberRequest queries galleries a specific user belongs
-// to directly (a proper "by member" query), rather than paginating over
-// all galleries and filtering client-side the way
-// ListGalleries(my_galleries=true) currently does. Intended for internal
-// service-to-service use (e.g. Notification Service resolving a
-// subscriber's memberships) -- like IsMember, not exposed via the HTTP
-// gateway, and the caller passes user_id explicitly rather than relying
-// on forwarded JWT identity.
+// ListGalleriesByMemberRequest queries galleries a specific user belongs to directly
 type ListGalleriesByMemberRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -998,10 +990,7 @@ func (x *ListMembersResponse) GetMembers() []*Member {
 	return nil
 }
 
-// IsMember is a cheap existence check, intended for other services
-// (e.g. Upload Service) to validate a single user's membership without
-// pulling the full member list. Also returns gallery status so callers
-// can validate "open" state in the same round trip.
+// IsMember is intended for other services to validate a single user's membership
 type IsMemberRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	GalleryId     string                 `protobuf:"bytes,1,opt,name=gallery_id,json=galleryId,proto3" json:"gallery_id,omitempty"`

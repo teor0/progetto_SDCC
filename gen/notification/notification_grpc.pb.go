@@ -32,8 +32,6 @@ type NotificationServiceClient interface {
 	// subscribers who are members of the relevant gallery.
 	// The stream remains open until the client disconnects or the server closes it.
 	// Clients should reconnect with exponential back-off on stream termination.
-	// Not exposed via grpc-gateway (server-streaming is unsupported over HTTP/1.1);
-	// clients must connect over HTTP/2 directly or via a WebSocket bridge.
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Notification], error)
 }
 
@@ -74,8 +72,6 @@ type NotificationServiceServer interface {
 	// subscribers who are members of the relevant gallery.
 	// The stream remains open until the client disconnects or the server closes it.
 	// Clients should reconnect with exponential back-off on stream termination.
-	// Not exposed via grpc-gateway (server-streaming is unsupported over HTTP/1.1);
-	// clients must connect over HTTP/2 directly or via a WebSocket bridge.
 	Subscribe(*SubscribeRequest, grpc.ServerStreamingServer[Notification]) error
 }
 

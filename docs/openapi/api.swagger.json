@@ -13,7 +13,7 @@
     },
     {
       "name": "UploadService",
-      "description": "UploadService receives photos from clients (via the API Gateway),\npersists them to object storage (MinIO), and emits an upload event\nto RabbitMQ once storage succeeds. It calls out to GalleryService to\nverify the gallery exists and the user is a member; that call is\nwrapped in a circuit breaker on the server implementation side."
+      "description": "UploadService receives photos from clients persists them to MinIO, and emits an upload event\nto RabbitMQ once storage succeeds. It calls out to GalleryService to\nverify the gallery exists and the user is a member. That call is\nwrapped in a circuit breaker on the server implementation side."
     },
     {
       "name": "UserService"
@@ -54,28 +54,6 @@
             }
           }
         ],
-        "tags": [
-          "UserService"
-        ]
-      }
-    },
-    "/photogallery/auth/me": {
-      "get": {
-        "operationId": "UserService_Info",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/protoInfoResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
         "tags": [
           "UserService"
         ]
@@ -134,7 +112,6 @@
         "parameters": [
           {
             "name": "myGalleries",
-            "description": "Optional: filter to galleries the caller belongs to.",
             "in": "query",
             "required": false,
             "type": "boolean"
@@ -494,14 +471,6 @@
         "GALLERY_STATUS_CLOSED"
       ],
       "default": "GALLERY_STATUS_UNSPECIFIED"
-    },
-    "protoInfoResponse": {
-      "type": "object",
-      "properties": {
-        "userId": {
-          "type": "string"
-        }
-      }
     },
     "protoJoinGalleryResponse": {
       "type": "object"

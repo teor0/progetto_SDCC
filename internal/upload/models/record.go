@@ -3,8 +3,6 @@ package model
 import (
 	"time"
 
-	uploadpb "photogallery/gen/upload"
-
 	"github.com/google/uuid"
 )
 
@@ -17,7 +15,6 @@ type Record struct {
 	ContentType  string
 	StorageKey   string
 	SizeBytes    int64
-	Status       uploadpb.UploadStatus `gorm:"type:smallint"`
 	ErrorMessage string
 	UploadedAt   time.Time `gorm:"index"`
 	UpdatedAt    time.Time

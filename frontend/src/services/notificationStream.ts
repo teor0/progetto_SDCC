@@ -13,11 +13,6 @@ type Handlers = {
     onStatusChange: (status: StreamStatus) => void;
 };
 
-// Reads the SSE stream manually via fetch's ReadableStream rather than
-// EventSource, since EventSource can't attach an Authorization header and
-// this endpoint requires one. Reconnects with exponential backoff per the
-// API's own doc comment ("Clients should reconnect with exponential
-// back-off on stream termination").
 export function subscribeToNotifications(token: string, handlers: Handlers): () => void {
     const controller = new AbortController();
     let stopped = false;
@@ -102,6 +97,6 @@ function handleRawEvent(raw: string, handlers: Handlers) {
     try {
         handlers.onNotification(JSON.parse(dataLines.join("\n")) as NotificationEvent);
     } catch {
-        // Malformed payload -- drop it rather than crash the stream.
+        // Malformed payload drop it rather than crash the stream.
     }
 }

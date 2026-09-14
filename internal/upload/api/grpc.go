@@ -224,7 +224,6 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 		ContentType: contentType,
 		StorageKey:  objectKey,
 		SizeBytes:   int64(buf.Len()),
-		Status:      uploadpb.UploadStatus_UPLOAD_STATUS_COMPLETED,
 		UploadedAt:  now,
 		UpdatedAt:   now,
 	}
@@ -252,7 +251,6 @@ func (s *Server) uploadPhoto(stream uploadStream) error {
 		StorageKey: objectKey,
 		SizeBytes:  int64(buf.Len()),
 		Url:        photoURL,
-		Status:     uploadpb.UploadStatus_UPLOAD_STATUS_COMPLETED,
 		UploadedAt: timestamppb.Now(),
 	})
 }
@@ -351,7 +349,6 @@ func (s *Server) ListUploads(ctx context.Context, req *uploadpb.ListUploadsReque
 			UploaderUserId: rec.UploaderID.String(),
 			StorageKey:     rec.StorageKey,
 			SizeBytes:      rec.SizeBytes,
-			Status:         rec.Status,
 			UploadedAt:     timestamppb.New(rec.UploadedAt),
 		})
 	}

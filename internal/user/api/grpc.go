@@ -86,16 +86,6 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.T
 	}, nil
 }
 
-func (s *Server) Info(ctx context.Context, req *userpb.InfoRequest) (*userpb.InfoResponse, error) {
-	userID, err := callerIDFromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &userpb.InfoResponse{
-		UserId: userID.String(),
-	}, nil
-}
-
 func callerIDFromContext(ctx context.Context) (uuid.UUID, error) {
 	claims, err := auth.FromContext(ctx)
 	if err != nil {
