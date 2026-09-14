@@ -116,7 +116,7 @@ func (s *Service) IsMember(ctx context.Context, galleryID uuid.UUID, userID uuid
 	}
 	membership, galleryStatus, err := s.repo.IsMember(ctx, galleryID, userID)
 	if err != nil {
-		return false, models.GalleryClosed, status.Errorf(codes.Internal, err.Error())
+		return false, models.GalleryClosed, status.Errorf(codes.Internal, "gallery is closed: %v", err)
 	}
 	return membership, galleryStatus, nil
 
