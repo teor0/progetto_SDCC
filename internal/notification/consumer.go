@@ -18,8 +18,6 @@ import (
 // notifier is the subset of Broadcaster's function Consumer depends on.
 type notifier interface {
 	PublishNotification(ctx context.Context, n *notificationpb.Notification) error
-	PublishMemberAdded(ctx context.Context, galleryID, userID uuid.UUID) error
-	PublishMemberRemoved(ctx context.Context, galleryID, userID uuid.UUID) error
 }
 
 type Consumer struct {
