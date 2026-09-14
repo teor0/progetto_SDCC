@@ -175,7 +175,7 @@ func TestModeratorAlert_DeliveredToMembers(t *testing.T) {
 
 	require.Equal(t, alertBody, notif.Message)
 	require.Equal(t, gallery.Name, notif.GalleryName,
-		"galleryName should be populated by Consumer.galleryName -- if this is empty, that lookup regressed")
+		"galleryName should be populated by Consumer.galleryName")
 }
 
 func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
@@ -224,7 +224,7 @@ func TestModeratorAlert_DeliveredToAllSubscribers(t *testing.T) {
 	wg.Wait()
 
 	for i, notif := range results {
-		if !assert.NotNilf(t, notif, "subscriber %d never received the alert -- likely a cross-replica delivery gap", i) {
+		if !assert.NotNilf(t, notif, "subscriber %d never received the alert", i) {
 			continue
 		}
 		assert.Equal(t, alertBody, notif.Message, "subscriber %d got the wrong message", i)

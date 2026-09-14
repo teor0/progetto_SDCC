@@ -4,7 +4,7 @@
 //
 // Point at a non-local stack (AWS) with:
 //
-//		UPLOAD_GRPC_URL=<PUBLIC_IPV4>:8083 GATEWAY_URL=http://<PUBLIC_IPV4>:8080 \
+//		UPLOAD_GRPC_URL=upload-service:8083 GATEWAY_URL=http://<PUBLIC_IPV4>:8080 \
 //	    go test -tags=integration ./test/integration/... -v
 //
 // This test doesn't uses mock so YOU NEED TO CLEANUP THE TEST RESULTS AFTER

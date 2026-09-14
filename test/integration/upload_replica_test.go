@@ -7,6 +7,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Run with:
+//	docker compose up -d --build --scale upload-service=3
+//	go test -tags=integration ./test/integration/... -v
+//
+// Point at a non-local stack (AWS) with:
+//
+//		UPLOAD_GRPC_URL=upload-service:8083 GATEWAY_URL=http://<PUBLIC_IPV4>:8080 \
+//	    go test -tags=integration ./test/integration/... -v
+//
+// double check with: docker compose logs upload-service
+// This test doesn't uses mock so YOU NEED TO CLEANUP THE TEST RESULTS AFTER
+
 type photoUploadDTO struct {
 	PhotoID    string `json:"photoId"`
 	GalleryID  string `json:"galleryId"`
@@ -65,7 +77,7 @@ func TestUploadPhoto_VisibleAcrossReplicas(t *testing.T) {
 		for _, photoID := range photoIDs {
 			require.True(t, containsPhotoID(result.Uploads, photoID),
 				"check %d/%d: photo %s missing from ListUploads -- likely served by a replica "+
-					"that never processed its own write (the exact failure mode PostgresRepository was meant to fix)",
+					"that never processed its own write",
 				check+1, numListChecks, photoID)
 		}
 	}

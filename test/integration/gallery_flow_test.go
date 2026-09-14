@@ -209,7 +209,7 @@ func TestDeleteGallery_RejectsNonModerator(t *testing.T) {
 
 	getResp := doJSON(t, http.MethodGet, "/photogallery/galleries/"+gallery.ID, "", nil, nil)
 	require.Equal(t, http.StatusOK, getResp.StatusCode,
-		"gallery should still exist -- a rejected delete must not have any effect")
+		"gallery should still exist")
 }
 
 func TestDeleteGallery_RejectsWrongGalleryModerator(t *testing.T) {
