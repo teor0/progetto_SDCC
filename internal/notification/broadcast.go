@@ -51,14 +51,6 @@ func (b *Broadcaster) PublishNotification(ctx context.Context, n *notificationpb
 	return b.publish(ctx, broadcastEnvelope{Kind: "notify", NotificationPB: raw})
 }
 
-func (b *Broadcaster) PublishMemberAdded(ctx context.Context, galleryID, userID uuid.UUID) error {
-	return b.publish(ctx, broadcastEnvelope{Kind: "member_added", GalleryID: galleryID.String(), UserID: userID.String()})
-}
-
-func (b *Broadcaster) PublishMemberRemoved(ctx context.Context, galleryID, userID uuid.UUID) error {
-	return b.publish(ctx, broadcastEnvelope{Kind: "member_removed", GalleryID: galleryID.String(), UserID: userID.String()})
-}
-
 func (b *Broadcaster) publish(ctx context.Context, env broadcastEnvelope) error {
 	body, err := json.Marshal(env)
 	if err != nil {
@@ -93,6 +85,7 @@ func (b *Broadcaster) apply(ctx context.Context, payload string) {
 		log.Printf("broadcaster: malformed envelope: %v", err)
 		return
 	}
+	log.Printf("broadcaster: apply kind=%s for gallery=%s", env.Kind, env.GalleryID)
 
 	switch env.Kind {
 	case "notify":
@@ -107,19 +100,6 @@ func (b *Broadcaster) apply(ctx context.Context, payload string) {
 			return
 		}
 		b.registry.Notify(ctx, galleryID, &n)
-
-	case "member_added", "member_removed":
-		galleryID, err1 := uuid.Parse(env.GalleryID)
-		userID, err2 := uuid.Parse(env.UserID)
-		if err1 != nil || err2 != nil {
-			log.Printf("broadcaster: invalid ids in %s envelope", env.Kind)
-			return
-		}
-		if env.Kind == "member_added" {
-			b.registry.AddGalleryForClient(galleryID, userID)
-		} else {
-			b.registry.Unsubscribe(galleryID, userID)
-		}
 
 	default:
 		log.Printf("broadcaster: ignoring unknown envelope kind %q", env.Kind)

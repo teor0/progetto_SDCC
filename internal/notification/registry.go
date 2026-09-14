@@ -216,6 +216,7 @@ func (r *Registry) Notify(ctx context.Context, galleryID uuid.UUID, n *notificat
 
 	if !ok {
 		r.mu.RUnlock()
+		log.Printf("registry: Notify gallery=%s no local subscribers on this replica", galleryID)
 		return
 	}
 
@@ -230,6 +231,7 @@ func (r *Registry) Notify(ctx context.Context, galleryID uuid.UUID, n *notificat
 	}
 
 	r.mu.RUnlock()
+	log.Printf("registry: Notify gallery=%s delivering to %d local client(s)", galleryID, len(clients))
 
 	for _, client := range clients {
 		if err := client.Stream.Send(n); err != nil {

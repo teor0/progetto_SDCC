@@ -3,6 +3,7 @@ package notification
 import (
 	"context"
 	"errors"
+	"log"
 	gallerypb "photogallery/gen/gallery"
 	notificationpb "photogallery/gen/notification"
 	"photogallery/internal/auth"
@@ -55,7 +56,7 @@ func (s *Server) Subscribe(
 
 	// One connection ID for the entire streaming RPC.
 	connectionID := s.registry.CreateClient(userID, stream)
-
+	log.Printf("notification: SSE connected user=%s conn=%s galleries=%v", userID, connectionID, galleryIDs)
 	// Register this connection for every gallery
 	// the user currently belongs to.
 	for _, galleryID := range galleryIDs {
