@@ -3,9 +3,10 @@
 // distribution and error rate.
 // Usage:
 //
-//	go run ./cmd/testupload -gateway http://<PUBLIC_IPV4>:8080 -users 50 -duration 30s
+//	docker compose up -d --build --scale upload-service=3 then
+//	go run ./cmd/testupload -gateway http://<PUBLIC_IPV4>:8080 -users 30 -duration 90s
 //
-// Example profiles:
+// stop and rerun the upload-service for some time to simulate a fault in the system to trip and recover the circuit breaker
 //
 // Chaos injection (automatically trip and recover the circuit breaker):
 // use go run ./cmd/testupload -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
@@ -13,9 +14,7 @@
 // use -list-my-pct to specify the percent of requests that are ListGalleries(my_galleries=true)
 //
 //	go run ./cmd/testupload -gateway http://<IP>:8080 -users 30 -duration 90s \
-//	  -upload-pct 60 -list-my-pct 20 \
-//	  -chaos-after 20s -chaos-duration 20s \
-//	  -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
+//	-upload-pct 60 -list-my-pct 20 -chaos-after 20s -chaos-duration 20s -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
 package main
 
 import (
@@ -533,8 +532,8 @@ func printStats(s opStats, duration time.Duration) {
 	}
 	throughput := float64(s.count) / duration.Seconds()
 
-	fmt.Printf("%-18s requests=%-7d errors=%-6d (%.1f%%) throughput=%.1f req/s\n",
+	fmt.Printf("%-s requests=%-7d errors=%-6d (%.1f%%) throughput=%.1f req/s\n",
 		s.op, s.count, s.errors, errRate, throughput)
-	fmt.Printf("%-18s min=%-8s mean=%-8s p50=%-8s p95=%-8s p99=%-8s max=%s\n\n",
+	fmt.Printf("%-s min=%.2fms mean=%.2fms p50=%.2fms p95=%.2fms p99=%.2fms max=%.2fms\n\n",
 		"", toMilliseconds(s.min), toMilliseconds(s.mean), toMilliseconds(s.p50), toMilliseconds(s.p95), toMilliseconds(s.p99), toMilliseconds(s.max))
 }

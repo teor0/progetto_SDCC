@@ -5,7 +5,7 @@
 // this test use a pool of many galleries during the measured run
 // Usage:
 //
-//	docker compose up -d --build --scale gallery-service=3
+//	docker compose up -d --build --scale gallery-service=3 then
 //	go run ./cmd/testgallery -gateway http://<PUBLIC_IPV4>:8080 \
 //	  -moderators 5 -members 50 -duration 60s
 package main
@@ -613,8 +613,8 @@ func printStats(s opStats, duration time.Duration) {
 	}
 	throughput := float64(s.count) / duration.Seconds()
 
-	fmt.Printf("%-18s requests=%-7d errors=%-6d (%.1f%%) throughput=%.1f req/s\n",
+	fmt.Printf("%-s requests=%-7d errors=%-6d (%.1f%%) throughput=%.1f req/s\n",
 		s.op, s.count, s.errors, errRate, throughput)
-	fmt.Printf("%-18s min=%-8s mean=%-8s p50=%-8s p95=%-8s p99=%-8s max=%s\n\n",
+	fmt.Printf("%-s min=%.2fms mean=%.2fms p50=%.2fms p95=%.2fms p99=%.2fms max=%.2fms\n\n",
 		"", toMilliseconds(s.min), toMilliseconds(s.mean), toMilliseconds(s.p50), toMilliseconds(s.p95), toMilliseconds(s.p99), toMilliseconds(s.max))
 }
