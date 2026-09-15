@@ -603,7 +603,7 @@ func computeStats(op string, results []opResult) opStats {
 }
 
 func toMilliseconds(d time.Duration) float64 {
-	return float64(d.Microseconds()) / 1000.0
+	return float64(d) / float64(time.Millisecond)
 }
 
 func printStats(s opStats, duration time.Duration) {
