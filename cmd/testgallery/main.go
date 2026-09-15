@@ -602,6 +602,10 @@ func computeStats(op string, results []opResult) opStats {
 	}
 }
 
+func toMilliseconds(d time.Duration) float64 {
+	return float64(d.Microseconds()) / 1000.0
+}
+
 func printStats(s opStats, duration time.Duration) {
 	errRate := 0.0
 	if s.count > 0 {
@@ -612,5 +616,5 @@ func printStats(s opStats, duration time.Duration) {
 	fmt.Printf("%-18s requests=%-7d errors=%-6d (%.1f%%) throughput=%.1f req/s\n",
 		s.op, s.count, s.errors, errRate, throughput)
 	fmt.Printf("%-18s min=%-8s mean=%-8s p50=%-8s p95=%-8s p99=%-8s max=%s\n\n",
-		"", s.min, s.mean, s.p50, s.p95, s.p99, s.max)
+		"", toMilliseconds(s.min), toMilliseconds(s.mean), toMilliseconds(s.p50), toMilliseconds(s.p95), toMilliseconds(s.p99), toMilliseconds(s.max))
 }

@@ -193,9 +193,10 @@ services:
       UPLOAD_SERVICE_ADDRESS: upload-service:8083
       NOTIFICATION_SERVICE_ADDRESS: notification-service:8084
     depends_on:
-      # to fix
-      rabbitmq:
-        condition: service_healthy
+      - user-service
+      - gallery-service
+      - notification-service
+      - upload-service
 
   frontend:
     build:
