@@ -8,13 +8,13 @@
 //
 // stop and rerun the upload-service for some time to simulate a fault in the system to trip and recover the circuit breaker
 //
-// Chaos injection (automatically trip and recover the circuit breaker):
-// use go run ./cmd/testupload -users 5 -duration 15s -chaos-after 5s -chaos-duration 5s to check ssh connection
+// Crash injection (automatically trip and recover the circuit breaker):
+// use go run ./cmd/testupload -users 5 -duration 15s -crash-after 5s -crash-duration 5s to check ssh connection
 // use -upload-pct to specify the percent of requests that are photo uploads
 // use -list-my-pct to specify the percent of requests that are ListGalleries(my_galleries=true)
 //
 //	go run ./cmd/testupload -gateway http://<IP>:8080 -users 30 -duration 90s \
-//	-upload-pct 60 -list-my-pct 20 -chaos-after 20s -chaos-duration 20s -chaos-ssh-host ec2-user@<IP> -chaos-ssh-key ./labsuser.pem
+//	-upload-pct 60 -list-my-pct 20 -crash-after 20s -crash-duration 20s -crash-ssh-host ec2-user@<IP> -crash-ssh-key ./labsuser.pem
 package main
 
 import (
@@ -62,7 +62,7 @@ type config struct {
 	listMyPct  int
 }
 
-type chaosConfig struct {
+type crashConfig struct {
 	enabled    bool
 	after      time.Duration
 	duration   time.Duration
@@ -90,18 +90,18 @@ type galleryResponse struct {
 var totalRequests atomic.Int64
 
 func main() {
-	cfg, chaos := parseFlags()
+	cfg, crash := parseFlags()
 
 	log.Printf("scalability test: %d concurrent users, %s duration, gateway=%s",
 		cfg.users, cfg.duration, cfg.gatewayURL)
 	log.Printf("workload mix: %d%% listMyGalleries, %d%% listAllGalleries, %d%% uploadPhoto",
 		cfg.listMyPct, 100-cfg.listMyPct-cfg.uploadPct, cfg.uploadPct)
-	if chaos.enabled {
-		log.Printf("chaos injection enabled: stop %s at t+%s, restart at t+%s (via %s)",
-			chaos.service, chaos.after, chaos.after+chaos.duration, chaos.sshHost)
-		if chaos.after+chaos.duration > cfg.duration {
-			log.Printf("WARNING: -chaos-after + -chaos-duration extends past -duration; " +
-				"the tool will keep running past the load phase until the chaos restart completes")
+	if crash.enabled {
+		log.Printf("crash injection enabled: stop %s at t+%s, restart at t+%s (via %s)",
+			crash.service, crash.after, crash.after+crash.duration, crash.sshHost)
+		if crash.after+crash.duration > cfg.duration {
+			log.Printf("WARNING: -crash-after + -crash-duration extends past -duration; " +
+				"the tool will keep running past the load phase until the crash restart completes")
 		}
 	}
 
@@ -139,12 +139,12 @@ func main() {
 		}
 	}()
 
-	var chaosWG sync.WaitGroup
-	var chaosStopOffset, chaosRestartOffset time.Duration
+	var crashWG sync.WaitGroup
+	var crashStopOffset, crashRestartOffset time.Duration
 
-	if chaos.enabled {
-		chaosWG.Go(func() {
-			runChaos(chaos, start, &chaosStopOffset, &chaosRestartOffset)
+	if crash.enabled {
+		crashWG.Go(func() {
+			runCrash(crash, start, &crashStopOffset, &crashRestartOffset)
 		})
 	}
 
@@ -161,8 +161,8 @@ func main() {
 	close(resultsCh)
 	actualDuration := time.Since(start)
 
-	// Wait for any in-progress chaos restart
-	chaosWG.Wait()
+	// Wait for any in-progress crash restart
+	crashWG.Wait()
 
 	var all []opResult
 	for r := range resultsCh {
@@ -171,26 +171,26 @@ func main() {
 
 	report(all, actualDuration)
 
-	if chaos.enabled {
-		fmt.Printf("chaos injection: stopped %s at t+%s, restarted at t+%s\n",
-			chaos.service, chaosStopOffset.Round(time.Millisecond), chaosRestartOffset.Round(time.Millisecond))
+	if crash.enabled {
+		fmt.Printf("crash injection: stopped %s at t+%s, restarted at t+%s\n",
+			crash.service, crashStopOffset.Round(time.Millisecond), crashRestartOffset.Round(time.Millisecond))
 		fmt.Println("cross-reference these offsets against `docker compose logs upload-service | grep CircuitBreaker` ")
 	}
 }
 
-func parseFlags() (config, chaosConfig) {
+func parseFlags() (config, crashConfig) {
 	gateway := flag.String("gateway", "http://localhost:8080", "API gateway base URL")
 	users := flag.Int("users", 50, "number of concurrent virtual users")
 	duration := flag.Duration("duration", 30*time.Second, "how long to run the measured load phase")
 	uploadPct := flag.Int("upload-pct", 10, "percent of requests that are photo uploads")
 	listMyPct := flag.Int("list-my-pct", 60, "percent of requests that are ListGalleries(my_galleries=true)")
 
-	chaosAfter := flag.Duration("chaos-after", 0, "if > 0, stop -chaos-service this long after the load phase starts")
-	chaosDuration := flag.Duration("chaos-duration", 20*time.Second, "how long to keep -chaos-service stopped before restarting it")
-	chaosService := flag.String("chaos-service", "gallery-service", "docker compose service name to stop/start for the chaos injection")
-	chaosSSHHost := flag.String("chaos-ssh-host", "", "user@host for SSH'ing into the deployment to run docker compose")
-	chaosSSHKey := flag.String("chaos-ssh-key", "", "path to the SSH private key for -chaos-ssh-host")
-	chaosComposeDir := flag.String("chaos-compose-dir", "~/photogallery", "remote directory containing docker-compose.yml")
+	crashAfter := flag.Duration("crash-after", 0, "if > 0, stop -crash-service this long after the load phase starts")
+	crashDuration := flag.Duration("crash-duration", 20*time.Second, "how long to keep -crash-service stopped before restarting it")
+	crashService := flag.String("crash-service", "gallery-service", "docker compose service name to stop/start for the crash injection")
+	crashSSHHost := flag.String("crash-ssh-host", "", "user@host for SSH'ing into the deployment to run docker compose")
+	crashSSHKey := flag.String("crash-ssh-key", "", "path to the SSH private key for -crash-ssh-host")
+	crashComposeDir := flag.String("crash-compose-dir", "~/photogallery", "remote directory containing docker-compose.yml")
 
 	flag.Parse()
 
@@ -203,17 +203,17 @@ func parseFlags() (config, chaosConfig) {
 
 	gatewayURL = *gateway
 
-	chaos := chaosConfig{
-		enabled:    *chaosAfter > 0,
-		after:      *chaosAfter,
-		duration:   *chaosDuration,
-		service:    *chaosService,
-		sshHost:    *chaosSSHHost,
-		sshKey:     *chaosSSHKey,
-		composeDir: *chaosComposeDir,
+	crash := crashConfig{
+		enabled:    *crashAfter > 0,
+		after:      *crashAfter,
+		duration:   *crashDuration,
+		service:    *crashService,
+		sshHost:    *crashSSHHost,
+		sshKey:     *crashSSHKey,
+		composeDir: *crashComposeDir,
 	}
-	if chaos.enabled && chaos.sshHost == "" {
-		log.Fatal("-chaos-after > 0 requires -chaos-ssh-host (e.g. ec2-user@<PUBLIC_IPV4>)")
+	if crash.enabled && crash.sshHost == "" {
+		log.Fatal("-crash-after > 0 requires -crash-ssh-host (e.g. ec2-user@<PUBLIC_IPV4>)")
 	}
 
 	return config{
@@ -222,27 +222,27 @@ func parseFlags() (config, chaosConfig) {
 		duration:   *duration,
 		uploadPct:  *uploadPct,
 		listMyPct:  *listMyPct,
-	}, chaos
+	}, crash
 }
 
-func runChaos(cfg chaosConfig, loadPhaseStart time.Time, stopOffset, restartOffset *time.Duration) {
+func runCrash(cfg crashConfig, loadPhaseStart time.Time, stopOffset, restartOffset *time.Duration) {
 	time.Sleep(cfg.after)
 	*stopOffset = time.Since(loadPhaseStart)
-	log.Printf("=== CHAOS: stopping %s (t+%s) ===", cfg.service, stopOffset.Round(time.Millisecond))
+	log.Printf("=== CRASH: stopping %s (t+%s) ===", cfg.service, stopOffset.Round(time.Millisecond))
 	if err := runRemoteCompose(cfg, "stop", cfg.service); err != nil {
-		log.Printf("CHAOS: failed to stop %s: %v -- chaos injection aborted, %s was never stopped", cfg.service, err, cfg.service)
+		log.Printf("CRASH: failed to stop %s: %v -- crash injection aborted, %s was never stopped", cfg.service, err, cfg.service)
 		return
 	}
 
 	time.Sleep(cfg.duration)
 	*restartOffset = time.Since(loadPhaseStart)
-	log.Printf("=== CHAOS: restarting %s (t+%s) ===", cfg.service, restartOffset.Round(time.Millisecond))
+	log.Printf("=== CRASH: restarting %s (t+%s) ===", cfg.service, restartOffset.Round(time.Millisecond))
 	if err := runRemoteCompose(cfg, "start", cfg.service); err != nil {
-		log.Printf("CHAOS: failed to restart %s: %v -- you will need to restart it manually (docker compose start %s)", cfg.service, err, cfg.service)
+		log.Printf("CRASH: failed to restart %s: %v -- you will need to restart it manually (docker compose start %s)", cfg.service, err, cfg.service)
 	}
 }
 
-func runRemoteCompose(cfg chaosConfig, action, service string) error {
+func runRemoteCompose(cfg crashConfig, action, service string) error {
 	remoteCmd := fmt.Sprintf("cd %s && docker compose %s %s", cfg.composeDir, action, service)
 
 	args := []string{"-o", "BatchMode=yes"}
@@ -256,7 +256,7 @@ func runRemoteCompose(cfg chaosConfig, action, service string) error {
 	if err != nil {
 		return fmt.Errorf("ssh %q: %w\noutput: %s", remoteCmd, err, out)
 	}
-	log.Printf("chaos: %s -> %s", remoteCmd, strings.TrimSpace(string(out)))
+	log.Printf("crash: %s -> %s", remoteCmd, strings.TrimSpace(string(out)))
 	return nil
 }
 

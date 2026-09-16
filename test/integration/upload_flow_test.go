@@ -6,28 +6,20 @@
 //
 // Point at a non-local stack (AWS) with:
 //
-//		UPLOAD_GRPC_URL=upload-service:8083 GATEWAY_URL=http://<PUBLIC_IPV4>:8080 \
-//	    go test -tags=integration ./test/integration/... -v
+//	GATEWAY_URL=http://<PUBLIC_IPV4>:8080 go test -tags=integration ./test/integration/... -v
 //
 // This test doesn't uses mock so YOU NEED TO CLEANUP THE TEST RESULTS AFTER
 package integration
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"testing"
 
-	uploadpb "photogallery/gen/upload"
-
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 )
 
 func decodeJSONBody(t *testing.T, resp *http.Response, out any) {
@@ -37,25 +29,6 @@ func decodeJSONBody(t *testing.T, resp *http.Response, out any) {
 	require.NoError(t, err)
 	require.NotEmpty(t, body, "expected a JSON response body, got an empty one")
 	require.NoError(t, json.Unmarshal(body, out), "response body: %s", body)
-}
-
-func uploadServiceClient(t *testing.T) uploadpb.UploadServiceClient {
-	t.Helper()
-
-	addr := os.Getenv("UPLOAD_GRPC_URL")
-	if addr == "" {
-		addr = "localhost:8083"
-	}
-
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "dialing upload-service at %s -- is its gRPC port published to the host?", addr)
-	t.Cleanup(func() { conn.Close() })
-
-	return uploadpb.NewUploadServiceClient(conn)
-}
-
-func authContext(token string) context.Context {
-	return metadata.AppendToOutgoingContext(context.Background(), "authorization", "bearer "+token)
 }
 
 func createTestGallery(t *testing.T, moderatorToken, name string) galleryResponse {
