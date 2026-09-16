@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.3.3)  15 SEP 2026 19:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2025/dev/Debian) (preloaded format=pdflatex 2026.3.3)  16 SEP 2026 11:13
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -351,6 +351,11 @@ Underfull \hbox (badness 2035) in paragraph at lines 55--56
  []
 
 
+Underfull \hbox (badness 4072) in paragraph at lines 56--57
+\OT1/ptm/m/n/10 stream-ing dal client, la salva in MinIO, ver-i-fica
+ []
+
+
 
 [2]
 <architettura.png, id=14, 649.67719pt x 525.46312pt>
@@ -368,26 +373,27 @@ File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 
 [3 <./architettura.png>]
 
-LaTeX Warning: Citation `e' on page 4 undefined on input line 83.
-
-
-
 
 
 [4]
-<load_test_gallery.png, id=24, 859.71187pt x 301.8778pt>
+<load_test_gallery.png, id=24, 465.99094pt x 595.47469pt>
 File: load_test_gallery.png Graphic file (type png)
 <use load_test_gallery.png>
-Package pdftex.def Info: load_test_gallery.png  used on input line 101.
-(pdftex.def)             Requested size: 252.0pt x 88.4866pt.
+Package pdftex.def Info: load_test_gallery.png  used on input line 99.
+(pdftex.def)             Requested size: 252.0pt x 322.02402pt.
 <load_test_upload.png, id=25, 500.62032pt x 362.85562pt>
 File: load_test_upload.png Graphic file (type png)
 <use load_test_upload.png>
-Package pdftex.def Info: load_test_upload.png  used on input line 107.
+Package pdftex.def Info: load_test_upload.png  used on input line 105.
 (pdftex.def)             Requested size: 252.0pt x 182.65097pt.
 
-Underfull \hbox (badness 1728) in paragraph at lines 98--111
-[]\OT1/ptm/m/n/10 Due gen-er-a-tori di carico Go pro-get-tati ap-posi-ta-mente
+Underfull \hbox (badness 10000) in paragraph at lines 96--109
+[]\OT1/ptm/m/n/10 Due gen-er-a-tori di carico pro-get-tati ap-posi-ta-mente
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 96--109
+\OT1/ptm/m/n/10 (cmd/testupload, cmd/testgallery) ap-pli-cano carichi di
  []
 
 
@@ -395,48 +401,48 @@ Underfull \hbox (badness 1728) in paragraph at lines 98--111
 
 
 [5 <./load_test_gallery.png> <./load_test_upload.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 115--116
+Underfull \hbox (badness 10000) in paragraph at lines 113--114
 []\OT1/ptm/m/n/10 Nonostante i mec-ca-n-ismi di re-silienza in-trodotti,
  []
 
 
-Underfull \hbox (badness 1584) in paragraph at lines 115--116
+Underfull \hbox (badness 1584) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 sin-crona. Tut-tavia, un even-tuale ar-resto del servizio tra
  []
 
 
-Underfull \hbox (badness 2922) in paragraph at lines 115--116
+Underfull \hbox (badness 2922) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 il com-mit del database e la pub-bli-cazione dell'evento
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 115--116
+Underfull \hbox (badness 10000) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 del No-ti-fi-ca-tion Ser-vice rap-p-re-senta un com-pro-messo
  []
 
 
-Underfull \hbox (badness 1661) in paragraph at lines 115--116
+Underfull \hbox (badness 1661) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 pro-get-tuale. Lo stato delle con-nes-sioni viene man-tenuto
  []
 
 
-Underfull \hbox (badness 2591) in paragraph at lines 115--116
+Underfull \hbox (badness 2591) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 ri-con-nette. Questa soluzione mantiene l'implementazione
  []
 
 
-Underfull \hbox (badness 1648) in paragraph at lines 115--116
+Underfull \hbox (badness 1648) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 Un'ulteriore lim-i-tazione riguarda l'infrastruttura uti-liz-za
 ta
  []
 
 
-Underfull \hbox (badness 1796) in paragraph at lines 115--116
+Underfull \hbox (badness 1796) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 per la dis-tribuzione. Rab-bitMQ, Re-dis e le tre is-tanze
  []
 
 
-Underfull \hbox (badness 1953) in paragraph at lines 115--116
+Underfull \hbox (badness 1953) in paragraph at lines 113--114
 \OT1/ptm/m/n/10 ef-fet-tuate. Per una va-l-u-tazione sper-i-men-tale pi[]u ro-b
 usta
  []
@@ -444,26 +450,26 @@ usta
 
 
 
-Underfull \hbox (badness 2012) in paragraph at lines 146--148
+
+[6]
+Underfull \hbox (badness 2012) in paragraph at lines 144--146
 []\OT1/ptm/m/n/8 MinIO, Inc., ``MinIO Doc-u-men-ta-tion,'' 2026. [On-line]. Ava
 il-able:
  []
 
 
-
-[6]
-Underfull \hbox (badness 10000) in paragraph at lines 161--163
+Underfull \hbox (badness 10000) in paragraph at lines 159--161
 []\OT1/ptm/m/n/8 Uber Go Au-thors, ``Go-Mock,'' 2026. [On-line]. Avail-able:
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 164--166
+Underfull \hbox (badness 10000) in paragraph at lines 162--164
 []\OT1/ptm/m/n/8 GitHub, ``Build-ing and test-ing Go,'' \OT1/ptm/m/it/8 GitHub 
 Ac-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 164--166
+Underfull \hbox (badness 10000) in paragraph at lines 162--164
 \OT1/ptm/m/it/8 tions Doc-u-men-ta-tion\OT1/ptm/m/n/8 , 2026. [On-line]. Avail-
 able:
  []
@@ -490,26 +496,22 @@ Before submitting the final camera ready copy, remember to:
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
  ) 
 Here is how much of TeX's memory you used:
- 4237 strings out of 475102
- 65950 string characters out of 5764878
- 471915 words of memory out of 5000000
- 27210 multiletter control sequences out of 15000+600000
+ 4236 strings out of 475102
+ 65947 string characters out of 5764878
+ 471678 words of memory out of 5000000
+ 27209 multiletter control sequences out of 15000+600000
  592661 words of font info for 96 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 57i,8n,65p,2153b,275s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,8n,65p,2132b,275s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr
 /share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share/texliv
 e/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fo
 nts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/
 times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.p
 fb>
-Output written on "Report progetto.pdf" (7 pages, 582781 bytes).
+Output written on "Report progetto.pdf" (7 pages, 602354 bytes).
 PDF statistics:
  66 PDF objects out of 1000 (max. 8388607)
  38 compressed objects within 1 object stream
