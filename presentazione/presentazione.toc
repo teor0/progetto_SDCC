@@ -1,0 +1,5 @@
+\babel@toc {nil}{}\relax 
+\beamer@sectionintoc {1}{Introduzione}{3}{0}{1}
+\beamer@sectionintoc {2}{Implementazione}{8}{0}{2}
+\beamer@sectionintoc {3}{Risultati}{14}{0}{3}
+\beamer@sectionintoc {4}{Conclusioni}{18}{0}{4}
